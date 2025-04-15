@@ -7,14 +7,12 @@ from app.database import SessionLocal
 
 client = TestClient(app)
 
-# Diese Fixture sorgt dafür, dass nach jedem Test alle Einträge gelöscht werden.
+# Diese Fixture wird nach jedem Test ausgeführt und löscht alle erstellten Einträge.
 @pytest.fixture(autouse=True)
 def clean_db():
     yield
     db = SessionLocal()
-    # Lösche zunächst alle Verträge (falls Fremdschlüssel bestehen)
     db.query(models.Contract).delete()
-    # Lösche alle User
     db.query(models.User).delete()
     db.commit()
     db.close()
@@ -27,25 +25,24 @@ def test_read_root():
 def test_user_registration_and_login():
     # Generiere eine eindeutige E-Mail-Adresse
     unique_email = f"test_{uuid.uuid4().hex}@example.com"
+    # Registrierung
     user_data = {"email": unique_email, "password": "secret"}
-    
-    # Registrierung eines Testnutzers
-    response = client.post("/users/", json=user_data)
-    assert response.status_code == 200, f"Registrierung fehlgeschlagen: {response.json()}"
-    user_response = response.json()
-    assert user_response["email"] == unique_email
-    assert "id" in user_response
+    reg_response = client.post("/users/", json=user_data)
+    assert reg_response.status_code == 200, f"Registrierungsfehler: {reg_response.json()}"
+    user = reg_response.json()
+    assert user["email"] == unique_email
+    assert "id" in user
 
-    # Login des Testnutzers (OAuth2 erwartet Formulardaten, daher das Argument 'data')
+    # Login (über OAuth2 erwartet der Endpoint Form-Daten)
     login_data = {"username": unique_email, "password": "secret"}
-    response = client.post("/users/login", data=login_data)
-    assert response.status_code == 200, f"Login fehlgeschlagen: {response.json()}"
-    token_response = response.json()
-    assert "access_token" in token_response
-    assert token_response["token_type"] == "bearer"
+    login_response = client.post("/users/login", data=login_data)
+    assert login_response.status_code == 200, f"Loginfehler: {login_response.json()}"
+    token_data = login_response.json()
+    assert "access_token" in token_data
+    assert token_data["token_type"] == "bearer"
 
-def test_contract_creation():
-    # Erstelle einen Vertrag
+def test_contract_creation_and_retrieval():
+    # Vertrag erstellen
     contract_data = {
         "name": "Test Contract",
         "contract_type": "Miete",
@@ -56,8 +53,15 @@ def test_contract_creation():
         "status": "active",
         "notes": "Testvertrag"
     }
-    response = client.post("/contracts/", json=contract_data)
-    assert response.status_code == 200, f"Vertragserstellung fehlgeschlagen: {response.json()}"
-    contract_response = response.json()
-    assert contract_response["name"] == "Test Contract"
-    assert "id" in contract_response
+    create_response = client.post("/contracts/", json=contract_data)
+    assert create_response.status_code == 200, f"Vertragserstellungsfehler: {create_response.json()}"
+    created_contract = create_response.json()
+    assert created_contract["name"] == "Test Contract"
+    assert "id" in created_contract
+
+    # Abrufen aller Verträge
+    get_response = client.get("/contracts/")
+    assert get_response.status_code == 200, f"Fehler beim Abrufen der Verträge: {get_response.json()}"
+    contracts = get_response.json()
+    # Es sollte einen Vertrag geben, der der erstellte entspricht
+    assert any(c["id"] == created_contract["id"] for c in contracts)
