@@ -102,10 +102,14 @@ def update_current_user(user_update: schemas.UserUpdate,
     db.refresh(current_user)
     return current_user
 
-# Profil löschen
+# users.py
+# app/routes/users.py
 @router.delete("/me", response_model=schemas.User)
 def delete_current_user(current_user: models.User = Depends(get_current_user),
                         db: Session = Depends(get_db)):
+    # Lösche alle Verträge des Nutzers
+    db.query(models.Contract).filter(models.Contract.user_id == current_user.id).delete()
+    # Lösche den Nutzer
     db.delete(current_user)
     db.commit()
     return current_user

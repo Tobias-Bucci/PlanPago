@@ -4,9 +4,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard"; // Wir verwenden dashboard.jsx (funktioniert genauso wie .js)
+import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
-import ContractForm from "./pages/ContractForm";  // Neues Vertragsformular
+import ContractForm from "./pages/ContractForm";
 import ProtectedRoute from "./ProtectedRoute";
 
 function App() {
@@ -16,7 +16,6 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        {/* Geschützte Routen */}
         <Route
           path="/dashboard"
           element={
@@ -41,7 +40,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Standardroute */}
         <Route
           path="/"
           element={
