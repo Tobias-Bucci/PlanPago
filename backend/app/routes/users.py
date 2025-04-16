@@ -97,13 +97,18 @@ def update_me(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if user_upd.email:
-        current_user.email = user_upd.email
-    if user_upd.password:
-        current_user.hashed_password = get_password_hash(user_upd.password)
+    data = user_upd.model_dump(exclude_unset=True)
+
+    if "email" in data:
+        current_user.email = data["email"]
+
+    if "password" in data:
+        current_user.hashed_password = get_password_hash(data["password"])
+
     db.commit()
     db.refresh(current_user)
     return current_user
+
 
 @router.delete("/me", response_model=schemas.User)
 def delete_me(

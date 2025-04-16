@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi import HTTPException, Request
 from .database import engine, Base
 from . import models
 from .routes import users, contracts
+from app.logging_config import setup_logging
+setup_logging()
 
 # Erstelle zuerst das FastAPI-Objekt
 app = FastAPI(
@@ -36,3 +40,10 @@ app.include_router(contracts.router)
 @app.get("/")
 def read_root():
     return {"message": "Willkommen beim PlanPago Backend"}
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail or exc.status_code},
+    )

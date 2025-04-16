@@ -17,7 +17,7 @@ def create_contract(
     current_user: models.User = Depends(get_current_user)
 ):
     # Neu: user_id wird auf aktuellen User gesetzt
-    db_contract = models.Contract(**contract.dict(), user_id=current_user.id)
+    db_contract = models.Contract(**contract.model_dump(), user_id=current_user.id)
     db.add(db_contract)
     db.commit()
     db.refresh(db_contract)
