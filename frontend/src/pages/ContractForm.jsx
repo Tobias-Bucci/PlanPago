@@ -1,8 +1,9 @@
+// src/pages/ContractForm.jsx
 import React, { useState, useEffect } from "react";
 import { computeNet } from "../utils/taxUtils";
 
 const ContractForm = () => {
-  // ─── State ────────────────────────────────────────────────
+  // ─── State ───────────────────────────────────────────────
   const [name, setName] = useState("");
   const [contractType, setContractType] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -12,37 +13,47 @@ const ContractForm = () => {
   const [amount, setAmount] = useState("");
   const [brutto, setBrutto] = useState("");
   const [netto, setNetto] = useState("");
-  const [message, setMessage] = useState("");
   const [currency, setCurrency] = useState("€");
   const [country, setCountry] = useState("");
   const [warning, setWarning] = useState("");
-  const token = localStorage.getItem("token");
+  const [message, setMessage] = useState("");
+  const token   = localStorage.getItem("token");
 
-  // ─── Einstellungen laden ─────────────────────────────────
-
+  /* ─── Einstellungen laden ──────────────────────────────── */
   useEffect(() => {
-    const mail = localStorage.getItem("currentEmail");
-    if (!mail) return;
-    setCountry(localStorage.getItem(`country_${mail}`) || "");
-    setCurrency(localStorage.getItem(`currency_${mail}`) || "€");
-  }, []);
-  
+    const email = localStorage.getItem("currentEmail");  // beim Login gesetzt
+    if (!email) return;
 
-  // ─── Bruttogehalt‑Änderung ────────────────────────────────
+    const userCountry  = localStorage.getItem(`country_${email}`)   || "";
+    const userCurrency = localStorage.getItem(`currency_${email}`) || "€";
+    setCountry(userCountry);
+    setCurrency(userCurrency);
+
+    if (!userCountry) {
+      setWarning(
+        "Bitte füge in deinen Nutzereinstellungen ein Land hinzu, damit das Nettogehalt korrekt berechnet wird."
+      );
+    } else {
+      setWarning("");
+    }
+  }, []);
+
+  /* ─── Brutto‑Änderung ⇒ Netto berechnen ────────────────── */
   const handleBrutto = (e) => {
     setBrutto(e.target.value);
     const b = parseFloat(e.target.value);
-    if (!isNaN(b)) setNetto(computeNet(b, country).toFixed(2));
+    if (!isNaN(b) && country) setNetto(computeNet(b, country).toFixed(2));
     else setNetto("");
   };
 
-  // ─── Submit ───────────────────────────────────────────────
+  /* ─── Submit ────────────────────────────────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!country) {
-      setMessage("Bitte Land in den Einstellungen eintragen.");
+      setMessage("Bitte zuerst unter „Einstellungen“ ein Land auswählen.");
       return;
     }
+
     const netValue =
       contractType === "Gehalt"
         ? netto !== "" ? parseFloat(netto) : parseFloat(brutto)
@@ -71,17 +82,18 @@ const ContractForm = () => {
         },
         body: JSON.stringify(body),
       });
+
       if (res.ok) {
-        setMessage("Vertrag angelegt!");
-        // Felder leeren
+        setMessage("Vertrag erfolgreich angelegt!");
+        // Felder zurücksetzen
         setName(""); setContractType(""); setStartDate("");
         setEndDate(""); setPaymentInterval(""); setNotes("");
         setBrutto(""); setNetto(""); setAmount("");
       } else if (res.status === 401) {
-        setMessage("Nicht autorisiert – bitte erneut anmelden.");
+        setMessage("Nicht autorisiert – bitte neu einloggen.");
       } else {
         const err = await res.json();
-        setMessage("Fehler: " + (err.detail || ""));
+        setMessage("Fehler: " + (err.detail || res.status));
       }
     } catch (err) {
       console.error(err);
@@ -89,15 +101,16 @@ const ContractForm = () => {
     }
   };
 
-  // ─── JSX ─────────────────────────────────────────────────
+  /* ─── JSX ──────────────────────────────────────────────── */
   return (
     <div className="max-w-xl mx-auto p-4 bg-white shadow rounded mt-8">
       <h2 className="text-2xl font-bold mb-4">Vertrag hinzufügen</h2>
+
       {warning && <p className="text-red-500 mb-4 text-center">{warning}</p>}
       {message && <p className="text-green-600 mb-4 text-center">{message}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name */}
+        {/* Vertragsname */}
         <div>
           <label className="block font-medium">Vertragsname</label>
           <input
@@ -127,7 +140,7 @@ const ContractForm = () => {
           </select>
         </div>
 
-        {/* Gehalts‑Spezialfelder */}
+        {/* Gehaltsfelder */}
         {contractType === "Gehalt" ? (
           <>
             <div>
