@@ -5,13 +5,22 @@ const Dashboard = () => {
   const [contracts, setContracts] = useState([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [currency, setCurrency] = useState("€");
+  const token = localStorage.getItem("token"); // Token holen
 
   const fetchContracts = async () => {
     try {
-      const response = await fetch("http://192.168.1.150:8001/contracts/");
+      const response = await fetch("http://192.168.1.150:8001/contracts/", {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`  // Token im Header
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setContracts(data);
+      } else if (response.status === 401) {
+        setError("Nicht autorisiert. Bitte neu einloggen.");
       } else {
         setError("Fehler beim Laden der Verträge");
       }
@@ -22,27 +31,38 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    // Währung aus Einstellungen
+    const userCurrency = localStorage.getItem("currency");
+    if (userCurrency) setCurrency(userCurrency);
+    // Verträge laden
     fetchContracts();
   }, []);
 
   const handleDelete = async (contractId) => {
-    if (window.confirm("Möchten Sie diesen Vertrag wirklich löschen?")) {
-      try {
-        const response = await fetch(
-          `http://192.168.1.150:8001/contracts/${contractId}`,
-          { method: "DELETE" }
-        );
-        if (response.ok) {
-          setMessage("Vertrag gelöscht!");
-          fetchContracts();
-        } else {
-          const errorData = await response.json();
-          setMessage("Fehler beim Löschen: " + (errorData.detail || ""));
+    if (!window.confirm("Möchten Sie diesen Vertrag wirklich löschen?")) return;
+
+    try {
+      const response = await fetch(
+        `http://192.168.1.150:8001/contracts/${contractId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
         }
-      } catch (err) {
-        console.error(err);
-        setMessage("Ein Fehler ist aufgetreten.");
+      );
+      if (response.ok) {
+        setMessage("Vertrag gelöscht!");
+        fetchContracts();
+      } else if (response.status === 401) {
+        setError("Nicht autorisiert. Bitte neu einloggen.");
+      } else {
+        const err = await response.json();
+        setMessage("Fehler beim Löschen: " + (err.detail || ""));
       }
+    } catch (err) {
+      console.error(err);
+      setMessage("Ein Fehler ist aufgetreten.");
     }
   };
 
@@ -78,11 +98,15 @@ const Dashboard = () => {
                   <tr key={contract.id} className={isInactive ? "bg-gray-200" : ""}>
                     <td className="py-2 px-4 border">{contract.name}</td>
                     <td className="py-2 px-4 border">{contract.contract_type}</td>
-                    <td className="py-2 px-4 border">{new Date(contract.start_date).toLocaleDateString()}</td>
+                    <td className="py-2 px-4 border">
+                      {new Date(contract.start_date).toLocaleDateString()}
+                    </td>
                     <td className="py-2 px-4 border">
                       {endDate ? endDate.toLocaleDateString() : "-"}
                     </td>
-                    <td className="py-2 px-4 border">{contract.amount}</td>
+                    <td className="py-2 px-4 border">
+                      {contract.amount} {currency}
+                    </td>
                     <td className="py-2 px-4 border">{contract.payment_interval}</td>
                     <td className="py-2 px-4 border">{isInactive ? "inactive" : contract.status}</td>
                     <td className="py-2 px-4 border text-center">
@@ -100,7 +124,7 @@ const Dashboard = () => {
             </tbody>
           </table>
           <p className="text-sm text-gray-600 mt-2">
-            Hinweis: Verträge mit abgelaufenem Enddatum werden als "inactive" angezeigt.
+            Hinweis: Abgelaufene Verträge werden automatisch als „inactive“ markiert.
           </p>
         </div>
       )}

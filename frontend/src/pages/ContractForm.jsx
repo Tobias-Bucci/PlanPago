@@ -1,8 +1,8 @@
-// src/pages/ContractForm.jsx
 import React, { useState, useEffect } from "react";
 import { computeNet } from "../utils/taxUtils";
 
 const ContractForm = () => {
+  // ─── State ────────────────────────────────────────────────
   const [name, setName] = useState("");
   const [contractType, setContractType] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -16,51 +16,40 @@ const ContractForm = () => {
   const [currency, setCurrency] = useState("€");
   const [country, setCountry] = useState("");
   const [warning, setWarning] = useState("");
+  const token = localStorage.getItem("token");
 
-  // Lade Einstellungen aus localStorage (diese dürfen im Vertrag nicht verändert werden)
+  // ─── Einstellungen laden ─────────────────────────────────
+
   useEffect(() => {
-    const storedCurrency = localStorage.getItem("currency");
-    if (storedCurrency) setCurrency(storedCurrency);
-    const storedCountry = localStorage.getItem("country");
-    if (storedCountry) {
-      setCountry(storedCountry);
-      setWarning("");
-    } else {
-      setWarning("Hinweis: Bitte tragen Sie in Ihren Einstellungen Ihr Land ein, damit das Nettogehalt korrekt berechnet wird.");
-    }
+    const mail = localStorage.getItem("currentEmail");
+    if (!mail) return;
+    setCountry(localStorage.getItem(`country_${mail}`) || "");
+    setCurrency(localStorage.getItem(`currency_${mail}`) || "€");
   }, []);
+  
 
-  // Bei Gehaltsverträgen: Berechne automatisch den Nettobetrag basierend auf Brutto und länderspezifischen Steuersätzen
-  const handleBruttoChange = (e) => {
-    const value = e.target.value;
-    setBrutto(value);
-    const num = parseFloat(value);
-    if (!isNaN(num)) {
-      const net = computeNet(num, country);
-      setNetto(net.toFixed(2));
-    } else {
-      setNetto("");
-    }
+  // ─── Bruttogehalt‑Änderung ────────────────────────────────
+  const handleBrutto = (e) => {
+    setBrutto(e.target.value);
+    const b = parseFloat(e.target.value);
+    if (!isNaN(b)) setNetto(computeNet(b, country).toFixed(2));
+    else setNetto("");
   };
 
+  // ─── Submit ───────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Wenn kein Land definiert ist, weisen wir den Nutzer freundlich hin und verhindern das Absenden
     if (!country) {
-      setMessage("Bitte tragen Sie in den Einstellungen Ihr Land ein, bevor Sie einen Vertrag erstellen.");
+      setMessage("Bitte Land in den Einstellungen eintragen.");
       return;
     }
+    const netValue =
+      contractType === "Gehalt"
+        ? netto !== "" ? parseFloat(netto) : parseFloat(brutto)
+        : parseFloat(amount);
 
-    let netValue;
-    if (contractType === "Gehalt") {
-      netValue = netto !== "" ? parseFloat(netto) : parseFloat(brutto);
-    } else {
-      netValue = parseFloat(amount);
-    }
-
-    const contractData = {
-      name: name,
+    const body = {
+      name,
       contract_type: contractType,
       start_date: startDate,
       end_date: endDate || null,
@@ -74,109 +63,113 @@ const ContractForm = () => {
     };
 
     try {
-      const response = await fetch("http://192.168.1.150:8001/contracts/", {
+      const res = await fetch("http://192.168.1.150:8001/contracts/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(contractData),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
       });
-      if (response.ok) {
-        setMessage("Vertrag erfolgreich hinzugefügt!");
-        // Felder zurücksetzen
-        setName("");
-        setContractType("");
-        setStartDate("");
-        setEndDate("");
-        setPaymentInterval("");
-        setNotes("");
-        setBrutto("");
-        setNetto("");
-        setAmount("");
+      if (res.ok) {
+        setMessage("Vertrag angelegt!");
+        // Felder leeren
+        setName(""); setContractType(""); setStartDate("");
+        setEndDate(""); setPaymentInterval(""); setNotes("");
+        setBrutto(""); setNetto(""); setAmount("");
+      } else if (res.status === 401) {
+        setMessage("Nicht autorisiert – bitte erneut anmelden.");
       } else {
-        const errorData = await response.json();
-        setMessage("Fehler: " + (errorData.detail || ""));
+        const err = await res.json();
+        setMessage("Fehler: " + (err.detail || ""));
       }
-    } catch (error) {
-      console.error("Error creating contract:", error);
-      setMessage("Ein Fehler ist aufgetreten.");
+    } catch (err) {
+      console.error(err);
+      setMessage("Netzwerk‑Fehler.");
     }
   };
 
+  // ─── JSX ─────────────────────────────────────────────────
   return (
     <div className="max-w-xl mx-auto p-4 bg-white shadow rounded mt-8">
-      <h2 className="text-2xl font-bold mb-4">Vertragsformular</h2>
-      {warning && <p className="mb-4 text-center text-red-500">{warning}</p>}
-      {message && <p className="mb-4 text-center text-green-600">{message}</p>}
+      <h2 className="text-2xl font-bold mb-4">Vertrag hinzufügen</h2>
+      {warning && <p className="text-red-500 mb-4 text-center">{warning}</p>}
+      {message && <p className="text-green-600 mb-4 text-center">{message}</p>}
+
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name */}
         <div>
           <label className="block font-medium">Vertragsname</label>
           <input
-            type="text"
+            className="w-full border p-2 rounded"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border p-2 rounded"
             required
           />
         </div>
+
+        {/* Vertragsart */}
         <div>
           <label className="block font-medium">Vertragsart</label>
           <select
+            className="w-full border p-2 rounded"
             value={contractType}
             onChange={(e) => setContractType(e.target.value)}
-            className="w-full border p-2 rounded"
             required
           >
             <option value="">Bitte wählen</option>
-            <option value="Miete">Miete</option>
-            <option value="Versicherung">Versicherung</option>
-            <option value="Streaming">Streaming</option>
-            <option value="Gehalt">Gehalt</option>
-            <option value="Leasing">Leasing</option>
-            <option value="Sonstiges">Sonstiges</option>
+            <option>Miete</option>
+            <option>Versicherung</option>
+            <option>Streaming</option>
+            <option>Gehalt</option>
+            <option>Leasing</option>
+            <option>Sonstiges</option>
           </select>
         </div>
+
+        {/* Gehalts‑Spezialfelder */}
         {contractType === "Gehalt" ? (
           <>
             <div>
               <label className="block font-medium">Bruttogehalt</label>
               <input
                 type="number"
-                value={brutto}
-                onChange={handleBruttoChange}
                 className="w-full border p-2 rounded"
+                value={brutto}
+                onChange={handleBrutto}
                 required
               />
             </div>
             <div>
-              <label className="block font-medium">Nettogehalt (optional manuell)</label>
+              <label className="block font-medium">
+                Nettogehalt (optional manuell)
+              </label>
               <input
                 type="number"
+                className="w-full border p-2 rounded"
                 value={netto}
                 onChange={(e) => setNetto(e.target.value)}
-                placeholder="Falls manuell eingeben"
-                className="w-full border p-2 rounded"
               />
             </div>
             <div>
               <label className="block font-medium">Land</label>
               <input
-                type="text"
+                className="w-full border p-2 rounded bg-gray-100"
                 value={country}
                 readOnly
-                className="w-full border p-2 rounded bg-gray-100"
               />
             </div>
             <div>
               <label className="block font-medium">Währung</label>
               <input
-                type="text"
+                className="w-full border p-2 rounded bg-gray-100"
                 value={currency}
                 readOnly
-                className="w-full border p-2 rounded bg-gray-100"
               />
             </div>
           </>
         ) : (
-          contractType && contractType !== "Gehalt" && (
+          contractType && (
             <div>
               <label className="block font-medium">Betrag</label>
               <div className="flex">
@@ -185,22 +178,24 @@ const ContractForm = () => {
                 </span>
                 <input
                   type="number"
+                  className="w-full border p-2 rounded-r"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full border p-2 rounded-r"
                   required
                 />
               </div>
             </div>
           )
         )}
+
+        {/* Gemeinsame Felder */}
         <div>
           <label className="block font-medium">Startdatum</label>
           <input
             type="date"
+            className="w-full border p-2 rounded"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full border p-2 rounded"
             required
           />
         </div>
@@ -208,17 +203,17 @@ const ContractForm = () => {
           <label className="block font-medium">Enddatum (optional)</label>
           <input
             type="date"
+            className="w-full border p-2 rounded"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full border p-2 rounded"
           />
         </div>
         <div>
           <label className="block font-medium">Zahlungsintervall</label>
           <select
+            className="w-full border p-2 rounded"
             value={paymentInterval}
             onChange={(e) => setPaymentInterval(e.target.value)}
-            className="w-full border p-2 rounded"
             required
           >
             <option value="">Bitte wählen</option>
@@ -230,15 +225,13 @@ const ContractForm = () => {
         <div>
           <label className="block font-medium">Notizen</label>
           <textarea
+            className="w-full border p-2 rounded"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full border p-2 rounded"
-          ></textarea>
+          />
         </div>
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
-        >
+
+        <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
           Vertrag erstellen
         </button>
       </form>
