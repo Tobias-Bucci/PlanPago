@@ -1,60 +1,47 @@
-// src/components/NavBar.jsx
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const NavBar = () => {
+export default function NavBar() {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  const token    = localStorage.getItem("token");
 
-  const handleLogout = () => {
+  const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("currentEmail");
     navigate("/login");
   };
 
   return (
-    <nav className="bg-blue-500 p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        <div>
-          <Link to="/" className="text-white font-bold text-xl">
-            PlanPago
+    <nav className="bg-gray-800 text-white px-4 py-2 flex gap-4 items-center">
+      <span className="font-bold">PlanPago</span>
+
+      {token ? (
+        <>
+          <Link to="/dashboard" className="hover:underline">
+            Dashboard
           </Link>
-        </div>
-        <div className="flex items-center space-x-4">
-          {token ? (
-            <>
-              <Link to="/dashboard" className="text-white hover:text-blue-100">
-                Dashboard
-              </Link>
-              <Link to="/profile" className="text-white hover:text-blue-100">
-                Einstellungen
-              </Link>
-              <Link
-                to="/contracts/new"
-                className="text-white hover:text-blue-100 font-semibold"
-              >
-                Neuen Vertrag erstellen
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-white border border-white px-3 py-1 rounded hover:bg-white hover:text-blue-500 transition-colors"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="text-white hover:text-blue-100">
-                Login
-              </Link>
-              <Link to="/register" className="text-white hover:text-blue-100">
-                Register
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
+          <Link
+            to="/contracts/new"
+            className="px-3 py-1 bg-green-600 rounded hover:bg-green-700"
+          >
+            + Neuer Vertrag
+          </Link>
+          <Link to="/profile" className="hover:underline ml-auto">
+            Profil
+          </Link>
+          <button
+            onClick={logout}
+            className="ml-4 text-red-300 hover:text-red-500"
+          >
+            Logout
+          </button>
+        </>
+      ) : (
+        <>
+          <Link to="/login"    className="ml-auto hover:underline">Login</Link>
+          <Link to="/register" className="hover:underline">Register</Link>
+        </>
+      )}
     </nav>
   );
-};
-
-export default NavBar;
+}

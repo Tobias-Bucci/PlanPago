@@ -28,6 +28,21 @@ class ContractBase(BaseModel):
     payment_interval: str
     status: Optional[str] = "active"
     notes: Optional[str] = None
+    
+# Contract‑Schemas
+class ContractUpdate(BaseModel):
+    # alle Felder optional – nur das senden, was geändert werden soll
+    name:           Optional[str]      = None
+    contract_type:  Optional[str]      = None
+    start_date:     Optional[datetime] = None
+    end_date:       Optional[datetime] = None
+    amount:         Optional[float]    = None
+    payment_interval: Optional[str]    = None
+    status:         Optional[str]      = None
+    notes:          Optional[str]      = None
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ContractCreate(ContractBase):
     pass

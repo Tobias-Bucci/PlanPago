@@ -41,6 +41,14 @@ function App() {
           }
         />
         <Route
+          path="/contracts/:id/edit"
+          element={
+            <ProtectedRoute>
+              <ContractForm isEdit />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/"
           element={
             <ProtectedRoute>

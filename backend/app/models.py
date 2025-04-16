@@ -21,5 +21,5 @@ class Contract(Base):
     payment_interval = Column(String)
     status = Column(String, default="active")
     notes = Column(String, nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id  = Column(Integer, ForeignKey("users.id"), nullable=False)
     owner = relationship("User", back_populates="contracts")
