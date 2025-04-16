@@ -1,3 +1,4 @@
+// src/pages/Dashboard.js
 import React, { useState, useEffect } from "react";
 
 const Dashboard = () => {
@@ -15,7 +16,8 @@ const Dashboard = () => {
           setError("Fehler beim Laden der Verträge");
         }
       } catch (err) {
-        setError(err.toString());
+        console.error("Fehler beim Abrufen:", err);
+        setError("Ein Fehler ist aufgetreten");
       }
     };
     fetchContracts();
@@ -23,17 +25,44 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-      {error && <p className="text-red-500">{error}</p>}
-      <ul>
-        {contracts.map((contract) => (
-          <li key={contract.id} className="border p-2 mb-2">
-            <p className="font-bold">{contract.name}</p>
-            <p>Typ: {contract.contract_type}</p>
-            <p>Betrag: {contract.amount} | Status: {contract.status}</p>
-          </li>
-        ))}
-      </ul>
+      <h1 className="text-3xl font-bold mb-4">Vertragsübersicht</h1>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      {contracts.length === 0 ? (
+        <p>Keine Verträge gefunden.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="py-2 px-4 border">Name</th>
+                <th className="py-2 px-4 border">Vertragsart</th>
+                <th className="py-2 px-4 border">Startdatum</th>
+                <th className="py-2 px-4 border">Enddatum</th>
+                <th className="py-2 px-4 border">Betrag</th>
+                <th className="py-2 px-4 border">Zahlungsintervall</th>
+                <th className="py-2 px-4 border">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.map((contract) => (
+                <tr key={contract.id}>
+                  <td className="py-2 px-4 border">{contract.name}</td>
+                  <td className="py-2 px-4 border">{contract.contract_type}</td>
+                  <td className="py-2 px-4 border">
+                    {new Date(contract.start_date).toLocaleDateString()}
+                  </td>
+                  <td className="py-2 px-4 border">
+                    {contract.end_date ? new Date(contract.end_date).toLocaleDateString() : "-"}
+                  </td>
+                  <td className="py-2 px-4 border">{contract.amount}</td>
+                  <td className="py-2 px-4 border">{contract.payment_interval}</td>
+                  <td className="py-2 px-4 border">{contract.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

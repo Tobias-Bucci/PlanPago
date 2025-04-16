@@ -12,6 +12,11 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+    
+class UserUpdate(BaseModel):
+    email: Optional[str] = None
+    password: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 # Contract-Schemas
 class ContractBase(BaseModel):

@@ -1,10 +1,12 @@
-// src/App.jsx
+// src/App.js
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard"; // Wir verwenden dashboard.jsx (funktioniert genauso wie .js)
+import Profile from "./pages/Profile";
+import ContractForm from "./pages/ContractForm";  // Neues Vertragsformular
 import ProtectedRoute from "./ProtectedRoute";
 
 function App() {
@@ -14,7 +16,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        {/* Das Dashboard ist geschützt und wird nur angezeigt, wenn ein Token existiert */}
+        {/* Geschützte Routen */}
         <Route
           path="/dashboard"
           element={
@@ -23,7 +25,23 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* Optional: Standardroute, die auch geschützt ist */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contracts/new"
+          element={
+            <ProtectedRoute>
+              <ContractForm />
+            </ProtectedRoute>
+          }
+        />
+        {/* Standardroute */}
         <Route
           path="/"
           element={

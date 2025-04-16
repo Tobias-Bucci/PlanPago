@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import timedelta, datetime
@@ -39,7 +39,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 # JWT Einstellungen
-SECRET_KEY = "xbsFZ4NFRhJz1jWs_caUXU3oKlFxgf5ob8n57Y52ZIVEa0qSF0K2UOuZIIAeDsXrFYPnnI7CBHL2yzRPwGrkOA" 
+SECRET_KEY = "xbsFZ4NFRhJz1jWs_caUXU3oKlFxgf5ob8n57Y52ZIVEa0qSF0K2UOuZIIAeDsXrFYPnnI7CBHL2yzRPwGrkOA"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -65,3 +65,47 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials"
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: Optional[str] = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+# Profil abrufen
+@router.get("/me", response_model=schemas.User)
+def read_current_user(current_user: models.User = Depends(get_current_user)):
+    return current_user
+
+# Profil aktualisieren (z. B. E-Mail ändern, Passwort wechseln)
+@router.patch("/me", response_model=schemas.User)
+def update_current_user(user_update: schemas.UserUpdate,
+                        current_user: models.User = Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    if user_update.email:
+        current_user.email = user_update.email
+    if user_update.password:
+        current_user.hashed_password = get_password_hash(user_update.password)
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+# Profil löschen
+@router.delete("/me", response_model=schemas.User)
+def delete_current_user(current_user: models.User = Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    db.delete(current_user)
+    db.commit()
+    return current_user
