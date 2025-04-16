@@ -1,0 +1,7 @@
+from app.utils.taxUtils import computeNet
+
+def test_compute_net():
+    assert computeNet(3000, "Deutschland") == 2100  # 30 %
+    assert computeNet(1000, "Österreich")   == 780   # 22 %
+    assert computeNet(8000, "Schweiz")      == 5200  # 35 %
+    assert computeNet(2000, "Unknown")      == 1400  # default 30 %
