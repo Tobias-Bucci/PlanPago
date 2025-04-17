@@ -1,8 +1,3 @@
-/*  ContractForm.jsx
-    – Neu anlegen  (/contracts/new)  oder  Bearbeiten  (/contracts/:id/edit)
-    – Netto wird live berechnet, bleibt aber editierbar
-*/
-
 import React, { useState, useEffect } from "react";
 import {
   useNavigate,
@@ -14,13 +9,13 @@ import { computeNet } from "../utils/taxUtils";
 const API = "http://192.168.1.150:8001/contracts/";
 
 export default function ContractForm() {
-  /* ─── Modus erkennen ─────────────────────────────────── */
-  const { id }    = useParams();
+  /* ── Mode ─────────────────────────────────────────── */
+  const { id }    = useParams();                 // undefined bei /new
   const isEdit    = Boolean(id);
   const { state } = useLocation();
   const navigate  = useNavigate();
 
-  /* ─── Form‑State ─────────────────────────────────────── */
+  /* ── Form State ───────────────────────────────────── */
   const [form, setForm] = useState({
     name: "",
     contract_type: "",
@@ -31,13 +26,14 @@ export default function ContractForm() {
     amount: "",
     brutto: "",
     netto: "",
+    files: null,            // FileList | null
   });
 
   const [country,  setCountry]  = useState("");
   const [currency, setCurrency] = useState("€");
   const [msg,      setMsg]      = useState("");
 
-  /* ─── Prefill & Settings ─────────────────────────────── */
+  /* ── Prefill & Settings ───────────────────────────── */
   useEffect(() => {
     const mail = localStorage.getItem("currentEmail");
     setCurrency(localStorage.getItem(`currency_${mail}`) || "€");
@@ -51,12 +47,14 @@ export default function ContractForm() {
   }, []);
 
   const prefill = (c) =>
-    setForm({
-      ...form,
+    setForm((f) => ({
+      ...f,
       ...c,
-      netto: c.contract_type === "Gehalt" ? c.amount : "",
+      start_date: c.start_date ? c.start_date.slice(0, 10) : "",
+      end_date:   c.end_date   ? c.end_date.slice(0, 10)   : "",
+      netto:  c.contract_type === "Gehalt" ? c.amount : "",
       brutto: "",
-    });
+    }));
 
   const fetchContract = async () => {
     const res = await fetch(`${API}${id}`, {
@@ -66,7 +64,7 @@ export default function ContractForm() {
     else setMsg("Fehler beim Laden des Vertrags.");
   };
 
-  /* ─── Netto live berechnen, wenn Brutto ändert ───────── */
+  /* ── Live‑Netto‑Berechnung ───────────────────────── */
   useEffect(() => {
     if (
       form.contract_type === "Gehalt" &&
@@ -76,13 +74,12 @@ export default function ContractForm() {
       const net = computeNet(Number(form.brutto), country);
       setForm((f) => ({ ...f, netto: net.toFixed(2) }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.brutto, country, form.contract_type]);
 
-  /* ─── Helper ─────────────────────────────────────────── */
+  /* ── Helpers ─────────────────────────────────────── */
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const iso = (d) => (d ? d + "T00:00:00" : null);
+  const iso      = (d) => (d ? d + "T00:00:00" : null);
+  const token    = localStorage.getItem("token");
 
   const buildPayload = () => {
     if (!form.name || !form.contract_type || !form.start_date) {
@@ -118,7 +115,7 @@ export default function ContractForm() {
     };
   };
 
-  /* ─── Submit ─────────────────────────────────────────── */
+  /* ── Submit ──────────────────────────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     const payload = buildPayload();
@@ -127,23 +124,46 @@ export default function ContractForm() {
     const method = isEdit ? "PATCH" : "POST";
     const url    = isEdit ? `${API}${id}` : API;
 
-    const res = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (res.ok) navigate("/dashboard");
-    else {
-      const err = await res.json();
-      setMsg("Fehler: " + JSON.stringify(err.detail ?? err));
+      if (!res.ok) {
+        const err = await res.json();
+        setMsg("Fehler: " + JSON.stringify(err.detail ?? err));
+        return;
+      }
+
+      /* ─── ID für Upload ermitteln ─── */
+      const data = await res.json();
+      const newId = data.id;            // bei POST
+      const contractId = newId || id;
+
+      /* ─── (A) Bilder hochladen ─────── */
+      if (form.files && form.files.length > 0) {
+        const fd = new FormData();
+        Array.from(form.files).forEach((file) => fd.append("files", file));
+        await fetch(`${API}${contractId}/files`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+      }
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setMsg("Netzwerk‑Fehler.");
     }
   };
 
-  /* ─── JSX ───────────────────────────────────────────── */
+  /* ── JSX ─────────────────────────────────────────── */
   return (
     <div className="max-w-xl mx-auto p-4 bg-white shadow rounded mt-8">
       <h2 className="text-2xl font-bold mb-4">
@@ -270,6 +290,32 @@ export default function ContractForm() {
             value={form.notes}
             onChange={(e) => setField("notes", e.target.value)}
           />
+        </div>
+
+        {/* ─── Anhänge (Bilder & PDFs) ───────────────────────── */}
+        <div>
+          <label className="block font-medium">
+            Anhänge (Bild / PDF – mehrere möglich)
+          </label>
+
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            multiple
+            onChange={(e) => setField("files", e.target.files)}
+            className="mt-1"
+          />
+
+          {/* kleine Vorschau / Auflistung */}
+          {form.files && (
+            <ul className="mt-1 text-sm text-gray-600 list-disc list-inside">
+              {Array.from(form.files).map((f) => (
+                <li key={f.name}>
+                  {f.name} – {(f.size / 1024).toFixed(1)} kB
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Land & Währung */}

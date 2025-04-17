@@ -1,49 +1,43 @@
+# app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi import HTTPException, Request
-from .database import engine, Base
-from . import models
-from .routes import users, contracts
-from app.logging_config import setup_logging
-setup_logging()
+from fastapi.staticfiles import StaticFiles
 
-# Erstelle zuerst das FastAPI-Objekt
+# Router‑Module
+from app.routes import users, contracts, contract_files
+from app.config import UPLOAD_DIR
+
 app = FastAPI(
-    title="PlanPago API",
-    description="API zur Verwaltung von Verträgen, Zahlungsverpflichtungen und Fristen",
-    version="1.0"
+    title="PlanPago API",
+    version="0.1.0",
+    docs_url="/docs",
+    redoc_url=None,
 )
 
-# CORS-Middleware hinzufügen
-origins = [
-    "http://localhost:4000",
-    "http://127.0.0.1:4000",
-    "http://192.168.1.150:4000",
-]
-
+# ───────────────────────────────
+#  CORS (Frontend → Backend)
+# ───────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],          # in Prod auf Domain einschränken
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Erstelle alle Tabellen in der Datenbank
-Base.metadata.create_all(bind=engine)
-
-# Binde die Router ein
+# ───────────────────────────────
+#  Router registrieren
+# ───────────────────────────────
 app.include_router(users.router)
 app.include_router(contracts.router)
+app.include_router(contract_files.router)   # <— Upload & Download
 
+# ───────────────────────────────
+#  Statische Auslieferung der Files
+# ───────────────────────────────
+app.mount("/files", StaticFiles(directory=str(UPLOAD_DIR)), name="files")
+
+# ───────────────────────────────
 @app.get("/")
-def read_root():
+def root():
     return {"message": "Willkommen beim PlanPago Backend"}
-
-@app.exception_handler(HTTPException)
-async def custom_http_exception(request: Request, exc: HTTPException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail or exc.status_code},
-    )
