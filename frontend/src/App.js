@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import ContractForm from "./pages/ContractForm";
 import ProtectedRoute from "./ProtectedRoute";
+import Stats from "./pages/Stats";
 
 function App() {
   return (
@@ -53,6 +54,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stats"
+          element={
+            <ProtectedRoute>
+              <Stats />   
             </ProtectedRoute>
           }
         />

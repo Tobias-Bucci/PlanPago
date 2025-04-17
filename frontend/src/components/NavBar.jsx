@@ -1,47 +1,89 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 export default function NavBar() {
   const navigate = useNavigate();
-  const token    = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
+  const isAuth = Boolean(token);
 
-  const logout = () => {
+  const linkBase   = "px-3 py-2 rounded";
+  const linkActive = "bg-blue-600 text-white";
+
+  const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("currentEmail");
     navigate("/login");
   };
 
   return (
-    <nav className="bg-gray-800 text-white px-4 py-2 flex gap-4 items-center">
-      <span className="font-bold">PlanPago</span>
+    <nav className="bg-white shadow">
+      <div className="container mx-auto flex items-center justify-between p-4">
+        {/* links: Brand + (wenn auth) Dashboard & Statistiken */}
+        <div className="flex items-center gap-4">
+          <div className="text-2xl font-bold text-blue-600">PlanPago</div>
+          {isAuth && (
+            <>
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : ""}`
+                }
+              >
+                Dashboard
+              </NavLink>
+              <NavLink
+                to="/stats"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : ""}`
+                }
+              >
+                Statistiken
+              </NavLink>
+            </>
+          )}
+        </div>
 
-      {token ? (
-        <>
-          <Link to="/dashboard" className="hover:underline">
-            Dashboard
-          </Link>
-          <Link
-            to="/contracts/new"
-            className="px-3 py-1 bg-green-600 rounded hover:bg-green-700"
-          >
-            + Neuer Vertrag
-          </Link>
-          <Link to="/profile" className="hover:underline ml-auto">
-            Profil
-          </Link>
-          <button
-            onClick={logout}
-            className="ml-4 text-red-300 hover:text-red-500"
-          >
-            Logout
-          </button>
-        </>
-      ) : (
-        <>
-          <Link to="/login"    className="ml-auto hover:underline">Login</Link>
-          <Link to="/register" className="hover:underline">Register</Link>
-        </>
-      )}
+        {/* rechts: Login/Register oder Einstellungen/Logout */}
+        <div className="flex items-center gap-2">
+          {!isAuth ? (
+            <>
+              <NavLink
+                to="/login"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : ""}`
+                }
+              >
+                Login
+              </NavLink>
+              <NavLink
+                to="/register"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : ""}`
+                }
+              >
+                Register
+              </NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : ""}`
+                }
+              >
+                Einstellungen
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-2 bg-red-600 text-white rounded"
+              >
+                Logout
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </nav>
-  );
+);
 }
