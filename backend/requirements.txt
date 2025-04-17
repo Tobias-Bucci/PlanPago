@@ -7,5 +7,3 @@ python-jose[cryptography]
 python-multipart
 httpx
 pytest
-recharts        
-lucide-react  

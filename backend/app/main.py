@@ -1,43 +1,45 @@
-# app/main.py
+# backend/app/main.py
+
+import os
+from dotenv import load_dotenv
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-# Router‑Module
-from app.routes import users, contracts, contract_files
-from app.config import UPLOAD_DIR
+from .database import engine, Base
+from .routes import users, contracts, contract_files
 
+# 1. Load environment variables from .env
+load_dotenv()
+
+# 2. Create all database tables (if they don't exist)
+Base.metadata.create_all(bind=engine)
+
+# 3. Instantiate FastAPI app
 app = FastAPI(
-    title="PlanPago API",
-    version="0.1.0",
-    docs_url="/docs",
-    redoc_url=None,
+    title="PlanPago",
+    description="API für die Vertragsverwaltung mit Nutzer-Authentifizierung",
 )
 
-# ───────────────────────────────
-#  CORS (Frontend → Backend)
-# ───────────────────────────────
+# 4. Configure CORS
+#    Default: allow all origins; 
+#    Override via CORS_ORIGINS env, z.B. "http://localhost:4000,https://myfrontend.example.com"
+origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # in Prod auf Domain einschränken
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ───────────────────────────────
-#  Router registrieren
-# ───────────────────────────────
+# 5. Mount directory for uploaded files (contract attachments)
+UPLOADS_DIR = os.getenv("UPLOADS_DIR", "files")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/files", StaticFiles(directory=UPLOADS_DIR), name="files")
+
+# 6. Include all Routers
 app.include_router(users.router)
 app.include_router(contracts.router)
-app.include_router(contract_files.router)   # <— Upload & Download
-
-# ───────────────────────────────
-#  Statische Auslieferung der Files
-# ───────────────────────────────
-app.mount("/files", StaticFiles(directory=str(UPLOAD_DIR)), name="files")
-
-# ───────────────────────────────
-@app.get("/")
-def root():
-    return {"message": "Willkommen beim PlanPago Backend"}
+app.include_router(contract_files.router)

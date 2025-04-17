@@ -1,51 +1,79 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Register = () => {
-  const [email, setEmail] = useState("");
+export default function Register() {
+  const [step, setStep]         = useState(1);
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [code, setCode]         = useState("");
+  const [tempToken, setTemp]    = useState("");
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
+  const navigate                = useNavigate();
 
+  // Schritt 1: Registrierung + Code anfordern
   const handleRegistration = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
-      // Registrierung: Sende die neuen Nutzerdaten an den /users/ Endpoint
-      const regResponse = await fetch("http://192.168.1.150:8001/users/", {
+      // 1a) User anlegen
+      const reg = await fetch("http://192.168.1.150:8001/users/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      if (!regResponse.ok) {
-        const regError = await regResponse.json();
-        throw new Error(regError.detail || "Registrierung fehlgeschlagen");
+      if (reg.status !== 201) {
+        const err = await reg.json();
+        throw new Error(err.detail || "Registrierung fehlgeschlagen");
       }
 
-      // Registrierung war erfolgreich – nun den Login mit denselben Daten ausführen
-      const formData = new URLSearchParams();
-      formData.append("username", email);
-      formData.append("password", password);
-
-      const loginResponse = await fetch("http://192.168.1.150:8001/users/login", {
+      // 1b) Code per E‑Mail anfordern (login‑Phase 1)
+      const form = new URLSearchParams();
+      form.append("username", email);
+      form.append("password", password);
+      const login1 = await fetch("http://192.168.1.150:8001/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData.toString(),
+        body: form.toString(),
       });
-      if (!loginResponse.ok) {
-        const loginError = await loginResponse.json();
-        throw new Error(loginError.detail || "Login fehlgeschlagen");
+      if (!login1.ok) {
+        const err = await login1.json();
+        throw new Error(err.detail || "Code-Anforderung fehlgeschlagen");
       }
-      const loginData = await loginResponse.json();
-      localStorage.setItem("token", loginData.access_token);
+      const { temp_token } = await login1.json();
+      setTemp(temp_token);
+      setStep(2);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Schritt 2: Code validieren und direkt einloggen
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("http://192.168.1.150:8001/users/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ temp_token: tempToken, code }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Code ungültig");
+      }
+      const { access_token } = await res.json();
+      localStorage.setItem("token", access_token);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -53,64 +81,99 @@ const Register = () => {
       <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-lg">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Registrieren
+            {step === 1 ? "Registrieren" : "Code bestätigen"}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Hast du bereits einen Account?{" "}
-            <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Melde Dich an
-            </a>
-          </p>
+          {step === 1 && (
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Hast du bereits einen Account?{" "}
+              <a
+                href="/login"
+                className="font-medium text-blue-600 hover:text-blue-500 no-underline"
+              >
+                Melde dich an
+              </a>
+            </p>
+          )}
         </div>
-        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-        <form className="mt-8 space-y-6" onSubmit={handleRegistration}>
-          <div className="rounded-md shadow-sm -space-y-px">
+        {error && (
+          <div className="text-red-500 text-sm text-center">{error}</div>
+        )}
+        {step === 1 && (
+          <form className="mt-8 space-y-6" onSubmit={handleRegistration}>
+            <div className="rounded-md shadow-sm -space-y-px">
+              <div>
+                <label htmlFor="email" className="sr-only">
+                  Email-Adresse
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Email-Adresse"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Passwort
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Passwort"
+                />
+              </div>
+            </div>
             <div>
-              <label htmlFor="email" className="sr-only">
-                Email-Adresse
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {loading ? "Bitte warten..." : "Registrieren"}
+              </button>
+            </div>
+          </form>
+        )}
+        {step === 2 && (
+          <form className="mt-8 space-y-6" onSubmit={handleVerify}>
+            <div>
+              <label htmlFor="code" className="sr-only">
+                Bestätigungscode
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="code"
+                name="code"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Email-Adresse"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                placeholder="Code eingeben"
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Passwort
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Passwort"
-              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                {loading ? "Validiere..." : "Code bestätigen"}
+              </button>
             </div>
-          </div>
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {loading ? "Bitte warten..." : "Registrieren"}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
     </div>
   );
-};
-
-export default Register;
+}

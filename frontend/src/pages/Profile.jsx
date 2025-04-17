@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import CountryAutoComplete from "../components/CountryAutoComplete";
+import CountryAutoComplete from "../utils/CountryAutoComplete";
 
 const Profile = () => {
   const [email, setEmail] = useState("");
