@@ -2,10 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
-
-from .database import Base, engine, SessionLocal
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.memory import MemoryJobStore
 from .config import UPLOAD_DIR
+from .database import Base, engine, SessionLocal
 from . import models
+from .routes import users, contracts, contract_files
+from .utils.email_utils import schedule_all_reminders
 
 # Tabellen anlegen
 Base.metadata.create_all(bind=engine)
@@ -39,9 +42,22 @@ app.add_middleware(
 # Static files für Anhänge
 app.mount("/files", StaticFiles(directory=UPLOAD_DIR), name="files")
 
-# Router import & einbinden
-from .routes import users, contracts, contract_files
+# Scheduler mit CET
+jobstores = {"default": MemoryJobStore()}
+scheduler = BackgroundScheduler(jobstores=jobstores, timezone="Europe/Berlin")
+scheduler.start()
+# Scheduler in app.state verfügbar machen
+app.state.scheduler = scheduler
 
+@app.on_event("startup")
+def load_existing_reminders():
+    """Beim Start alle existierenden Contracts einplanen."""
+    db = SessionLocal()
+    for c in db.query(models.Contract).all():
+        schedule_all_reminders(c, scheduler)
+    db.close()
+
+# Router einbinden
 app.include_router(users.router)
 app.include_router(contracts.router)
 app.include_router(contract_files.router)
