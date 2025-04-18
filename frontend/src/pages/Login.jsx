@@ -1,17 +1,22 @@
+// src/pages/Login.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Login() {
-  const [step, setStep]         = useState(1);
-  const [email, setEmail]       = useState("");
-  const [password, setPass]     = useState("");
-  const [tempToken, setTemp]    = useState("");
-  const [code, setCode]         = useState("");
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
-  const navigate                = useNavigate();
+  const [step, setStep]       = useState(1);
+  const [email, setEmail]     = useState("");
+  const [password, setPass]   = useState("");
+  const [tempToken, setTemp]  = useState("");
+  const [code, setCode]       = useState("");
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Schritt 1: Credentials prüfen & Code senden
+  const navigate = useNavigate();
+  const location = useLocation();
+  // wohin nach dem Login?
+  const target = location.state?.from || "/dashboard";
+
+  // Schritt 1: Credentials prüfen & Code senden
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -40,7 +45,7 @@ export default function Login() {
     }
   };
 
-  // Schritt 2: Code validieren → echtes Token erhalten
+  // Schritt 2: Code validieren → echtes Token erhalten
   const handleVerify = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -57,7 +62,7 @@ export default function Login() {
       }
       const { access_token } = await res.json();
       localStorage.setItem("token", access_token);
-      navigate("/dashboard");
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -87,7 +92,7 @@ export default function Login() {
         {error && (
           <div className="text-red-500 text-sm text-center">{error}</div>
         )}
-        {step === 1 && (
+        {step === 1 ? (
           <form className="mt-8 space-y-6" onSubmit={handleLogin}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
@@ -133,8 +138,7 @@ export default function Login() {
               </button>
             </div>
           </form>
-        )}
-        {step === 2 && (
+        ) : (
           <form className="mt-8 space-y-6" onSubmit={handleVerify}>
             <div>
               <label htmlFor="code" className="sr-only">

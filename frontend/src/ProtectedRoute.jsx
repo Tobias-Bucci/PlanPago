@@ -1,15 +1,22 @@
 // src/ProtectedRoute.jsx
-import React from "react";
-import { Navigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
+export default function ProtectedRoute({ children }) {
+  const [ready, setReady] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  if (!token) {
-    // Kein Token gefunden – weiterleiten zur Login-Seite
-    return <Navigate to="/login" replace />;
-  }
-  return children;
-};
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      // leiten wir zur Login-Seite weiter und merken uns, wohin wir wollten
+      navigate("/login", { state: { from: location.pathname } });
+    } else {
+      setReady(true);
+    }
+  }, [navigate, location]);
 
-export default ProtectedRoute;
+  if (!ready) return null;
+  return <>{children}</>;
+}

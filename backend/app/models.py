@@ -1,14 +1,5 @@
-# backend/app/models.py
-
 from datetime import datetime
-from sqlalchemy import (
-    Column,
-    Integer,
-    String,
-    DateTime,
-    Float,
-    ForeignKey,
-)
+from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -18,16 +9,13 @@ class User(Base):
     id              = Column(Integer, primary_key=True, index=True)
     email           = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    is_admin = Column(Boolean, default=False, nullable=False)
 
     contracts          = relationship(
-        "Contract",
-        back_populates="user",
-        cascade="all, delete-orphan",
+        "Contract", back_populates="user", cascade="all, delete-orphan"
     )
     verification_codes = relationship(
-        "VerificationCode",
-        back_populates="user",
-        cascade="all, delete-orphan",
+        "VerificationCode", back_populates="user", cascade="all, delete-orphan"
     )
 
 class Contract(Base):
@@ -47,9 +35,7 @@ class Contract(Base):
     user    = relationship("User", back_populates="contracts")
 
     files = relationship(
-        "ContractFile",
-        back_populates="contract",
-        cascade="all, delete-orphan",
+        "ContractFile", back_populates="contract", cascade="all, delete-orphan"
     )
 
 class VerificationCode(Base):
@@ -65,10 +51,10 @@ class VerificationCode(Base):
 class ContractFile(Base):
     __tablename__ = "contract_files"
 
-    id                 = Column(Integer, primary_key=True, index=True)
-    contract_id        = Column(Integer, ForeignKey("contracts.id", ondelete="CASCADE"), nullable=False)
-    file_path          = Column(String, nullable=False)   # z.B. "/files/uuid-filename.png"
-    original_filename  = Column(String, nullable=False)
-    uploaded_at        = Column(DateTime, default=datetime.utcnow)
+    id                = Column(Integer, primary_key=True, index=True)
+    contract_id       = Column(Integer, ForeignKey("contracts.id", ondelete="CASCADE"), nullable=False)
+    file_path         = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    uploaded_at       = Column(DateTime, default=datetime.utcnow)
 
     contract = relationship("Contract", back_populates="files")

@@ -1,4 +1,4 @@
-// src/App.js
+// src/App.jsx
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NavBar from "./components/NavBar";
@@ -9,6 +9,7 @@ import Profile from "./pages/Profile";
 import ContractForm from "./pages/ContractForm";
 import ProtectedRoute from "./ProtectedRoute";
 import Stats from "./pages/Stats";
+import AdminPanel from "./pages/AdminPanel";
 
 function App() {
   return (
@@ -17,11 +18,20 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/stats"
+          element={
+            <ProtectedRoute>
+              <Stats />
             </ProtectedRoute>
           }
         />
@@ -49,19 +59,22 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/adminpanel"
+          element={
+            <ProtectedRoute>
+              <AdminPanel />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback auf Dashboard */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
               <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/stats"
-          element={
-            <ProtectedRoute>
-              <Stats />   
             </ProtectedRoute>
           }
         />
