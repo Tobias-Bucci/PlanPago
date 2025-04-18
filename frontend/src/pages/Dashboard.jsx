@@ -9,64 +9,81 @@ import { useNavigate } from "react-router-dom";
 import { PlusCircle } from "lucide-react";
 
 const API = "http://192.168.1.150:8001/contracts/";
+const FILE_BASE = "http://192.168.1.150:8001"; // for <img src=…>
 
 export default function Dashboard() {
   const [contracts, setContracts] = useState([]);
-  const [message,   setMessage]   = useState("");
-  const [error,     setError]     = useState("");
-  const [currency,  setCurrency]  = useState("€");
+  const [msg, setMsg]             = useState("");
+  const [err, setErr]             = useState("");
+  const [currency, setCurrency]   = useState("€");
   const navigate = useNavigate();
 
-  // stabiler Auth-Header
   const authHeader = useMemo(() => {
     const token = localStorage.getItem("token");
     return { Authorization: `Bearer ${token}` };
   }, []);
 
-  // Verträge laden
-  const fetchContracts = useCallback(async () => {
+  const loadContracts = useCallback(async () => {
     try {
       const res = await fetch(API, { headers: authHeader });
       if (!res.ok) {
-        setError(
+        setErr(
           res.status === 401
             ? "Nicht autorisiert – bitte neu anmelden."
-            : "Fehler beim Laden der Verträge"
+            : "Fehler beim Laden der Verträge."
         );
         return;
       }
-      setContracts(await res.json());
-      setError("");
-    } catch (err) {
-      console.error(err);
-      setError("Netzwerk-Fehler");
+      const list = await res.json();
+      // fetch files per contract
+      const withFiles = await Promise.all(
+        list.map(async (c) => {
+          const fr = await fetch(`${API}${c.id}/files`, { headers: authHeader });
+          const files = fr.ok ? await fr.json() : [];
+          return { ...c, files };
+        })
+      );
+      setContracts(withFiles);
+      setErr("");
+    } catch (e) {
+      console.error(e);
+      setErr("Netzwerk‑Fehler beim Laden der Verträge.");
     }
   }, [authHeader]);
 
   useEffect(() => {
     const mail = localStorage.getItem("currentEmail");
     setCurrency(localStorage.getItem(`currency_${mail}`) || "€");
-    fetchContracts();
-  }, [fetchContracts]);
+    loadContracts();
+  }, [loadContracts]);
 
-  // Vertrag löschen
-  const handleDelete = async (id) => {
+  const delContract = async (id) => {
     if (!window.confirm("Vertrag wirklich löschen?")) return;
-    try {
-      const res = await fetch(`${API}${id}`, {
-        method: "DELETE",
-        headers: authHeader,
-      });
-      if (res.ok) {
-        setMessage("Vertrag gelöscht!");
-        fetchContracts();
-      } else {
-        const err = await res.json();
-        setMessage("Löschen fehlgeschlagen: " + (err.detail || res.status));
-      }
-    } catch (err) {
-      console.error(err);
-      setMessage("Netzwerk-Fehler.");
+    const res = await fetch(`${API}${id}`, {
+      method: "DELETE",
+      headers: authHeader,
+    });
+    if (res.ok) {
+      setMsg("Vertrag gelöscht");
+      loadContracts();
+    } else {
+      const e = await res.json();
+      setMsg("Fehler: " + (e.detail || res.status));
+    }
+  };
+
+  const deleteFile = async (contractId, fileId) => {
+    if (!window.confirm("Anhang wirklich löschen?")) return;
+    const res = await fetch(`${API}${contractId}/files/${fileId}`, {
+      method: "DELETE",
+      headers: authHeader,
+    });
+    if (res.ok) {
+      setMsg("Anhang gelöscht");
+      loadContracts();
+    } else {
+      const e = await res.json();
+      setMsg("Fehler: " + (e.detail || res.status));
     }
   };
 
@@ -74,7 +91,7 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto p-4 relative">
-      {/* Neuer Vertrag Button oben rechts */}
+      {/* New‑contract button in top‑right */}
       <button
         onClick={() => navigate("/contracts/new")}
         className="
@@ -90,8 +107,8 @@ export default function Dashboard() {
       </button>
 
       <h1 className="text-3xl font-bold mb-4">Vertragsübersicht</h1>
-      {message && <p className="text-green-600 mb-4">{message}</p>}
-      {error   && <p className="text-red-600 mb-4">{error}</p>}
+      {msg && <p className="text-green-600 mb-4">{msg}</p>}
+      {err && <p className="text-red-600 mb-4">{err}</p>}
 
       {contracts.length === 0 ? (
         <p>Keine Verträge gefunden.</p>
@@ -105,36 +122,71 @@ export default function Dashboard() {
                 <th className="py-2 px-4 border">Start</th>
                 <th className="py-2 px-4 border">Ende</th>
                 <th className="py-2 px-4 border">Betrag</th>
-                <th className="py-2 px-4 border">Intervall</th>
                 <th className="py-2 px-4 border">Status</th>
+                <th className="py-2 px-4 border">Anhänge</th>
                 <th className="py-2 px-4 border">Aktionen</th>
               </tr>
             </thead>
             <tbody>
               {contracts.map((c) => {
-                const end      = c.end_date ? new Date(c.end_date) : null;
+                const end = c.end_date ? new Date(c.end_date) : null;
                 const inactive = end && end < today;
                 return (
                   <tr key={c.id} className={inactive ? "bg-gray-200" : ""}>
-                    <td className="py-2 px-4 border">{c.name}</td>
-                    <td className="py-2 px-4 border">{c.contract_type}</td>
-                    <td className="py-2 px-4 border">
+                    <td className="px-4 border">{c.name}</td>
+                    <td className="px-4 border">{c.contract_type}</td>
+                    <td className="px-4 border">
                       {new Date(c.start_date).toLocaleDateString()}
                     </td>
-                    <td className="py-2 px-4 border">
+                    <td className="px-4 border">
                       {end ? end.toLocaleDateString() : "-"}
                     </td>
-                    <td className="py-2 px-4 border">
-                      {c.amount} {currency}
+                    <td className="px-4 border">
+                      {c.amount} {currency}
                     </td>
-                    <td className="py-2 px-4 border">{c.payment_interval}</td>
-                    <td className="py-2 px-4 border">
-                      {inactive ? "inactive" : c.status}
+                    <td className="px-4 border">{c.status}</td>
+                    <td className="px-4 border">
+                      {c.files.map((f) => {
+                        const isImage = f.mime_type?.startsWith("image/");
+                        return (
+                          <span
+                            key={f.id}
+                            className="relative inline-block mr-2"
+                          >
+                            <a
+                              href={`${FILE_BASE}${f.url}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={isImage ? "" : "text-blue-600 underline"}
+                              title={f.original}
+                            >
+                              {isImage ? (
+                                <img
+                                  src={`${FILE_BASE}${f.url}`}
+                                  alt={f.original}
+                                  className="h-12 rounded border"
+                                />
+                              ) : (
+                                "📄"
+                              )}
+                            </a>
+                            <button
+                              onClick={() => deleteFile(c.id, f.id)}
+                              className="absolute -top-0.5 -right-1.5 bg-red-600 text-white text-[10px] rounded-full w-3 h-3 flex items-center justify-center"
+                              title="Löschen"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
                     </td>
-                    <td className="py-2 px-4 border text-center">
+                    <td className="px-4 border">
                       <button
                         onClick={() =>
-                          navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })
+                          navigate(`/contracts/${c.id}/edit`, {
+                            state: { contract: c },
+                          })
                         }
                         className="text-blue-600 mr-2"
                         title="Bearbeiten"
@@ -142,7 +194,7 @@ export default function Dashboard() {
                         ✏️
                       </button>
                       <button
-                        onClick={() => handleDelete(c.id)}
+                        onClick={() => delContract(c.id)}
                         className="text-red-600"
                         title="Löschen"
                       >

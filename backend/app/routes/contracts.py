@@ -1,25 +1,16 @@
-# app/routes/contracts.py
-"""
-REST‑Endpoints für Vertrags‑CRUD – mandanten­sicher:
-Jeder Aufruf ist an den eingeloggten Benutzer (current_user) gebunden,
-über das Foreign‑Key‑Feld  Contract.user_id.
-"""
-
-from typing import List, Optional
+# backend/app/routes/contracts.py
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
+from typing import List
 from .. import models, schemas, database
-from ..routes.users import get_current_user   # current_user Dependency
+from .users import get_current_user
 
-# ─── FastAPI‑Router ──────────────────────────────────────────────────────
 router = APIRouter(
     prefix="/contracts",
-    tags=["contracts"],
+    tags=["contracts"]
 )
 
-# ─── DB‑Session Dependency ──────────────────────────────────────────────
 def get_db():
     db = database.SessionLocal()
     try:
@@ -27,27 +18,22 @@ def get_db():
     finally:
         db.close()
 
-# ────────────────────────────────────────────────────────────────────────
-#  Create  (POST /contracts/)
-# ────────────────────────────────────────────────────────────────────────
+
 @router.post("/", response_model=schemas.Contract, status_code=status.HTTP_201_CREATED)
 def create_contract(
     contract: schemas.ContractCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    db_contract = models.Contract(
-        **contract.model_dump(),
-        user_id=current_user.id,          #  Besitzer festlegen
-    )
+    # Neues Contract-Objekt anlegen und mit current_user verknüpfen
+    data = contract.model_dump()
+    db_contract = models.Contract(**data, user_id=current_user.id)
     db.add(db_contract)
     db.commit()
     db.refresh(db_contract)
     return db_contract
 
-# ────────────────────────────────────────────────────────────────────────
-#  List  (GET /contracts/)
-# ────────────────────────────────────────────────────────────────────────
+
 @router.get("/", response_model=List[schemas.Contract])
 def read_contracts(
     skip: int = 0,
@@ -55,6 +41,7 @@ def read_contracts(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    # Nur Verträge des angemeldeten Users zurückliefern
     return (
         db.query(models.Contract)
         .filter(models.Contract.user_id == current_user.id)
@@ -63,9 +50,7 @@ def read_contracts(
         .all()
     )
 
-# ────────────────────────────────────────────────────────────────────────
-#  Read single  (GET /contracts/{id})
-# ────────────────────────────────────────────────────────────────────────
+
 @router.get("/{contract_id}", response_model=schemas.Contract)
 def read_contract(
     contract_id: int,
@@ -81,12 +66,10 @@ def read_contract(
         .first()
     )
     if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
     return contract
 
-# ────────────────────────────────────────────────────────────────────────
-#  Update  (PATCH /contracts/{id})
-# ────────────────────────────────────────────────────────────────────────
+
 @router.patch("/{contract_id}", response_model=schemas.Contract)
 def update_contract(
     contract_id: int,
@@ -103,18 +86,18 @@ def update_contract(
         .first()
     )
     if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
 
-    for key, value in upd.model_dump(exclude_unset=True).items():
-        setattr(contract, key, value)
+    # Nur übergebene Felder updaten
+    update_data = upd.model_dump(exclude_none=True)
+    for field, value in update_data.items():
+        setattr(contract, field, value)
 
     db.commit()
     db.refresh(contract)
     return contract
 
-# ────────────────────────────────────────────────────────────────────────
-#  Delete  (DELETE /contracts/{id})
-# ────────────────────────────────────────────────────────────────────────
+
 @router.delete("/{contract_id}", response_model=schemas.Contract)
 def delete_contract(
     contract_id: int,
@@ -130,7 +113,7 @@ def delete_contract(
         .first()
     )
     if not contract:
-        raise HTTPException(status_code=404, detail="Contract not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
 
     db.delete(contract)
     db.commit()

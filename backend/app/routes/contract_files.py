@@ -1,12 +1,16 @@
-# app/routes/contract_files.py
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+# backend/app/routes/contract_files.py
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from ..config import UPLOAD_DIR
-from ..models import Contract, ContractFile, User
+from ..models import Contract, ContractFile
 from ..database import SessionLocal
 from ..routes.users import get_current_user
 import uuid, shutil, mimetypes
 
-router = APIRouter(prefix="/contracts/{contract_id}/files", tags=["contract files"])
+router = APIRouter(
+    prefix="/contracts/{contract_id}/files",
+    tags=["contract files"]
+)
 
 def get_db():
     db = SessionLocal()
@@ -15,46 +19,55 @@ def get_db():
     finally:
         db.close()
 
-@router.post("", status_code=201)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def upload_files(
     contract_id: int,
     files: list[UploadFile] = File(...),
     db=Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    # Stelle sicher, dass der Contract existiert und dem aktuellen User gehört
     contract = (
         db.query(Contract)
         .filter(Contract.id == contract_id, Contract.user_id == current_user.id)
         .first()
     )
     if not contract:
-        raise HTTPException(404, "Contract not found")
+        raise HTTPException(status_code=404, detail="Contract not found")
 
     saved = []
     for up in files:
+        # Dateiendung ermitteln (optional)
         ext = mimetypes.guess_extension(up.content_type) or ""
+        # Eindeutigen Dateinamen generieren
         uid = f"{uuid.uuid4()}{ext}"
         dest = UPLOAD_DIR / uid
+        # Datei speichern
         with dest.open("wb") as buffer:
             shutil.copyfileobj(up.file, buffer)
 
+        # Im DB‑Objekt nur den Pfad und Originalnamen speichern
         db_file = ContractFile(
             contract_id=contract.id,
-            filename=uid,
-            original=up.filename,
-            mime_type=up.content_type,
+            file_path=f"/files/{uid}",
+            original_filename=up.filename,
         )
         db.add(db_file)
         saved.append(db_file)
 
     db.commit()
-    return [{"id": f.id, "original": f.original} for f in saved]
 
-@router.get("")
+    # Gib zurück, was wir gerade angelegt haben
+    return [
+        {"id": f.id, "original": f.original_filename, "url": f.file_path}
+        for f in saved
+    ]
+
+@router.get("", response_class=JSONResponse)
 def list_files(
     contract_id: int,
     db=Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     files = (
         db.query(ContractFile)
@@ -66,18 +79,17 @@ def list_files(
         .all()
     )
     return [
-        {
-            "id": f.id,
-            "original": f.original,
-            "url": f"/files/{f.filename}",
-            "mime_type": f.mime_type,          #  <────────
-        }
+        {"id": f.id, "original": f.original_filename, "url": f.file_path}
         for f in files
     ]
 
-
-@router.delete("/{file_id}", status_code=204)
-def delete_file(contract_id: int, file_id: int, db=Depends(get_db), current_user: User = Depends(get_current_user)):
+@router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_file(
+    contract_id: int,
+    file_id: int,
+    db=Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     f = (
         db.query(ContractFile)
         .join(Contract)
@@ -85,13 +97,19 @@ def delete_file(contract_id: int, file_id: int, db=Depends(get_db), current_user
             ContractFile.id == file_id,
             Contract.id == contract_id,
             Contract.user_id == current_user.id,
-        ).first()
+        )
+        .first()
     )
     if not f:
-        raise HTTPException(404, "File not found")
+        raise HTTPException(status_code=404, detail="File not found")
 
-    path = UPLOAD_DIR / f.filename
+    # Datei vom Filesystem löschen
+    path = UPLOAD_DIR / f.file_path.split("/files/")[-1]
     if path.exists():
         path.unlink()
+
+    # DB‑Eintrag löschen
     db.delete(f)
     db.commit()
+
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
