@@ -71,7 +71,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 # ----------------------------
-# 2) Login – Schritt 1
+# 2) Login – Schritt 1
 # ----------------------------
 @router.post("/login", status_code=200)
 def login_step1(
@@ -83,12 +83,12 @@ def login_step1(
     if not user or not pwd_context.verify(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Falsche Anmeldedaten")
 
-    # Trusted Window: 10 Minuten nach letzter 2FA-Code-Bestätigung
+    # Falls innerhalb des Trusted-Windows (10 Minuten nach letzter 2FA), direkt Token ausgeben
     if user.last_2fa_at and (datetime.utcnow() - user.last_2fa_at) < timedelta(minutes=10):
         access_token = create_access_token({"sub": user.email})
         return {"access_token": access_token, "token_type": "bearer"}
 
-    # Ansonsten: 6‑stelligen Code erzeugen
+    # sonst neuen Code erzeugen
     code = f"{secrets.randbelow(10**6):06d}"
     expires = datetime.utcnow() + timedelta(minutes=10)
     vc = models.VerificationCode(user_id=user.id, code=code, expires_at=expires)
@@ -111,7 +111,7 @@ class CodeVerify(BaseModel):
 
 
 # ----------------------------
-# 3) Login – Schritt 2
+# 3) Login – Code Bestätigen
 # ----------------------------
 @router.post("/verify-code", status_code=200, response_model=schemas.Token)
 def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
@@ -139,7 +139,7 @@ def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
     if not vc:
         raise HTTPException(status_code=400, detail="Ungültiger oder abgelaufener Code")
 
-    # Trust-Window starten
+    # Trust-Window setzen
     user.last_2fa_at = datetime.utcnow()
     db.delete(vc)
     db.commit()
@@ -150,7 +150,7 @@ def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
 
 
 # ----------------------------
-# Hilfsfunktion: aktuellen User bestimmen
+# Helper: aktuellen User bestimmen
 # ----------------------------
 def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -186,7 +186,6 @@ class UpdateConfirm(BaseModel):
     temp_token: str
     code: str
 
-
 @router.patch("/me", status_code=200)
 def update_request(
     background_tasks: BackgroundTasks,
@@ -194,6 +193,10 @@ def update_request(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Prüfen, ob altes Passwort korrekt ist
+    if not pwd_context.verify(upd.old_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Falsches aktuelles Passwort")
+
     if not upd.email and not upd.password:
         raise HTTPException(status_code=400, detail="Keine Änderungen angegeben")
 
