@@ -1,5 +1,4 @@
 # backend/app/schemas.py
-
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
@@ -13,18 +12,17 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
+    email_reminders_enabled: bool
     model_config = ConfigDict(from_attributes=True)
 
 class UserUpdate(BaseModel):
+    old_password: str
     email: Optional[str] = None
     password: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
-    
-class UserUpdate(BaseModel):
-    old_password: str                    # neu
-    email: Optional[str] = None
-    password: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
+
+class UserSettings(BaseModel):
+    email_reminders_enabled: bool
 
 # ——— Contract-Schemas ——————————————————————————————————————
 class ContractBase(BaseModel):

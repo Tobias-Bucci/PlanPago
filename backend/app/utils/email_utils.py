@@ -7,7 +7,7 @@ from email.message import EmailMessage
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from ..database import SessionLocal
-from ..models import Contract
+from ..models import Contract, User
 from .email_templates import TEMPLATES
 
 # Umgebungsvariablen laden
@@ -52,14 +52,25 @@ def send_reminder_email(to_address: str, contract_id: int, days_before: int, rem
     - days_before: 3 oder 1
     """
     session = SessionLocal()
+
+    # Vertrag und User laden
     contract: Contract = session.get(Contract, contract_id)
+    user: User = session.get(User, contract.user_id) if contract else None
     session.close()
-    if not contract:
+
+    if not contract or not user:
+        return
+
+    # Prüfen, ob der Nutzer E‑Mail‑Reminder aktiviert hat
+    if not getattr(user, "email_reminders_enabled", True):
         return
 
     # Auswahl der passenden Sub-Template nach Vertragstyp oder Default
     type_templates = TEMPLATES.get(reminder_type, {})
-    sub_tpl = type_templates.get(contract.contract_type, type_templates.get("Default"))
+    sub_tpl = type_templates.get(
+        contract.contract_type,
+        type_templates.get("Default")
+    )
     if not sub_tpl:
         return
 
@@ -139,7 +150,7 @@ def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False)
             due += step
 
         run_date = due - timedelta(days=days)
-        run_date = run_date.replace(hour=3, minute=36, second=30, microsecond=0)
+        run_date = run_date.replace(hour=3, minute=0, second=0, microsecond=0)
 
         scheduler.add_job(
             send_reminder_email,
@@ -153,7 +164,7 @@ def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False)
         # ─── Enderinnerung ──────────────────────────────────────
         if contract.end_date:
             end_run = contract.end_date - timedelta(days=days)
-            end_run = end_run.replace(hour=3, minute=36, second=30, microsecond=0)
+            end_run = end_run.replace(hour=3, minute=0, second=0, microsecond=0)
 
             scheduler.add_job(
                 send_reminder_email,

@@ -19,7 +19,7 @@ from ..utils.email_utils import send_code_via_email
 load_dotenv()
 router = APIRouter(prefix="/users", tags=["users"])
 
-# --- Passwort-Hashing & JWT-Setup ---
+# --- Passwort‑Hashing & JWT-Setup ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
@@ -41,7 +41,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 def get_db():
     db = database.SessionLocal()
     try:
-        # Admin-Benutzer anlegen, falls nicht existent
+        # Admin‑User automatisch anlegen, falls nicht existent
         if not db.query(models.User).filter(models.User.email == "admin@admin").first():
             admin = models.User(
                 email="admin@admin",
@@ -55,9 +55,7 @@ def get_db():
         db.close()
 
 
-# ----------------------------
-# 1) Registrierung
-# ----------------------------
+# ———————— 1) Registrierung —————————
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.email == user.email).first():
@@ -70,9 +68,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 
-# ----------------------------
-# 2) Login – Schritt 1
-# ----------------------------
+# ———————— 2) Login – Schritt 1 —————————
 @router.post("/login", status_code=200)
 def login_step1(
     background_tasks: BackgroundTasks,
@@ -83,7 +79,7 @@ def login_step1(
     if not user or not pwd_context.verify(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Falsche Anmeldedaten")
 
-    # Falls innerhalb des Trusted-Windows (10 Minuten nach letzter 2FA), direkt Token ausgeben
+    # Trusted‑Window: 10 Minuten nach letzter 2FA
     if user.last_2fa_at and (datetime.utcnow() - user.last_2fa_at) < timedelta(minutes=10):
         access_token = create_access_token({"sub": user.email})
         return {"access_token": access_token, "token_type": "bearer"}
@@ -98,10 +94,7 @@ def login_step1(
     target = "mainbuccitobias@gmail.com" if user.email == "admin@admin" else user.email
     background_tasks.add_task(send_code_via_email, target, code)
 
-    temp_token = create_access_token(
-        {"sub": user.email},
-        expires_delta=timedelta(minutes=10),
-    )
+    temp_token = create_access_token({"sub": user.email}, expires_delta=timedelta(minutes=10))
     return {"temp_token": temp_token}
 
 
@@ -110,9 +103,7 @@ class CodeVerify(BaseModel):
     code: str
 
 
-# ----------------------------
-# 3) Login – Code Bestätigen
-# ----------------------------
+# ———————— 3) Login – Code bestätigen —————————
 @router.post("/verify-code", status_code=200, response_model=schemas.Token)
 def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
     try:
@@ -139,7 +130,7 @@ def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
     if not vc:
         raise HTTPException(status_code=400, detail="Ungültiger oder abgelaufener Code")
 
-    # Trust-Window setzen
+    # Trust‑Window setzen
     user.last_2fa_at = datetime.utcnow()
     db.delete(vc)
     db.commit()
@@ -149,9 +140,7 @@ def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# ----------------------------
-# Helper: aktuellen User bestimmen
-# ----------------------------
+# ———————— Hilfsfunktion: aktuellen User bestimmen —————————
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
@@ -171,17 +160,13 @@ def get_current_user(
     return user
 
 
-# ----------------------------
-# 4) Profil abrufen
-# ----------------------------
+# ———————— 4) Profil abrufen —————————
 @router.get("/me", response_model=schemas.User)
 def read_current_user(current_user: models.User = Depends(get_current_user)):
     return current_user
 
 
-# ----------------------------
-# 5) Profil updaten (2FA anfordern)
-# ----------------------------
+# ———————— 5) Profil updaten (2FA anfordern) —————————
 class UpdateConfirm(BaseModel):
     temp_token: str
     code: str
@@ -193,7 +178,7 @@ def update_request(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # Prüfen, ob altes Passwort korrekt ist
+    # Altes Passwort prüfen
     if not pwd_context.verify(upd.old_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="Falsches aktuelles Passwort")
 
@@ -223,9 +208,7 @@ def update_request(
     return {"temp_token": temp_token}
 
 
-# ----------------------------
-# 6) Update bestätigen & anwenden
-# ----------------------------
+# ———————— 6) Update bestätigen & anwenden —————————
 @router.patch("/me/confirm", status_code=200, response_model=schemas.User)
 def update_confirm(payload: UpdateConfirm, db: Session = Depends(get_db)):
     try:
@@ -263,9 +246,20 @@ def update_confirm(payload: UpdateConfirm, db: Session = Depends(get_db)):
     return user
 
 
-# ----------------------------
-# 7) Account löschen
-# ----------------------------
+# ———————— 7) Einstellungen updaten (E-Mail-Reminders) —————————
+@router.patch("/me/settings", status_code=200, response_model=schemas.User)
+def update_settings(
+    settings: schemas.UserSettings,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.email_reminders_enabled = settings.email_reminders_enabled
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+# ———————— 8) Account löschen —————————
 @router.delete("/me", response_model=schemas.User)
 def delete_current_user(
     current_user: models.User = Depends(get_current_user),
@@ -277,9 +271,7 @@ def delete_current_user(
     return current_user
 
 
-# ----------------------------
-# 8) Admin‑Endpoints
-# ----------------------------
+# ———————— 9) Admin‑Endpoints —————————
 def ensure_admin(user: models.User):
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Admin‑Rechte erforderlich")
