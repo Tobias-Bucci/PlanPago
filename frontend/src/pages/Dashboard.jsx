@@ -1,55 +1,43 @@
 // src/pages/Dashboard.jsx
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlusCircle } from "lucide-react";
-
-const API = "http://192.168.1.150:8001/contracts/";
-const FILE_BASE = "http://192.168.1.150:8001"; // for <img src=…>
+import { PlusCircle, Edit3, Trash2 } from "lucide-react";
 
 export default function Dashboard() {
   const [contracts, setContracts] = useState([]);
   const [msg, setMsg]             = useState("");
   const [err, setErr]             = useState("");
+  const [loading, setLoading]     = useState(true);
   const [currency, setCurrency]   = useState("€");
   const navigate = useNavigate();
 
+  const API = "http://192.168.1.150:8001";
   const authHeader = useMemo(() => {
     const token = localStorage.getItem("token");
     return { Authorization: `Bearer ${token}` };
   }, []);
 
   const loadContracts = useCallback(async () => {
+    setLoading(true);
+    setErr("");
     try {
-      const res = await fetch(API, { headers: authHeader });
-      if (!res.ok) {
-        setErr(
-          res.status === 401
-            ? "Nicht autorisiert – bitte neu anmelden."
-            : "Fehler beim Laden der Verträge."
-        );
-        return;
-      }
+      const res = await fetch(`${API}/contracts/`, { headers: authHeader });
+      if (!res.ok) throw new Error("Fehler beim Laden der Verträge");
       const list = await res.json();
-      // fetch files per contract
       const withFiles = await Promise.all(
         list.map(async (c) => {
-          const fr = await fetch(`${API}${c.id}/files`, { headers: authHeader });
+          const fr = await fetch(`${API}/contracts/${c.id}/files`, { headers: authHeader });
           const files = fr.ok ? await fr.json() : [];
           return { ...c, files };
         })
       );
       setContracts(withFiles);
-      setErr("");
     } catch (e) {
-      console.error(e);
-      setErr("Netzwerk‑Fehler beim Laden der Verträge.");
+      setErr(e.message);
+    } finally {
+      setLoading(false);
     }
-  }, [authHeader]);
+  }, [API, authHeader]);
 
   useEffect(() => {
     const mail = localStorage.getItem("currentEmail");
@@ -57,157 +45,172 @@ export default function Dashboard() {
     loadContracts();
   }, [loadContracts]);
 
-  const delContract = async (id) => {
+  const deleteContract = async (id) => {
     if (!window.confirm("Vertrag wirklich löschen?")) return;
-    const res = await fetch(`${API}${id}`, {
-      method: "DELETE",
-      headers: authHeader,
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(`${API}/contracts/${id}`, {
+        method: "DELETE",
+        headers: authHeader,
+      });
+      if (!res.ok) throw new Error("Löschen fehlgeschlagen");
       setMsg("Vertrag gelöscht");
       loadContracts();
-    } else {
-      const e = await res.json();
-      setMsg("Fehler: " + (e.detail || res.status));
+    } catch (e) {
+      setErr(e.message);
     }
   };
 
   const deleteFile = async (contractId, fileId) => {
     if (!window.confirm("Anhang wirklich löschen?")) return;
-    const res = await fetch(`${API}${contractId}/files/${fileId}`, {
-      method: "DELETE",
-      headers: authHeader,
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(
+        `${API}/contracts/${contractId}/files/${fileId}`,
+        {
+          method: "DELETE",
+          headers: authHeader,
+        }
+      );
+      if (!res.ok) throw new Error("Anhang konnte nicht gelöscht werden");
       setMsg("Anhang gelöscht");
       loadContracts();
-    } else {
-      const e = await res.json();
-      setMsg("Fehler: " + (e.detail || res.status));
+    } catch (e) {
+      setErr(e.message);
     }
   };
 
   const today = new Date();
 
   return (
-    <div className="container mx-auto p-4 relative">
-      {/* New‑contract button in top‑right */}
-      <button
-        onClick={() => navigate("/contracts/new")}
-        className="
-          absolute top-2 right-5
-          bg-green-500 text-white
-          rounded-full
-          w-10 h-10
-          flex items-center justify-center
-        "
-        title="Neuer Vertrag"
-      >
-        <PlusCircle size={25} strokeWidth={2} />
-      </button>
+    <main className="container mx-auto p-6 animate-fadeIn">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-semibold">Vertragsübersicht</h1>
+        <button
+          onClick={() => navigate("/contracts/new")}
+          className="p-3 bg-accent text-white rounded-full shadow-lg hover:bg-accent-dark transition-colors"
+          title="Neuer Vertrag"
+        >
+          <PlusCircle size={24} />
+        </button>
+      </div>
 
-      <h1 className="text-3xl font-bold mb-4">Vertragsübersicht</h1>
-      {msg && <p className="text-green-600 mb-4">{msg}</p>}
-      {err && <p className="text-red-600 mb-4">{err}</p>}
+      {msg && (
+        <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-lg shadow">
+          {msg}
+        </div>
+      )}
+      {err && (
+        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg shadow">
+          {err}
+        </div>
+      )}
 
-      {contracts.length === 0 ? (
-        <p>Keine Verträge gefunden.</p>
+      {loading ? (
+        <div className="text-center py-10 text-gray-500">Lade Verträge…</div>
+      ) : contracts.length === 0 ? (
+        <div className="text-center py-10 text-gray-500">Keine Verträge vorhanden.</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border">
-            <thead className="bg-gray-100">
+        <div className="overflow-x-auto bg-white rounded-lg shadow-lg">
+          <table className="min-w-full">
+            <thead className="bg-primary text-white">
               <tr>
-                <th className="py-2 px-4 border">Name</th>
-                <th className="py-2 px-4 border">Art</th>
-                <th className="py-2 px-4 border">Start</th>
-                <th className="py-2 px-4 border">Ende</th>
-                <th className="py-2 px-4 border">Betrag</th>
-                <th className="py-2 px-4 border">Status</th>
-                <th className="py-2 px-4 border">Anhänge</th>
-                <th className="py-2 px-4 border">Aktionen</th>
+                <th className="px-6 py-3 text-left">Name</th>
+                <th className="px-6 py-3 text-left">Art</th>
+                <th className="px-6 py-3 text-left">Start</th>
+                <th className="px-6 py-3 text-left">Ende</th>
+                <th className="px-6 py-3 text-left">Betrag</th>
+                <th className="px-6 py-3 text-left">Status</th>
+                <th className="px-6 py-3 text-left">Anhänge</th>
+                <th className="px-6 py-3 text-center">Aktionen</th>
               </tr>
             </thead>
             <tbody>
-              {contracts.map((c) => {
+              {contracts.map((c, idx) => {
                 const end = c.end_date ? new Date(c.end_date) : null;
-                const inactive = end && end < today;
+                const isExpired = end && end < today;
+                const displayStatus = isExpired ? "Abgelaufen" : c.status;
+                const statusClass = isExpired ? "text-red-600" : "text-green-600";
+                const rowClass = isExpired
+                  ? "opacity-50"
+                  : "hover:bg-gray-100 transition-colors";
+
                 return (
-                  <tr key={c.id} className={inactive ? "bg-gray-200" : ""}>
-                    <td className="px-4 border">{c.name}</td>
-                    <td className="px-4 border">{c.contract_type}</td>
-                    <td className="px-4 border">
-                      {new Date(c.start_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 border">
-                      {end ? end.toLocaleDateString() : "-"}
-                    </td>
-                    <td className="px-4 border">
-                      {c.amount} {currency}
-                    </td>
-                    <td className="px-4 border">{c.status}</td>
-                    <td className="px-4 border">
-                      {c.files.map((f) => {
-                        const isImage = f.mime_type?.startsWith("image/");
-                        return (
-                          <span
-                            key={f.id}
-                            className="relative inline-block mr-2"
-                          >
+                  <React.Fragment key={c.id}>
+                    <tr className={rowClass}>
+                      <td className="px-6 py-4">{c.name}</td>
+                      <td className="px-6 py-4">{c.contract_type}</td>
+                      <td className="px-6 py-4">
+                        {new Date(c.start_date).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">{end ? end.toLocaleDateString() : "-"}</td>
+                      <td className="px-6 py-4">
+                        {c.amount} {currency}
+                      </td>
+                      <td className={`px-6 py-4 font-medium ${statusClass}`}>
+                        {displayStatus}
+                      </td>
+                      <td className="px-6 py-4 flex flex-wrap gap-2">
+                        {c.files.map((f) => (
+                          <div key={f.id} className="relative inline-block">
                             <a
-                              href={`${FILE_BASE}${f.url}`}
+                              href={`${API}${f.url}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className={isImage ? "" : "text-blue-600 underline"}
-                              title={f.original}
+                              className="inline-block"
                             >
-                              {isImage ? (
-                                <img
-                                  src={`${FILE_BASE}${f.url}`}
-                                  alt={f.original}
-                                  className="h-12 rounded border"
-                                />
+                              {f.url.endsWith(".pdf") ? (
+                                <span className="text-gray-600 text-2xl">📄</span>
                               ) : (
-                                "📄"
+                                <img
+                                  src={`${API}${f.url}`}
+                                  alt={f.original_filename}
+                                  className="h-10 w-10 rounded-lg shadow-sm object-cover"
+                                />
                               )}
                             </a>
                             <button
                               onClick={() => deleteFile(c.id, f.id)}
-                              className="absolute -top-0.5 -right-1.5 bg-red-600 text-white text-[10px] rounded-full w-3 h-3 flex items-center justify-center"
-                              title="Löschen"
+                              className="absolute -top-1 -right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                              title="Anhang löschen"
                             >
                               ×
                             </button>
-                          </span>
-                        );
-                      })}
-                    </td>
-                    <td className="px-4 border">
-                      <button
-                        onClick={() =>
-                          navigate(`/contracts/${c.id}/edit`, {
-                            state: { contract: c },
-                          })
-                        }
-                        className="text-blue-600 mr-2"
-                        title="Bearbeiten"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => delContract(c.id)}
-                        className="text-red-600"
-                        title="Löschen"
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
+                          </div>
+                        ))}
+                      </td>
+                      <td className="px-6 py-4 text-center space-x-2">
+                        <button
+                          onClick={() =>
+                            navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })
+                          }
+                          className="p-2 bg-primary-light text-white rounded-lg hover:bg-primary transition-colors"
+                          title="Bearbeiten"
+                        >
+                          <Edit3 size={20} />
+                        </button>
+                        <button
+                          onClick={() => deleteContract(c.id)}
+                          className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          title="Löschen"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </td>
+                    </tr>
+                    {/* Trenner zwischen Einträgen */}
+                    {idx < contracts.length - 1 && (
+                      <tr>
+                        <td colSpan="8" className="px-6">
+                          <div className="border-b border-gray-200" />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>
           </table>
         </div>
       )}
-    </div>
+    </main>
   );
 }

@@ -1,3 +1,4 @@
+# backend/app/models.py
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
@@ -9,7 +10,8 @@ class User(Base):
     id              = Column(Integer, primary_key=True, index=True)
     email           = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    is_admin = Column(Boolean, default=False, nullable=False)
+    is_admin        = Column(Boolean, default=False, nullable=False)
+    last_2fa_at     = Column(DateTime, nullable=True)
 
     contracts          = relationship(
         "Contract", back_populates="user", cascade="all, delete-orphan"

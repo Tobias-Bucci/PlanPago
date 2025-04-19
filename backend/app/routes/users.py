@@ -5,13 +5,7 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional, List
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    status,
-    BackgroundTasks,
-)
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -89,18 +83,21 @@ def login_step1(
     if not user or not pwd_context.verify(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Falsche Anmeldedaten")
 
-    # 6‑stelligen Code erzeugen
+    # Trusted Window: 10 Minuten nach letzter 2FA-Code-Bestätigung
+    if user.last_2fa_at and (datetime.utcnow() - user.last_2fa_at) < timedelta(minutes=10):
+        access_token = create_access_token({"sub": user.email})
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    # Ansonsten: 6‑stelligen Code erzeugen
     code = f"{secrets.randbelow(10**6):06d}"
     expires = datetime.utcnow() + timedelta(minutes=10)
     vc = models.VerificationCode(user_id=user.id, code=code, expires_at=expires)
     db.add(vc)
     db.commit()
 
-    # Code per Mail versenden (Admin → zentrale Mail)
     target = "mainbuccitobias@gmail.com" if user.email == "admin@admin" else user.email
     background_tasks.add_task(send_code_via_email, target, code)
 
-    # Temporäres Token mit sub = E‑Mail
     temp_token = create_access_token(
         {"sub": user.email},
         expires_delta=timedelta(minutes=10),
@@ -114,7 +111,7 @@ class CodeVerify(BaseModel):
 
 
 # ----------------------------
-# 3) Login – Schritt 2
+# 3) Login – Schritt 2
 # ----------------------------
 @router.post("/verify-code", status_code=200, response_model=schemas.Token)
 def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
@@ -142,8 +139,11 @@ def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
     if not vc:
         raise HTTPException(status_code=400, detail="Ungültiger oder abgelaufener Code")
 
+    # Trust-Window starten
+    user.last_2fa_at = datetime.utcnow()
     db.delete(vc)
     db.commit()
+    db.refresh(user)
 
     access_token = create_access_token({"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -197,7 +197,6 @@ def update_request(
     if not upd.email and not upd.password:
         raise HTTPException(status_code=400, detail="Keine Änderungen angegeben")
 
-    # E‑Mail-Freigabe prüfen
     if upd.email and db.query(models.User).filter(models.User.email == upd.email, models.User.id != current_user.id).first():
         raise HTTPException(status_code=400, detail="E‑Mail bereits vergeben")
 
@@ -238,13 +237,15 @@ def update_confirm(payload: UpdateConfirm, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Ungültige Session")
 
-    vc = db.query(models.VerificationCode)\
+    vc = (
+        db.query(models.VerificationCode)
         .filter(
             models.VerificationCode.user_id == user.id,
             models.VerificationCode.code == payload.code,
             models.VerificationCode.expires_at >= datetime.utcnow(),
-        )\
+        )
         .first()
+    )
     if not vc:
         raise HTTPException(status_code=400, detail="Ungültiger oder abgelaufener Code")
 
