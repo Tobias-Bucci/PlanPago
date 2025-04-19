@@ -1,15 +1,16 @@
 # backend/app/utils/email_utils.py
 
 from dotenv import load_dotenv
-import os, smtplib
+import os
+import smtplib
 from email.message import EmailMessage
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from .email_templates import TEMPLATES
 from ..database import SessionLocal
 from ..models import Contract
+from .email_templates import TEMPLATES
 
-# lädt die Umgebungsvariablen aus .env
+# Umgebungsvariablen laden
 load_dotenv()
 
 EMAIL_HOST = os.getenv("EMAIL_HOST")
@@ -19,15 +20,18 @@ EMAIL_PASS = os.getenv("EMAIL_PASS")
 
 
 def send_code_via_email(to_address: str, code: str):
+    """Sendet den 2FA-Code per E‑Mail."""
     if not EMAIL_USER or not EMAIL_PASS:
         print("⚠️ E‑Mail‑Credentials fehlen (EMAIL_USER/EMAIL_PASS)!")
         return
 
     msg = EmailMessage()
     msg["Subject"] = "PlanPago Verifizierungscode"
-    msg["From"]    = EMAIL_USER
-    msg["To"]      = to_address
-    msg.set_content(f"Ihr Verifizierungscode lautet:\n\n  {code}\n\nGültig für 10 Minuten.")
+    msg["From"] = EMAIL_USER
+    msg["To"] = to_address
+    msg.set_content(
+        f"Ihr Verifizierungscode lautet:\n\n  {code}\n\nGültig für 10 Minuten."
+    )
 
     try:
         with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as smtp:
@@ -42,20 +46,30 @@ def send_code_via_email(to_address: str, code: str):
 
 
 def send_reminder_email(to_address: str, contract_id: int, days_before: int, reminder_type: str):
+    """
+    Baut auf TEMPLATES auf und versendet Erinnerung:
+    - reminder_type: "payment" oder "end"
+    - days_before: 3 oder 1
+    """
     session = SessionLocal()
     contract: Contract = session.get(Contract, contract_id)
     session.close()
     if not contract:
         return
 
-    tpl = TEMPLATES[reminder_type]
-    subject = tpl["subject"].format(
+    # Auswahl der passenden Sub-Template nach Vertragstyp oder Default
+    type_templates = TEMPLATES.get(reminder_type, {})
+    sub_tpl = type_templates.get(contract.contract_type, type_templates.get("Default"))
+    if not sub_tpl:
+        return
+
+    subject = sub_tpl["subject"].format(
         name=contract.name,
         type=contract.contract_type,
         days=days_before
     )
 
-    # Fälligkeitsdatum ermitteln
+    # Datum bestimmen
     if reminder_type == "payment":
         due = contract.start_date
         interval = contract.payment_interval.lower()
@@ -66,13 +80,15 @@ def send_reminder_email(to_address: str, contract_id: int, days_before: int, rem
         else:
             step = None
 
+        # nächstes Fälligkeitsdatum ≥ heute
         while step and due < datetime.now():
             due += step
         date_str = due.date().isoformat()
     else:
+        # Vertragsende
         date_str = contract.end_date.date().isoformat()
 
-    body = tpl["body"].format(
+    body = sub_tpl["body"].format(
         name=contract.name,
         type=contract.contract_type,
         amount=contract.amount,
@@ -82,8 +98,8 @@ def send_reminder_email(to_address: str, contract_id: int, days_before: int, rem
 
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"]    = EMAIL_USER
-    msg["To"]      = to_address
+    msg["From"] = EMAIL_USER
+    msg["To"] = to_address
     msg.set_content(body)
 
     try:
@@ -100,33 +116,50 @@ def send_reminder_email(to_address: str, contract_id: int, days_before: int, rem
 
 def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False):
     """
-    Plant alle 3d- und 1d-Reminder für Zahlung und Vertragsende.
-    Wenn replace=True: vorherige Jobs für diesen Contract löschen.
+    Plant für den gegebenen Vertrag jeweils zwei Erinnerungen
+    (3 Tage und 1 Tag vorher) für Zahlungstermin und Vertragsende.
     """
-    # alte Jobs entfernen
     if replace:
         for job in scheduler.get_jobs():
             if job.id.startswith(f"rem_{contract.id}_"):
                 scheduler.remove_job(job.id)
 
-    # neue Jobs hinzufügen
     for days in (3, 1):
-        # payment reminder
+        # ─── Zahlungserinnerung ────────────────────────────────
+        due = contract.start_date
+        interval = contract.payment_interval.lower()
+        if interval == "monatlich":
+            step = relativedelta(months=1)
+        elif interval == "jährlich":
+            step = relativedelta(years=1)
+        else:
+            step = None
+
+        while step and due < datetime.now():
+            due += step
+
+        run_date = due - timedelta(days=days)
+        run_date = run_date.replace(hour=3, minute=36, second=30, microsecond=0)
+
         scheduler.add_job(
             send_reminder_email,
             trigger="date",
             id=f"rem_{contract.id}_pay_{days}",
-            run_date=contract.start_date - timedelta(days=days),
+            run_date=run_date,
             args=[contract.user.email, contract.id, days, "payment"],
             timezone="Europe/Berlin",
         )
-        # end reminder (falls gesetzt)
+
+        # ─── Enderinnerung ──────────────────────────────────────
         if contract.end_date:
+            end_run = contract.end_date - timedelta(days=days)
+            end_run = end_run.replace(hour=3, minute=36, second=30, microsecond=0)
+
             scheduler.add_job(
                 send_reminder_email,
                 trigger="date",
                 id=f"rem_{contract.id}_end_{days}",
-                run_date=contract.end_date - timedelta(days=days),
+                run_date=end_run,
                 args=[contract.user.email, contract.id, days, "end"],
                 timezone="Europe/Berlin",
             )
