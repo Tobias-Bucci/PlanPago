@@ -9,6 +9,7 @@ from .database import Base, engine, SessionLocal
 from . import models
 from .routes import users, contracts, contract_files
 from .utils.email_utils import schedule_all_reminders
+import os
 
 # Tabellen anlegen
 Base.metadata.create_all(bind=engine)
@@ -30,10 +31,12 @@ app = FastAPI(
     description="Vertragsverwaltung für Privatpersonen",
 )
 
+origins = ["https://planpago.buccilab.com"]
+
 # CORS erlauben
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,

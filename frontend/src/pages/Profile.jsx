@@ -1,4 +1,5 @@
 // src/pages/Profile.jsx
+import { API_BASE } from "../config";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CountryAutoComplete from "../utils/CountryAutoComplete";
@@ -16,7 +17,7 @@ export default function Profile() {
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
-  const API = "http://192.168.1.150:8001";
+  const API = API_BASE;
 
   // — Lade Profil und Einstellungen
   useEffect(() => {

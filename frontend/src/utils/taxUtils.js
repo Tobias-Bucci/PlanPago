@@ -44,7 +44,7 @@ const taxCalculators = {
     // Auf Jahreseinkommen umrechnen
     const brutto = bruttoMonatlich * 12;
     let steuer = 0;
-    
+
     // Einkommensteuer nach ESt-Staffel
     if (brutto <= 11693) {
       steuer = 0;

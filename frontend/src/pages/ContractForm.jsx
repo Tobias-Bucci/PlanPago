@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import React, { useState, useEffect } from "react";
 import {
   useNavigate,
@@ -6,7 +7,7 @@ import {
 } from "react-router-dom";
 import { computeNet } from "../utils/taxUtils";
 
-const API = "http://192.168.1.150:8001/contracts/";
+const API = `${API_BASE}/contracts/`;
 
 export default function ContractForm() {
   /* ── Mode ─────────────────────────────────────────── */

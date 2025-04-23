@@ -1,4 +1,5 @@
 // src/pages/Stats.jsx
+import { API_BASE } from "../config";
 import React, { useState, useEffect, useMemo } from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 
@@ -19,7 +20,7 @@ export default function Stats() {
   const [error,     setError]     = useState("");
   const [loading,   setLoading]   = useState(true);
 
-  const API = "http://192.168.1.150:8001";
+  const API = API_BASE;
 
   const authHeader = useMemo(() => {
     const token = localStorage.getItem("token");

@@ -1,4 +1,5 @@
 // src/pages/Login.jsx
+import { API_BASE } from "../config";
 import React, { useState } from "react";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
 
@@ -15,7 +16,7 @@ export default function Login() {
   const location = useLocation();
   const target = location.state?.from || "/dashboard";
 
-  const API = "http://192.168.1.150:8001";
+  const API = API_BASE;
 
   const handleLogin = async (e) => {
     e.preventDefault();

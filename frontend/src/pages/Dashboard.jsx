@@ -1,4 +1,5 @@
 // src/pages/Dashboard.jsx
+import { API_BASE } from "../config";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { PlusCircle, Edit3, Trash2 } from "lucide-react";
@@ -11,7 +12,7 @@ export default function Dashboard() {
   const [currency, setCurrency]   = useState("€");
   const navigate = useNavigate();
 
-  const API = "http://192.168.1.150:8001";
+  const API = API_BASE;
   const authHeader = useMemo(() => {
     const token = localStorage.getItem("token");
     return { Authorization: `Bearer ${token}` };

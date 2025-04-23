@@ -1,3 +1,4 @@
+import { API_BASE } from "../config";
 import React, { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 
@@ -11,7 +12,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const API = "http://192.168.1.150:8001";
+  const API = API_BASE;
 
   const handleRegister = async (e) => {
     e.preventDefault();

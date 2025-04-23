@@ -1,8 +1,9 @@
 // src/pages/AdminPanel.jsx
+import { API_BASE } from "../config";
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API = "http://192.168.1.150:8001";
+const API = API_BASE;
 
 export default function AdminPanel() {
   const [users, setUsers] = useState([]);
