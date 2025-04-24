@@ -31,7 +31,7 @@ export default function Login() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.detail || "Login fehlgeschlagen");
+        throw new Error(data.detail || "Login failed");
       }
 
       // Wenn direkt Access-Token zurückgegeben wird, überspringe 2FA
@@ -46,7 +46,7 @@ export default function Login() {
         setTemp(data.temp_token);
         setStep(2);
       } else {
-        throw new Error("Unerwartete Server-Antwort");
+        throw new Error("Unexpected server response");
       }
     } catch (err) {
       setError(err.message);
@@ -80,7 +80,7 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-light flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 animate-fadeIn transform hover:scale-[1.02] transition-transform duration-300">
         <h2 className="text-2xl font-semibold text-center mb-6">
-          {step === 1 ? "Anmelden" : "Code bestätigen"}
+          {step === 1 ? "Log in" : "Confirm code"}
         </h2>
 
         {error && (
@@ -101,7 +101,7 @@ export default function Login() {
             />
             <input
               type="password"
-              placeholder="Passwort"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -112,12 +112,12 @@ export default function Login() {
               disabled={loading}
               className="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors duration-200"
             >
-              {loading ? "Bitte warten…" : "Anmelden"}
+              {loading ? "Please wait…" : "Log in"}
             </button>
             <p className="text-center text-sm">
-              Noch keinen Account?{" "}
+              Don't have an account yet?{" "}
               <NavLink to="/register" className="text-accent hover:underline">
-                Registrieren
+                Register
               </NavLink>
             </p>
           </form>
@@ -125,7 +125,7 @@ export default function Login() {
           <form onSubmit={handleVerify} className="space-y-4">
             <input
               type="text"
-              placeholder="6‑stelliger Code"
+              placeholder="6-digit code via E-Mail"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
@@ -136,7 +136,7 @@ export default function Login() {
               disabled={loading}
               className="w-full py-2 bg-accent text-white rounded-lg hover:bg-accent-dark transition-colors duration-200"
             >
-              {loading ? "Validiere…" : "Code bestätigen"}
+              {loading ? "Validating…" : "Confirm"}
             </button>
           </form>
         )}

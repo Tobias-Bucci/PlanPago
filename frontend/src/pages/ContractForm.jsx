@@ -62,13 +62,13 @@ export default function ContractForm() {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
     if (res.ok) prefill(await res.json());
-    else setMsg("Fehler beim Laden des Vertrags.");
+    else setMsg("Error loading the contract.");
   };
 
   /* ── Live‑Netto‑Berechnung ───────────────────────── */
   useEffect(() => {
     if (
-      form.contract_type === "Gehalt" &&
+      form.contract_type === "Salary" &&
       form.brutto !== "" &&
       country.trim()
     ) {
@@ -84,23 +84,23 @@ export default function ContractForm() {
 
   const buildPayload = () => {
     if (!form.name || !form.contract_type || !form.start_date) {
-      setMsg("Bitte alle Pflichtfelder ausfüllen.");
+      setMsg("Please fill out all required fields.");
       return null;
     }
     if (!country.trim()) {
-      setMsg("Bitte zuerst ein Land auswählen.");
+      setMsg("Please select a country first.");
       return null;
     }
     if (
       form.contract_type !== "Gehalt" &&
       (form.amount === "" || Number(form.amount) <= 0)
     ) {
-      setMsg("Bitte einen Betrag eingeben.");
+      setMsg("Please enter an amount.");
       return null;
     }
 
     const amount =
-      form.contract_type === "Gehalt"
+      form.contract_type === "Salary"
         ? Number(form.netto || 0)
         : Number(form.amount);
 
@@ -160,7 +160,7 @@ export default function ContractForm() {
       navigate("/dashboard");
     } catch (err) {
       console.error(err);
-      setMsg("Netzwerk‑Fehler.");
+      setMsg("Network error");
     }
   };
 
@@ -168,7 +168,7 @@ export default function ContractForm() {
   return (
     <div className="max-w-xl mx-auto p-4 bg-white shadow rounded mt-8">
       <h2 className="text-2xl font-bold mb-4">
-        {isEdit ? "Vertrag bearbeiten" : "Neuen Vertrag anlegen"}
+        {isEdit ? "Edit contract" : "Create new contract"}
       </h2>
 
       {msg && <p className="mb-4 text-red-600 text-center">{msg}</p>}
@@ -187,28 +187,28 @@ export default function ContractForm() {
 
         {/* Vertragsart */}
         <div>
-          <label className="block font-medium">Vertragsart</label>
+          <label className="block font-medium">Contract type</label>
           <select
             className="w-full border p-2 rounded"
             required
             value={form.contract_type}
             onChange={(e) => setField("contract_type", e.target.value)}
           >
-            <option value="">Bitte wählen</option>
-            <option>Miete</option>
-            <option>Versicherung</option>
+            <option value="">Please select</option>
+            <option>Rent</option>
+            <option>Insurance</option>
             <option>Streaming</option>
-            <option>Gehalt</option>
+            <option>Salary</option>
             <option>Leasing</option>
-            <option>Sonstiges</option>
+            <option>Other</option>
           </select>
         </div>
 
         {/* Gehalt-spezifisch */}
-        {form.contract_type === "Gehalt" && (
+        {form.contract_type === "Salary" && (
           <>
             <div>
-              <label className="block font-medium">Bruttogehalt</label>
+              <label className="block font-medium">Gross salary</label>
               <input
                 type="number"
                 className="w-full border p-2 rounded"
@@ -218,13 +218,13 @@ export default function ContractForm() {
             </div>
             <div>
               <label className="block font-medium">
-                Nettogehalt (berechnet – editierbar)
+                Net salary (calculated – editable)
               </label>
               <input
                 type="number"
                 className="w-full border p-2 rounded"
                 value={form.netto}
-                onChange={(e) => setField("netto", e.target.value)}
+                onChange={(e) => setField("net", e.target.value)}
               />
             </div>
           </>
@@ -232,10 +232,10 @@ export default function ContractForm() {
 
         {/* Betrag für nicht‑Gehalt */}
         {form.contract_type &&
-          form.contract_type !== "Gehalt" && (
+          form.contract_type !== "Salary" && (
             <div>
               <label className="block font-medium">
-                Betrag ({currency})
+                Amount({currency})
               </label>
               <input
                 type="number"
@@ -249,7 +249,7 @@ export default function ContractForm() {
 
         {/* Datum & Intervall */}
         <div>
-          <label className="block font-medium">Startdatum</label>
+          <label className="block font-medium">Start date</label>
           <input
             type="date"
             className="w-full border p-2 rounded"
@@ -260,7 +260,7 @@ export default function ContractForm() {
         </div>
 
         <div>
-          <label className="block font-medium">Enddatum</label>
+          <label className="block font-medium">End date</label>
           <input
             type="date"
             className="w-full border p-2 rounded"
@@ -270,22 +270,22 @@ export default function ContractForm() {
         </div>
 
         <div>
-          <label className="block font-medium">Zahlungsintervall</label>
+          <label className="block font-medium">Payment interval</label>
           <select
             className="w-full border p-2 rounded"
             required
             value={form.payment_interval}
             onChange={(e) => setField("payment_interval", e.target.value)}
           >
-            <option value="">Bitte wählen</option>
-            <option value="monatlich">Monatlich</option>
-            <option value="jährlich">Jährlich</option>
-            <option value="einmalig">Einmalig</option>
+          <option value="">Please select</option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+          <option value="one-time">One-time</option>
           </select>
         </div>
 
         <div>
-          <label className="block font-medium">Notizen</label>
+          <label className="block font-medium">Notes</label>
           <textarea
             className="w-full border p-2 rounded"
             value={form.notes}
@@ -327,19 +327,19 @@ export default function ContractForm() {
               className="w-full border p-2 rounded bg-gray-100"
               readOnly
               value={country}
-              placeholder="Nicht gesetzt"
+              placeholder="Not set"
             />
             {!country && (
               <p
                 className="text-red-600 text-sm cursor-pointer"
                 onClick={() => navigate("/profile")}
               >
-                ⚠ Bitte ein Land wählen (Profil öffnen)
+                ⚠ Please select a country (open settings)
               </p>
             )}
           </div>
           <div>
-            <label className="block font-medium">Währung</label>
+            <label className="block font-medium">Currency</label>
             <input
               className="w-full border p-2 rounded bg-gray-100"
               readOnly
@@ -349,7 +349,7 @@ export default function ContractForm() {
         </div>
 
         <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-          {isEdit ? "Speichern" : "Erstellen"}
+          {isEdit ? "Save" : "Create"}
         </button>
       </form>
     </div>

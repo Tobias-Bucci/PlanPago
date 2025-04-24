@@ -25,11 +25,11 @@ export default function AdminPanel() {
         });
         if (res.status === 401) return navigate("/login");
         if (res.status === 403) return navigate("/");
-        if (!res.ok) throw new Error("Fehler beim Laden der Benutzer");
+        if (!res.ok) throw new Error("Errror while fetching users");
         const data = await res.json();
         setUsers(data);
       } catch (err) {
-        setError(err.message || "Unbekannter Fehler");
+        setError(err.message || "Unspecified error");
       } finally {
         setLoading(false);
       }
@@ -38,17 +38,17 @@ export default function AdminPanel() {
   }, [authHeader, navigate]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Benutzer wirklich löschen?")) return;
+    if (!window.confirm("Are you sure you want to permanently delete this user?")) return;
     try {
       const res = await fetch(`${API}/users/admin/users/${id}`, {
         method: "DELETE",
         headers: authHeader,
       });
-      if (!res.ok) throw new Error("Löschen fehlgeschlagen");
-      setMessage("Benutzer gelöscht");
+      if (!res.ok) throw new Error("Deletion failed");
+      setMessage("User deleted successfully");
       setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch (err) {
-      setError(err.message || "Unbekannter Fehler");
+      setError(err.message || "Unspecified error");
     }
   };
 
@@ -57,7 +57,7 @@ export default function AdminPanel() {
       <h1 className="text-3xl font-semibold mb-6">Admin Panel</h1>
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500">Lade Benutzer…</div>
+        <div className="text-center py-10 text-gray-500">Loading users...</div>
       ) : (
         <>
           {message && (
@@ -100,7 +100,7 @@ export default function AdminPanel() {
                           onClick={() => handleDelete(u.id)}
                           className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
                         >
-                          Löschen
+                          Delete
                         </button>
                       </td>
                     </tr>

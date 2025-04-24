@@ -35,7 +35,7 @@ export default function Stats() {
       try {
         const now = new Date();
         const res = await fetch(`${API}/contracts/`, { headers: authHeader });
-        if (!res.ok) throw new Error("Fehler beim Laden der Daten");
+        if (!res.ok) throw new Error("Error loading data");
         let data = await res.json();
 
         // nur noch laufende Verträge
@@ -47,15 +47,15 @@ export default function Stats() {
 
         // Gehalt summieren
         const sal = data
-          .filter(c => c.contract_type === "Gehalt")
+          .filter(c => c.contract_type === "Salary")
           .reduce((sum, c) => sum + Number(c.amount), 0);
 
         // Fixkosten berechnen
         const fix = data.reduce((sum, c) => {
-          if (c.contract_type === "Gehalt") return sum;
+          if (c.contract_type === "Salary") return sum;
           const val = Number(c.amount);
-          if (c.payment_interval === "monatlich") return sum + val;
-          if (c.payment_interval === "jährlich")  return sum + val / 12;
+          if (c.payment_interval === "monthly") return sum + val;
+          if (c.payment_interval === "yearly")  return sum + val / 12;
           return sum;
         }, 0);
 
@@ -76,10 +76,10 @@ export default function Stats() {
     const map = Object.fromEntries(Object.keys(TYPE_COLORS).map(t => [t, 0]));
     contracts.forEach(c => {
       let monthly = Number(c.amount);
-      if (c.contract_type !== "Gehalt" && c.payment_interval === "jährlich") {
+      if (c.contract_type !== "Gehalt" && c.payment_interval === "yearly") {
         monthly /= 12;
       }
-      const key = TYPE_COLORS[c.contract_type] ? c.contract_type : "Sonstiges";
+      const key = TYPE_COLORS[c.contract_type] ? c.contract_type : "Others";
       map[key] += monthly;
     });
     return Object.entries(map)
@@ -96,33 +96,33 @@ export default function Stats() {
 
   return (
     <main className="container mx-auto p-6 animate-fadeIn">
-      <h1 className="text-3xl font-semibold mb-6">Statistiken</h1>
+      <h1 className="text-3xl font-semibold mb-6">Statistics</h1>
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500">Lade Daten…</div>
+        <div className="text-center py-10 text-gray-500">Load data...</div>
       ) : error ? (
         <div className="p-4 bg-red-100 text-red-800 rounded-lg shadow">{error}</div>
       ) : (
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Übersicht */}
           <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-medium mb-4">Übersicht</h2>
+            <h2 className="text-xl font-medium mb-4">Overview</h2>
             <ul className="space-y-2 text-lg">
               <li>
-                <span className="font-semibold">Einkommen:</span> {salary.toFixed(2)} {currency}
+                <span className="font-semibold">Income:</span> {salary.toFixed(2)} {currency}
               </li>
               <li>
-                <span className="font-semibold">Fixkosten/Monat:</span> {fixCosts.toFixed(2)} {currency}
+                <span className="font-semibold">Fixed costs/month:</span> {fixCosts.toFixed(2)} {currency}
               </li>
               <li>
-                <span className="font-semibold">Verfügbar:</span> {available.toFixed(2)} {currency}
+                <span className="font-semibold">Available:</span> {available.toFixed(2)} {currency}
               </li>
             </ul>
           </div>
 
           {/* Donut-Chart */}
           <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-medium mb-4">Verteilung nach Typ</h2>
+            <h2 className="text-xl font-medium mb-4">Distribution by type</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie

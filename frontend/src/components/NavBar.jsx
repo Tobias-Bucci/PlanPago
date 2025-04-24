@@ -51,7 +51,7 @@ export default function NavBar() {
                   }`
                 }
               >
-                Statistiken
+                Statistics
               </NavLink>
               <NavLink
                 to="/profile"
@@ -61,7 +61,7 @@ export default function NavBar() {
                   }`
                 }
               >
-                Einstellungen
+                Settings
               </NavLink>
               <button
                 onClick={handleLogout}
@@ -90,7 +90,7 @@ export default function NavBar() {
                   }`
                 }
               >
-                Registrieren
+                Register
               </NavLink>
             </>
           )}
@@ -144,14 +144,14 @@ export default function NavBar() {
                   onClick={() => setOpen(false)}
                   className="w-full text-center px-4 py-2 rounded-lg hover:bg-primary transition-colors"
                 >
-                  Statistiken
+                  Statistics
                 </NavLink>
                 <NavLink
                   to="/profile"
                   onClick={() => setOpen(false)}
                   className="w-full text-center px-4 py-2 rounded-lg hover:bg-primary transition-colors"
                 >
-                  Einstellungen
+                  Settings
                 </NavLink>
                 <button
                   onClick={handleLogout}
@@ -174,7 +174,7 @@ export default function NavBar() {
                   onClick={() => setOpen(false)}
                   className="w-full text-center px-4 py-2 rounded-lg hover:bg-primary transition-colors"
                 >
-                  Registrieren
+                  Register
                 </NavLink>
               </>
             )}

@@ -23,7 +23,7 @@ export default function Dashboard() {
     setErr("");
     try {
       const res = await fetch(`${API}/contracts/`, { headers: authHeader });
-      if (!res.ok) throw new Error("Fehler beim Laden der Verträge");
+      if (!res.ok) throw new Error("Error loading contracts");
       const list = await res.json();
       const withFiles = await Promise.all(
         list.map(async (c) => {
@@ -47,14 +47,14 @@ export default function Dashboard() {
   }, [loadContracts]);
 
   const deleteContract = async (id) => {
-    if (!window.confirm("Vertrag wirklich löschen?")) return;
+    if (!window.confirm("Are you sure you want to delete this contract?")) return;
     try {
       const res = await fetch(`${API}/contracts/${id}`, {
         method: "DELETE",
         headers: authHeader,
       });
-      if (!res.ok) throw new Error("Löschen fehlgeschlagen");
-      setMsg("Vertrag gelöscht");
+      if (!res.ok) throw new Error("Deletion failed.");
+      setMsg("Contract deleted.");
       loadContracts();
     } catch (e) {
       setErr(e.message);
@@ -62,7 +62,7 @@ export default function Dashboard() {
   };
 
   const deleteFile = async (contractId, fileId) => {
-    if (!window.confirm("Anhang wirklich löschen?")) return;
+    if (!window.confirm("Are you sure you want to delete this attachment?")) return;
     try {
       const res = await fetch(
         `${API}/contracts/${contractId}/files/${fileId}`,
@@ -71,8 +71,8 @@ export default function Dashboard() {
           headers: authHeader,
         }
       );
-      if (!res.ok) throw new Error("Anhang konnte nicht gelöscht werden");
-      setMsg("Anhang gelöscht");
+      if (!res.ok) throw new Error("Attachment could not be deleted.");
+      setMsg("Attachment deleted.");
       loadContracts();
     } catch (e) {
       setErr(e.message);
@@ -84,11 +84,11 @@ export default function Dashboard() {
   return (
     <main className="container mx-auto p-6 animate-fadeIn">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-semibold">Vertragsübersicht</h1>
+        <h1 className="text-3xl font-semibold">Overview</h1>
         <button
           onClick={() => navigate("/contracts/new")}
           className="p-3 bg-accent text-white rounded-full shadow-lg hover:bg-accent-dark transition-colors"
-          title="Neuer Vertrag"
+          title="New contract"
         >
           <PlusCircle size={24} />
         </button>
@@ -106,9 +106,9 @@ export default function Dashboard() {
       )}
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500">Lade Verträge…</div>
+        <div className="text-center py-10 text-gray-500">Load contracts...</div>
       ) : contracts.length === 0 ? (
-        <div className="text-center py-10 text-gray-500">Keine Verträge vorhanden.</div>
+        <div className="text-center py-10 text-gray-500">No contracts available.</div>
       ) : (
         <div className="overflow-x-auto bg-white rounded-lg shadow-lg">
           <table className="min-w-full">
@@ -128,7 +128,7 @@ export default function Dashboard() {
               {contracts.map((c, idx) => {
                 const end = c.end_date ? new Date(c.end_date) : null;
                 const isExpired = end && end < today;
-                const displayStatus = isExpired ? "Abgelaufen" : c.status;
+                const displayStatus = isExpired ? "Expired" : c.status;
                 const statusClass = isExpired ? "text-red-600" : "text-green-600";
                 const rowClass = isExpired
                   ? "opacity-50"
@@ -171,7 +171,7 @@ export default function Dashboard() {
                             <button
                               onClick={() => deleteFile(c.id, f.id)}
                               className="absolute -top-1 -right-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                              title="Anhang löschen"
+                              title="Delete attachment"
                             >
                               ×
                             </button>
@@ -184,14 +184,14 @@ export default function Dashboard() {
                             navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })
                           }
                           className="p-2 bg-primary-light text-white rounded-lg hover:bg-primary transition-colors"
-                          title="Bearbeiten"
+                          title="Edit"
                         >
                           <Edit3 size={20} />
                         </button>
                         <button
                           onClick={() => deleteContract(c.id)}
                           className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                          title="Löschen"
+                          title="Delete"
                         >
                           <Trash2 size={20} />
                         </button>

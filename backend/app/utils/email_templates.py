@@ -1,8 +1,3 @@
-# backend/app/utils/email_templates.py
-
-# Hier sind für jede Vertragsart und jeden Reminder-Typ individuelle Vorlagen
-# möglichen Vertragsarten: "Miete", "Versicherung", "Streaming", "Gehalt", "Leasing", "Sonstiges"
-
 TEMPLATES = {
     "payment": {
         "Miete": {

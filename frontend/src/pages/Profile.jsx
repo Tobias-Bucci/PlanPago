@@ -56,11 +56,11 @@ export default function Profile() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Fehler beim Anfordern");
+      if (!res.ok) throw new Error(data.detail || "Error during request");
       setTempToken(data.temp_token);
-      setMessage("Code gesendet – bitte unten eingeben.");
+      setMessage("Code sent – please enter it below.");
     } catch (err) {
-      setMessage("Fehler: " + err.message);
+      setMessage("Error: " + err.message);
     }
   };
 
@@ -78,7 +78,7 @@ export default function Profile() {
         body: JSON.stringify({ temp_token: tempToken, code }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Fehler beim Bestätigen");
+      if (!res.ok) throw new Error(data.detail || "Error confirming code");
 
       // Email ggf. in LocalStorage anpassen
       const oldMail = localStorage.getItem("currentEmail");
@@ -93,13 +93,13 @@ export default function Profile() {
       localStorage.setItem("currentEmail", data.email);
       setEmail(data.email);
 
-      setMessage("Profil erfolgreich aktualisiert!");
+      setMessage("Profile updated successfully!");
       setOldPassword("");
       setNewPassword("");
       setCode("");
       setTempToken("");
     } catch (err) {
-      setMessage("Fehler: " + err.message);
+      setMessage("Error: " + err.message);
     }
   };
 
@@ -122,17 +122,17 @@ export default function Profile() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.detail || "Fehler beim Speichern der Einstellungen");
+        throw new Error(data.detail || "Error saving settings");
       }
-      setMessage("Einstellungen gespeichert!");
+      setMessage("Settings saved!");
     } catch (err) {
-      setMessage("Fehler: " + err.message);
+      setMessage("Error: " + err.message);
     }
   };
 
   // — Account löschen
   const handleDelete = async () => {
-    if (!window.confirm("Account wirklich löschen?")) return;
+    if (!window.confirm("Are you sure you want to delete your account?")) return;
     await fetch(`${API}/users/me`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
@@ -143,7 +143,7 @@ export default function Profile() {
 
   return (
     <main className="container mx-auto p-6 space-y-8">
-      <h1 className="text-3xl font-semibold">Einstellungen</h1>
+      <h1 className="text-3xl font-semibold">Settings</h1>
 
       {message && (
         <div className="p-4 bg-blue-50 text-blue-800 rounded-lg shadow">
@@ -154,17 +154,17 @@ export default function Profile() {
       {/* Passwort/Email ändern */}
       {tempToken ? (
         <form onSubmit={handleConfirm} className="space-y-4 bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-medium">Code bestätigen</h2>
+          <h2 className="text-xl font-medium">Confirm code</h2>
           <input
             type="text"
-            placeholder="6‑stelliger Code"
+            placeholder="6-digit code via E‑Mail"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             required
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent"
           />
           <button className="w-full py-2 bg-accent text-white rounded-lg hover:bg-accent-dark transition">
-            Bestätigen
+            Confirm
           </button>
         </form>
       ) : (
@@ -180,7 +180,7 @@ export default function Profile() {
           />
           <input
             type="password"
-            placeholder="Altes Passwort"
+            placeholder="Old password"
             value={oldPassword}
             onChange={(e) => setOldPassword(e.target.value)}
             required
@@ -188,27 +188,27 @@ export default function Profile() {
           />
           <input
             type="password"
-            placeholder="Neues Passwort (optional)"
+            placeholder="New password (optional)"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent"
           />
           <button className="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
-            Änderungen anfordern
+            Request changes
           </button>
         </form>
       )}
 
       {/* Land, Währung & E‑Mail-Reminders */}
       <section className="bg-white p-6 rounded-lg shadow space-y-4">
-        <h2 className="text-xl font-medium">Persönliche Einstellungen</h2>
+        <h2 className="text-xl font-medium">Personal settings</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1 font-medium">Land</label>
+            <label className="block mb-1 font-medium">Country</label>
             <CountryAutoComplete value={country} onChange={setCountry} />
           </div>
           <div>
-            <label className="block mb-1 font-medium">Währung</label>
+            <label className="block mb-1 font-medium">Currency</label>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
@@ -228,14 +228,14 @@ export default function Profile() {
             onChange={(e) => setEmailRemindersEnabled(e.target.checked)}
             className="h-5 w-5 rounded border focus:ring-accent"
           />
-          <span className="font-medium">E‑Mail‑Erinnerungen aktivieren</span>
+          <span className="font-medium">Enable email reminders</span>
         </label>
         <div className="flex justify-end">
           <button
             onClick={handleSettingsSave}
             className="py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition"
           >
-            Einstellungen speichern
+            Save
           </button>
         </div>
       </section>
@@ -244,7 +244,7 @@ export default function Profile() {
         onClick={handleDelete}
         className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
       >
-        Account löschen
+        Delete account
       </button>
     </main>
   );

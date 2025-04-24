@@ -26,7 +26,7 @@ export default function Register() {
       });
       if (reg.status !== 201) {
         const err = await reg.json();
-        throw new Error(err.detail || "Registrierung fehlgeschlagen");
+        throw new Error(err.detail || "Registration failed");
       }
       // direkt Code anfordern
       const form = new URLSearchParams({ username: email, password });
@@ -35,7 +35,7 @@ export default function Register() {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: form.toString(),
       });
-      if (!login1.ok) throw new Error("Code‑Anforderung fehlgeschlagen");
+      if (!login1.ok) throw new Error("Code request failed");
       const { temp_token } = await login1.json();
       setTemp(temp_token);
       setStep(2);
@@ -56,7 +56,7 @@ export default function Register() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ temp_token: tempToken, code }),
       });
-      if (!res.ok) throw new Error("Code ungültig");
+      if (!res.ok) throw new Error("Invalid code");
       const { access_token } = await res.json();
       localStorage.setItem("token", access_token);
       navigate("/dashboard", { replace: true });
@@ -71,7 +71,7 @@ export default function Register() {
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-light flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 animate-fadeIn transform hover:scale-[1.02] transition-transform duration-300">
         <h2 className="text-2xl font-semibold text-center mb-6">
-          {step === 1 ? "Registrieren" : "Code bestätigen"}
+          {step === 1 ? "Register" : "Confirm"}
         </h2>
 
         {error && (
@@ -92,7 +92,7 @@ export default function Register() {
             />
             <input
               type="password"
-              placeholder="Passwort"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -103,7 +103,7 @@ export default function Register() {
               disabled={loading}
               className="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors duration-200"
             >
-              {loading ? "Bitte warten…" : "Registrieren"}
+              {loading ? "Please wait…" : "Register"}
             </button>
             <p className="text-center text-sm">
               Hast du schon einen Account?{" "}
@@ -116,7 +116,7 @@ export default function Register() {
           <form onSubmit={handleVerify} className="space-y-4">
             <input
               type="text"
-              placeholder="6‑stelliger Code"
+              placeholder="6-digit code via E‑Mail"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
@@ -127,7 +127,7 @@ export default function Register() {
               disabled={loading}
               className="w-full py-2 bg-accent text-white rounded-lg hover:bg-accent-dark transition-colors duration-200"
             >
-              {loading ? "Validiere…" : "Code bestätigen"}
+              {loading ? "Validation..." : "Confirm"}
             </button>
           </form>
         )}
