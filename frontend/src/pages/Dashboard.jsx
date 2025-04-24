@@ -1,6 +1,10 @@
-// src/pages/Dashboard.jsx
 import { API_BASE } from "../config";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { PlusCircle, Edit3, Trash2 } from "lucide-react";
 
@@ -18,6 +22,7 @@ export default function Dashboard() {
     return { Authorization: `Bearer ${token}` };
   }, []);
 
+  /* load contracts & files */
   const loadContracts = useCallback(async () => {
     setLoading(true);
     setErr("");
@@ -27,7 +32,10 @@ export default function Dashboard() {
       const list = await res.json();
       const withFiles = await Promise.all(
         list.map(async (c) => {
-          const fr = await fetch(`${API}/contracts/${c.id}/files`, { headers: authHeader });
+          const fr = await fetch(
+            `${API}/contracts/${c.id}/files`,
+            { headers: authHeader }
+          );
           const files = fr.ok ? await fr.json() : [];
           return { ...c, files };
         })
@@ -40,14 +48,16 @@ export default function Dashboard() {
     }
   }, [API, authHeader]);
 
+  /* first mount */
   useEffect(() => {
     const mail = localStorage.getItem("currentEmail");
     setCurrency(localStorage.getItem(`currency_${mail}`) || "€");
     loadContracts();
   }, [loadContracts]);
 
+  /* delete contract or file */
   const deleteContract = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this contract?")) return;
+    if (!window.confirm("Delete this contract permanently?")) return;
     try {
       const res = await fetch(`${API}/contracts/${id}`, {
         method: "DELETE",
@@ -62,7 +72,7 @@ export default function Dashboard() {
   };
 
   const deleteFile = async (contractId, fileId) => {
-    if (!window.confirm("Are you sure you want to delete this attachment?")) return;
+    if (!window.confirm("Delete this attachment?")) return;
     try {
       const res = await fetch(
         `${API}/contracts/${contractId}/files/${fileId}`,
@@ -106,48 +116,52 @@ export default function Dashboard() {
       )}
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500">Load contracts...</div>
+        <div className="text-center py-10 text-gray-500">Loading contracts…</div>
       ) : contracts.length === 0 ? (
-        <div className="text-center py-10 text-gray-500">No contracts available.</div>
+        <div className="text-center py-10 text-gray-500">
+          No contracts available.
+        </div>
       ) : (
         <div className="overflow-x-auto bg-white rounded-lg shadow-lg">
           <table className="min-w-full">
             <thead className="bg-primary text-white">
               <tr>
                 <th className="px-6 py-3 text-left">Name</th>
-                <th className="px-6 py-3 text-left">Art</th>
+                <th className="px-6 py-3 text-left">Type</th>
                 <th className="px-6 py-3 text-left">Start</th>
-                <th className="px-6 py-3 text-left">Ende</th>
-                <th className="px-6 py-3 text-left">Betrag</th>
+                <th className="px-6 py-3 text-left">End</th>
+                <th className="px-6 py-3 text-left">Amount</th>
                 <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Anhänge</th>
-                <th className="px-6 py-3 text-center">Aktionen</th>
+                <th className="px-6 py-3 text-left">Attachments</th>
+                <th className="px-6 py-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {contracts.map((c, idx) => {
-                const end = c.end_date ? new Date(c.end_date) : null;
-                const isExpired = end && end < today;
-                const displayStatus = isExpired ? "Expired" : c.status;
-                const statusClass = isExpired ? "text-red-600" : "text-green-600";
-                const rowClass = isExpired
+                const end        = c.end_date ? new Date(c.end_date) : null;
+                const isExpired  = end && end < today;
+                const statusText = isExpired ? "Expired" : c.status;
+                const statusCls  = isExpired ? "text-red-600" : "text-green-600";
+                const rowCls     = isExpired
                   ? "opacity-50"
                   : "hover:bg-gray-100 transition-colors";
 
                 return (
                   <React.Fragment key={c.id}>
-                    <tr className={rowClass}>
+                    <tr className={rowCls}>
                       <td className="px-6 py-4">{c.name}</td>
                       <td className="px-6 py-4">{c.contract_type}</td>
                       <td className="px-6 py-4">
                         {new Date(c.start_date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4">{end ? end.toLocaleDateString() : "-"}</td>
                       <td className="px-6 py-4">
-                        {c.amount} {currency}
+                        {end ? end.toLocaleDateString() : "-"}
                       </td>
-                      <td className={`px-6 py-4 font-medium ${statusClass}`}>
-                        {displayStatus}
+                      <td className="px-6 py-4">
+                        {c.amount} {currency}
+                      </td>
+                      <td className={`px-6 py-4 font-medium ${statusCls}`}>
+                        {statusText}
                       </td>
                       <td className="px-6 py-4 flex flex-wrap gap-2">
                         {c.files.map((f) => (
@@ -181,7 +195,9 @@ export default function Dashboard() {
                       <td className="px-6 py-4 text-center space-x-2">
                         <button
                           onClick={() =>
-                            navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })
+                            navigate(`/contracts/${c.id}/edit`, {
+                              state: { contract: c },
+                            })
                           }
                           className="p-2 bg-primary-light text-white rounded-lg hover:bg-primary transition-colors"
                           title="Edit"
@@ -197,7 +213,6 @@ export default function Dashboard() {
                         </button>
                       </td>
                     </tr>
-                    {/* Trenner zwischen Einträgen */}
                     {idx < contracts.length - 1 && (
                       <tr>
                         <td colSpan="8" className="px-6">

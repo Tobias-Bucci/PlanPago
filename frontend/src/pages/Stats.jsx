@@ -1,8 +1,15 @@
-// src/pages/Stats.jsx
 import { API_BASE } from "../config";
 import React, { useState, useEffect, useMemo } from "react";
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+} from "recharts";
 
+/* German contract-types remain keys for colours & backend */
 const TYPE_COLORS = {
   Gehalt:       "#10B981",
   Miete:        "#EF4444",
@@ -10,6 +17,16 @@ const TYPE_COLORS = {
   Versicherung: "#3B82F6",
   Leasing:      "#F59E0B",
   Sonstiges:    "#6B7280",
+};
+
+/* map DE → EN for legend display */
+const TYPE_LABEL = {
+  Gehalt: "Salary",
+  Miete: "Rent",
+  Streaming: "Streaming",
+  Versicherung: "Insurance",
+  Leasing: "Leasing",
+  Sonstiges: "Others",
 };
 
 export default function Stats() {
@@ -21,7 +38,6 @@ export default function Stats() {
   const [loading,   setLoading]   = useState(true);
 
   const API = API_BASE;
-
   const authHeader = useMemo(() => {
     const token = localStorage.getItem("token");
     return { Authorization: `Bearer ${token}` };
@@ -38,24 +54,21 @@ export default function Stats() {
         if (!res.ok) throw new Error("Error loading data");
         let data = await res.json();
 
-        // nur noch laufende Verträge
-        data = data.filter(c => {
-          if (!c.end_date) return true;
-          return new Date(c.end_date) >= now;
-        });
+        /* only active contracts */
+        data = data.filter((c) => !c.end_date || new Date(c.end_date) >= now);
         setContracts(data);
 
-        // Gehalt summieren
+        /* salary sum */
         const sal = data
-          .filter(c => c.contract_type === "Salary")
+          .filter((c) => c.contract_type === "Gehalt")
           .reduce((sum, c) => sum + Number(c.amount), 0);
 
-        // Fixkosten berechnen
+        /* fixed costs */
         const fix = data.reduce((sum, c) => {
-          if (c.contract_type === "Salary") return sum;
+          if (c.contract_type === "Gehalt") return sum;
           const val = Number(c.amount);
-          if (c.payment_interval === "monthly") return sum + val;
-          if (c.payment_interval === "yearly")  return sum + val / 12;
+          if (c.payment_interval === "monatlich") return sum + val;
+          if (c.payment_interval === "jährlich") return sum + val / 12;
           return sum;
         }, 0);
 
@@ -68,18 +81,18 @@ export default function Stats() {
         setLoading(false);
       }
     }
-
     load();
   }, [API, authHeader]);
 
+  /* prepare chart */
   const chartData = useMemo(() => {
-    const map = Object.fromEntries(Object.keys(TYPE_COLORS).map(t => [t, 0]));
-    contracts.forEach(c => {
+    const map = Object.fromEntries(Object.keys(TYPE_COLORS).map((t) => [t, 0]));
+    contracts.forEach((c) => {
       let monthly = Number(c.amount);
-      if (c.contract_type !== "Gehalt" && c.payment_interval === "yearly") {
+      if (c.contract_type !== "Gehalt" && c.payment_interval === "jährlich") {
         monthly /= 12;
       }
-      const key = TYPE_COLORS[c.contract_type] ? c.contract_type : "Others";
+      const key = TYPE_COLORS[c.contract_type] ? c.contract_type : "Sonstiges";
       map[key] += monthly;
     });
     return Object.entries(map)
@@ -89,7 +102,7 @@ export default function Stats() {
 
   const total = chartData.reduce((sum, e) => sum + e.value, 0);
   const formatLegend = (val, entry) =>
-    `${val}: ${((entry.payload.value / total) * 100).toFixed(0)}%`;
+    `${TYPE_LABEL[val]}: ${((entry.payload.value / total) * 100).toFixed(0)}%`;
 
   const currentEmail = localStorage.getItem("currentEmail") || "";
   const currency = localStorage.getItem(`currency_${currentEmail}`) || "€";
@@ -99,28 +112,33 @@ export default function Stats() {
       <h1 className="text-3xl font-semibold mb-6">Statistics</h1>
 
       {loading ? (
-        <div className="text-center py-10 text-gray-500">Load data...</div>
+        <div className="text-center py-10 text-gray-500">Loading data…</div>
       ) : error ? (
-        <div className="p-4 bg-red-100 text-red-800 rounded-lg shadow">{error}</div>
+        <div className="p-4 bg-red-100 text-red-800 rounded-lg shadow">
+          {error}
+        </div>
       ) : (
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Übersicht */}
+          {/* Overview */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-medium mb-4">Overview</h2>
             <ul className="space-y-2 text-lg">
               <li>
-                <span className="font-semibold">Income:</span> {salary.toFixed(2)} {currency}
+                <span className="font-semibold">Income:</span>{" "}
+                {salary.toFixed(2)} {currency}
               </li>
               <li>
-                <span className="font-semibold">Fixed costs/month:</span> {fixCosts.toFixed(2)} {currency}
+                <span className="font-semibold">Fixed costs / month:</span>{" "}
+                {fixCosts.toFixed(2)} {currency}
               </li>
               <li>
-                <span className="font-semibold">Available:</span> {available.toFixed(2)} {currency}
+                <span className="font-semibold">Available:</span>{" "}
+                {available.toFixed(2)} {currency}
               </li>
             </ul>
           </div>
 
-          {/* Donut-Chart */}
+          {/* Donut */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-medium mb-4">Distribution by type</h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -135,11 +153,11 @@ export default function Stats() {
                   outerRadius="80%"
                   paddingAngle={6}
                 >
-                  {chartData.map(entry => (
-                    <Cell key={entry.name} fill={TYPE_COLORS[entry.name]} />
+                  {chartData.map((e) => (
+                    <Cell key={e.name} fill={TYPE_COLORS[e.name]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={val => `${val.toFixed(2)} ${currency}`} />
+                <Tooltip formatter={(v) => `${v.toFixed(2)} ${currency}`} />
                 <Legend
                   layout="horizontal"
                   verticalAlign="bottom"

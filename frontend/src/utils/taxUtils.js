@@ -6,7 +6,7 @@
  * Für reale Steuererklärungen sollte man Steuerberatung konsultieren
  */
 const taxCalculators = {
-  Deutschland: (bruttoMonatlich) => {
+  Germany: (bruttoMonatlich) => {
     // Auf Jahreseinkommen umrechnen
     const brutto = bruttoMonatlich * 12;
     let steuer = 0;
@@ -40,7 +40,7 @@ const taxCalculators = {
     return (steuer + sozialabgaben) / 12;
   },
   
-  Österreich: (bruttoMonatlich) => {
+  Austria: (bruttoMonatlich) => {
     // Auf Jahreseinkommen umrechnen
     const brutto = bruttoMonatlich * 12;
     let steuer = 0;
@@ -69,7 +69,7 @@ const taxCalculators = {
     return (steuer + sozialabgaben) / 12;
   },
 
-  Italien: (bruttoMonatlich) => {
+  Italy: (bruttoMonatlich) => {
     // Auf Jahreseinkommen umrechnen
     const brutto = bruttoMonatlich * 12;
     let steuer = 0;

@@ -1,40 +1,50 @@
 import { API_BASE } from "../config";
 import React, { useState, useEffect } from "react";
-import {
-  useNavigate,
-  useLocation,
-  useParams,
-} from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { computeNet } from "../utils/taxUtils";
 
 const API = `${API_BASE}/contracts/`;
 
+/* Mapping UI-label → API value */
+const TYPE_OPTIONS = [
+  ["Rent",        "Miete"],
+  ["Insurance",   "Versicherung"],
+  ["Streaming",   "Streaming"],
+  ["Salary",      "Gehalt"],
+  ["Leasing",     "Leasing"],
+  ["Other",       "Sonstiges"],
+];
+const INTERVAL_OPTIONS = [
+  ["Monthly",   "monatlich"],
+  ["Yearly",    "jährlich"],
+  ["One-time",  "einmalig"],
+];
+
 export default function ContractForm() {
-  /* ── Mode ─────────────────────────────────────────── */
-  const { id }    = useParams();                 // undefined bei /new
+  /* ── Mode ─────────────────────────────────────── */
+  const { id }    = useParams();
   const isEdit    = Boolean(id);
   const { state } = useLocation();
   const navigate  = useNavigate();
 
-  /* ── Form State ───────────────────────────────────── */
+  /* ── State ────────────────────────────────────── */
   const [form, setForm] = useState({
     name: "",
-    contract_type: "",
+    contract_type: "",        // API value ("Miete", …)
     start_date: "",
     end_date: "",
-    payment_interval: "",
+    payment_interval: "",     // API value ("monatlich", …)
     notes: "",
     amount: "",
     brutto: "",
     netto: "",
-    files: null,            // FileList | null
+    files: null,
   });
-
   const [country,  setCountry]  = useState("");
   const [currency, setCurrency] = useState("€");
   const [msg,      setMsg]      = useState("");
 
-  /* ── Prefill & Settings ───────────────────────────── */
+  /* ── Prefill & settings ───────────────────────── */
   useEffect(() => {
     const mail = localStorage.getItem("currentEmail");
     setCurrency(localStorage.getItem(`currency_${mail}`) || "€");
@@ -65,19 +75,15 @@ export default function ContractForm() {
     else setMsg("Error loading the contract.");
   };
 
-  /* ── Live‑Netto‑Berechnung ───────────────────────── */
+  /* ── Live net-salary calc ─────────────────────── */
   useEffect(() => {
-    if (
-      form.contract_type === "Salary" &&
-      form.brutto !== "" &&
-      country.trim()
-    ) {
+    if (form.contract_type === "Gehalt" && form.brutto !== "" && country.trim()) {
       const net = computeNet(Number(form.brutto), country);
       setForm((f) => ({ ...f, netto: net.toFixed(2) }));
     }
   }, [form.brutto, country, form.contract_type]);
 
-  /* ── Helpers ─────────────────────────────────────── */
+  /* ── Helpers ──────────────────────────────────── */
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const iso      = (d) => (d ? d + "T00:00:00" : null);
   const token    = localStorage.getItem("token");
@@ -100,23 +106,23 @@ export default function ContractForm() {
     }
 
     const amount =
-      form.contract_type === "Salary"
+      form.contract_type === "Gehalt"
         ? Number(form.netto || 0)
         : Number(form.amount);
 
     return {
       name: form.name,
-      contract_type: form.contract_type,
+      contract_type: form.contract_type,         // DE value
       start_date: iso(form.start_date),
       end_date: iso(form.end_date),
       amount,
-      payment_interval: form.payment_interval,
+      payment_interval: form.payment_interval,   // DE value
       status: "active",
       notes: form.notes,
     };
   };
 
-  /* ── Submit ──────────────────────────────────────── */
+  /* ── Submit ───────────────────────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault();
     const payload = buildPayload();
@@ -137,16 +143,14 @@ export default function ContractForm() {
 
       if (!res.ok) {
         const err = await res.json();
-        setMsg("Fehler: " + JSON.stringify(err.detail ?? err));
+        setMsg("Error: " + JSON.stringify(err.detail ?? err));
         return;
       }
 
-      /* ─── ID für Upload ermitteln ─── */
-      const data = await res.json();
-      const newId = data.id;            // bei POST
-      const contractId = newId || id;
+      const data       = await res.json();
+      const contractId = data.id || id;
 
-      /* ─── (A) Bilder hochladen ─────── */
+      /* Upload files (optional) */
       if (form.files && form.files.length > 0) {
         const fd = new FormData();
         Array.from(form.files).forEach((file) => fd.append("files", file));
@@ -158,13 +162,12 @@ export default function ContractForm() {
       }
 
       navigate("/dashboard");
-    } catch (err) {
-      console.error(err);
-      setMsg("Network error");
+    } catch {
+      setMsg("Network error.");
     }
   };
 
-  /* ── JSX ─────────────────────────────────────────── */
+  /* ── JSX ───────────────────────────────────────── */
   return (
     <div className="max-w-xl mx-auto p-4 bg-white shadow rounded mt-8">
       <h2 className="text-2xl font-bold mb-4">
@@ -185,7 +188,7 @@ export default function ContractForm() {
           />
         </div>
 
-        {/* Vertragsart */}
+        {/* Contract type */}
         <div>
           <label className="block font-medium">Contract type</label>
           <select
@@ -195,17 +198,16 @@ export default function ContractForm() {
             onChange={(e) => setField("contract_type", e.target.value)}
           >
             <option value="">Please select</option>
-            <option>Rent</option>
-            <option>Insurance</option>
-            <option>Streaming</option>
-            <option>Salary</option>
-            <option>Leasing</option>
-            <option>Other</option>
+            {TYPE_OPTIONS.map(([label, value]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
 
-        {/* Gehalt-spezifisch */}
-        {form.contract_type === "Salary" && (
+        {/* Salary fields */}
+        {form.contract_type === "Gehalt" && (
           <>
             <div>
               <label className="block font-medium">Gross salary</label>
@@ -224,30 +226,27 @@ export default function ContractForm() {
                 type="number"
                 className="w-full border p-2 rounded"
                 value={form.netto}
-                onChange={(e) => setField("net", e.target.value)}
+                onChange={(e) => setField("netto", e.target.value)}
               />
             </div>
           </>
         )}
 
-        {/* Betrag für nicht‑Gehalt */}
-        {form.contract_type &&
-          form.contract_type !== "Salary" && (
-            <div>
-              <label className="block font-medium">
-                Amount({currency})
-              </label>
-              <input
-                type="number"
-                className="w-full border p-2 rounded"
-                required
-                value={form.amount}
-                onChange={(e) => setField("amount", e.target.value)}
-              />
-            </div>
-          )}
+        {/* Amount for non-salary */}
+        {form.contract_type && form.contract_type !== "Gehalt" && (
+          <div>
+            <label className="block font-medium">Amount ({currency})</label>
+            <input
+              type="number"
+              className="w-full border p-2 rounded"
+              required
+              value={form.amount}
+              onChange={(e) => setField("amount", e.target.value)}
+            />
+          </div>
+        )}
 
-        {/* Datum & Intervall */}
+        {/* Dates & interval */}
         <div>
           <label className="block font-medium">Start date</label>
           <input
@@ -277,10 +276,12 @@ export default function ContractForm() {
             value={form.payment_interval}
             onChange={(e) => setField("payment_interval", e.target.value)}
           >
-          <option value="">Please select</option>
-          <option value="monthly">Monthly</option>
-          <option value="yearly">Yearly</option>
-          <option value="one-time">One-time</option>
+            <option value="">Please select</option>
+            {INTERVAL_OPTIONS.map(([label, value]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -293,12 +294,11 @@ export default function ContractForm() {
           />
         </div>
 
-        {/* ─── Anhänge (Bilder & PDFs) ───────────────────────── */}
+        {/* Attachments */}
         <div>
           <label className="block font-medium">
-            Anhänge (Bild / PDF – mehrere möglich)
+            Attachments (image / PDF – multiple possible)
           </label>
-
           <input
             type="file"
             accept="image/*,application/pdf"
@@ -306,23 +306,21 @@ export default function ContractForm() {
             onChange={(e) => setField("files", e.target.files)}
             className="mt-1"
           />
-
-          {/* kleine Vorschau / Auflistung */}
           {form.files && (
             <ul className="mt-1 text-sm text-gray-600 list-disc list-inside">
               {Array.from(form.files).map((f) => (
                 <li key={f.name}>
-                  {f.name} – {(f.size / 1024).toFixed(1)} kB
+                  {f.name} – {(f.size / 1024).toFixed(1)} kB
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        {/* Land & Währung */}
+        {/* Country & currency (read-only) */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block font-medium">Land</label>
+            <label className="block font-medium">Country</label>
             <input
               className="w-full border p-2 rounded bg-gray-100"
               readOnly
