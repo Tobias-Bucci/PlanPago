@@ -5,134 +5,136 @@ import { useNavigate } from "react-router-dom";
 import CountryAutoComplete from "../utils/CountryAutoComplete";
 
 export default function Profile() {
-  const [email, setEmail] = useState("");
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [country, setCountry] = useState("");
-  const [currency, setCurrency] = useState("EUR");
-  const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(true);
-  const [message, setMessage] = useState("");
-  const [tempToken, setTempToken] = useState("");
-  const [code, setCode] = useState("");
+  /* ─────────── State ─────────── */
+  const [email, setEmail]                 = useState("");
+  const [oldPw, setOldPw]                 = useState("");
+  const [newPw, setNewPw]                 = useState("");
+  const [country, setCountry]             = useState("");
+  const [currency, setCurrency]           = useState("EUR");
+  const [emailRem, setEmailRem]           = useState(true);
+  const [msg, setMsg]                     = useState("");
+  const [tmpToken, setTmpToken]           = useState("");
+  const [code, setCode]                   = useState("");
+
   const navigate = useNavigate();
+  const token    = localStorage.getItem("token");
+  const API      = API_BASE;
 
-  const token = localStorage.getItem("token");
-  const API = API_BASE;
-
-  // — Lade Profil und Einstellungen
+  /* ───────── Load profile once ───────── */
   useEffect(() => {
     (async () => {
       const res = await fetch(`${API}/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        navigate("/login");
-        return;
-      }
-      const data = await res.json();
-      setEmail(data.email);
-      setEmailRemindersEnabled(data.email_reminders_enabled);
-      localStorage.setItem("currentEmail", data.email);
-      setCountry(localStorage.getItem(`country_${data.email}`) || "");
-      setCurrency(localStorage.getItem(`currency_${data.email}`) || "EUR");
+      if (!res.ok) return navigate("/login");
+      const me = await res.json();
+
+      setEmail(me.email);
+      setCountry(me.country ?? "");
+      setCurrency(me.currency ?? "EUR");
+      setEmailRem(me.email_reminders_enabled);
+
+      localStorage.setItem("currentEmail", me.email);
     })();
   }, [API, navigate, token]);
 
-  // — Passwort/Email ändern anfordern (2FA)
+  /* ───────── 2-step change of e-mail / password (unchanged) ───── */
   const handleRequest = async (e) => {
     e.preventDefault();
-    setMessage("");
+    setMsg("");
     try {
-      const body = { old_password: oldPassword };
-      if (email) body.email = email;
-      if (newPassword) body.password = newPassword;
+      const body = { old_password: oldPw };
+      if (email)      body.email    = email;
+      if (newPw)      body.password = newPw;
 
-      const res = await fetch(`${API}/users/me`, {
+      const res  = await fetch(`${API}/users/me`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Error during request");
-      setTempToken(data.temp_token);
-      setMessage("Code sent – please enter it below.");
+      if (!res.ok) throw new Error(data.detail || "Error requesting change");
+
+      setTmpToken(data.temp_token);
+      setMsg("Code sent – please confirm.");
     } catch (err) {
-      setMessage("Error: " + err.message);
+      setMsg("Error: " + err.message);
     }
   };
 
-  // — Code bestätigen und Änderungen übernehmen
   const handleConfirm = async (e) => {
     e.preventDefault();
-    setMessage("");
+    setMsg("");
     try {
       const res = await fetch(`${API}/users/me/confirm`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ temp_token: tempToken, code }),
+        body: JSON.stringify({ temp_token: tmpToken, code }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Error confirming code");
+      if (!res.ok) throw new Error(data.detail || "Code invalid");
 
-      // Email ggf. in LocalStorage anpassen
-      const oldMail = localStorage.getItem("currentEmail");
-      if (oldMail !== data.email) {
-        const oldCountry = localStorage.getItem(`country_${oldMail}`);
-        const oldCurrency = localStorage.getItem(`currency_${oldMail}`);
-        if (oldCountry) localStorage.setItem(`country_${data.email}`, oldCountry);
-        if (oldCurrency) localStorage.setItem(`currency_${data.email}`, oldCurrency);
-        localStorage.removeItem(`country_${oldMail}`);
-        localStorage.removeItem(`currency_${oldMail}`);
+      /* keep LS mapping */
+      const old = localStorage.getItem("currentEmail");
+      if (old !== data.email) {
+        const oldCtry = localStorage.getItem(`country_${old}`);
+        const oldCur  = localStorage.getItem(`currency_${old}`);
+        if (oldCtry) localStorage.setItem(`country_${data.email}`, oldCtry);
+        if (oldCur)  localStorage.setItem(`currency_${data.email}`, oldCur);
+        localStorage.removeItem(`country_${old}`);
+        localStorage.removeItem(`currency_${old}`);
       }
       localStorage.setItem("currentEmail", data.email);
-      setEmail(data.email);
 
-      setMessage("Profile updated successfully!");
-      setOldPassword("");
-      setNewPassword("");
+      setEmail(data.email);
+      setTmpToken("");
       setCode("");
-      setTempToken("");
+      setOldPw("");
+      setNewPw("");
+      setMsg("Profile updated.");
     } catch (err) {
-      setMessage("Error: " + err.message);
+      setMsg("Error: " + err.message);
     }
   };
 
-  // — Einstellungen (Land, Währung, E‑Mail-Reminders) speichern
-  const handleSettingsSave = async () => {
-    setMessage("");
+  /* ───────── Save personal settings ───────── */
+  const saveSettings = async () => {
+    setMsg("");
     try {
-      // Client‐side speichern
-      localStorage.setItem(`country_${email}`, country);
-      localStorage.setItem(`currency_${email}`, currency);
-
-      // Serverseitig E‑Mail‑Reminders speichern
       const res = await fetch(`${API}/users/me/settings`, {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email_reminders_enabled: emailRemindersEnabled }),
+        body: JSON.stringify({
+          country,
+          currency,
+          email_reminders_enabled: emailRem,
+        }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || "Error saving settings");
-      }
-      setMessage("Settings saved!");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Error saving settings");
+
+      /* sync LS */
+      localStorage.setItem(`country_${email}`, country);
+      localStorage.setItem(`currency_${email}`, currency);
+
+      setMsg("Settings saved.");
     } catch (err) {
-      setMessage("Error: " + err.message);
+      setMsg("Error: " + err.message);
     }
   };
 
-  // — Account löschen
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete your account?")) return;
+  /* ───────── Delete account ───────── */
+  const deleteAccount = async () => {
+    if (!window.confirm("Delete account permanently?")) return;
     await fetch(`${API}/users/me`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
@@ -141,65 +143,66 @@ export default function Profile() {
     navigate("/register");
   };
 
+  /* ───────── UI ───────── */
   return (
     <main className="container mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-semibold">Settings</h1>
 
-      {message && (
+      {msg && (
         <div className="p-4 bg-blue-50 text-blue-800 rounded-lg shadow">
-          {message}
+          {msg}
         </div>
       )}
 
-      {/* Passwort/Email ändern */}
-      {tempToken ? (
-        <form onSubmit={handleConfirm} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      {/* —— change e-mail / password —— */}
+      {tmpToken ? (
+        <form onSubmit={handleConfirm} className="bg-white p-6 rounded-lg shadow space-y-4">
           <h2 className="text-xl font-medium">Confirm code</h2>
           <input
+            className="w-full border p-2 rounded"
             type="text"
-            placeholder="6-digit code via E‑Mail"
+            placeholder="6-digit e-mail code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent"
           />
-          <button className="w-full py-2 bg-accent text-white rounded-lg hover:bg-accent-dark transition">
+          <button className="w-full bg-accent text-white py-2 rounded-lg">
             Confirm
           </button>
         </form>
       ) : (
-        <form onSubmit={handleRequest} className="space-y-4 bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-medium">Profil ändern</h2>
+        <form onSubmit={handleRequest} className="bg-white p-6 rounded-lg shadow space-y-4">
+          <h2 className="text-xl font-medium">Change profile</h2>
           <input
             type="email"
-            placeholder="E‑Mail"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder="E-mail"
+            className="w-full border p-2 rounded"
             required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent"
           />
           <input
             type="password"
-            placeholder="Old password"
-            value={oldPassword}
-            onChange={(e) => setOldPassword(e.target.value)}
+            value={oldPw}
+            onChange={(e) => setOldPw(e.target.value)}
+            placeholder="Current password"
+            className="w-full border p-2 rounded"
             required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent"
           />
           <input
             type="password"
+            value={newPw}
+            onChange={(e) => setNewPw(e.target.value)}
             placeholder="New password (optional)"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent"
+            className="w-full border p-2 rounded"
           />
-          <button className="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
-            Request changes
+          <button className="w-full bg-primary text-white py-2 rounded-lg">
+            Request change
           </button>
         </form>
       )}
 
-      {/* Land, Währung & E‑Mail-Reminders */}
+      {/* —— country / currency / reminders —— */}
       <section className="bg-white p-6 rounded-lg shadow space-y-4">
         <h2 className="text-xl font-medium">Personal settings</h2>
         <div className="grid grid-cols-2 gap-4">
@@ -212,7 +215,7 @@ export default function Profile() {
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent"
+              className="w-full border p-2 rounded"
             >
               <option>EUR</option>
               <option>USD</option>
@@ -221,28 +224,27 @@ export default function Profile() {
             </select>
           </div>
         </div>
-        <label className="flex items-center space-x-2">
+
+        <label className="flex items-center gap-2">
           <input
             type="checkbox"
-            checked={emailRemindersEnabled}
-            onChange={(e) => setEmailRemindersEnabled(e.target.checked)}
-            className="h-5 w-5 rounded border focus:ring-accent"
+            checked={emailRem}
+            onChange={(e) => setEmailRem(e.target.checked)}
+            className="h-5 w-5 border rounded"
           />
-          <span className="font-medium">Enable email reminders</span>
+          <span>Enable e-mail reminders</span>
         </label>
+
         <div className="flex justify-end">
-          <button
-            onClick={handleSettingsSave}
-            className="py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition"
-          >
+          <button onClick={saveSettings} className="px-4 py-2 bg-primary text-white rounded-lg">
             Save
           </button>
         </div>
       </section>
 
       <button
-        onClick={handleDelete}
-        className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+        onClick={deleteAccount}
+        className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
       >
         Delete account
       </button>

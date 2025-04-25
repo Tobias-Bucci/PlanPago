@@ -1,23 +1,41 @@
+// src/pages/Register.jsx
 import { API_BASE } from "../config";
 import React, { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 
+/* helper – same as in Login */
+const cacheProfile = async (token) => {
+  try {
+    const res = await fetch(`${API_BASE}/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const me = await res.json();
+    localStorage.setItem("currentEmail", me.email);
+    localStorage.setItem(`country_${me.email}`, me.country || "");
+    localStorage.setItem(`currency_${me.email}`, me.currency || "EUR");
+  } catch {
+    /* silent */
+  }
+};
+
 export default function Register() {
-  const [step, setStep] = useState(1);
+  const [step, setStep]   = useState(1);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
-  const [tempToken, setTemp] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [password, setPw] = useState("");
+  const [code, setCode]   = useState("");
+  const [tempToken, setT] = useState("");
+  const [error, setErr]   = useState("");
+  const [loading, setLd]  = useState(false);
 
   const navigate = useNavigate();
   const API = API_BASE;
 
+  /* ───────── Step 1: create account ───────── */
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setErr("");
+    setLd(true);
     try {
       const reg = await fetch(`${API}/users/`, {
         method: "POST",
@@ -25,10 +43,11 @@ export default function Register() {
         body: JSON.stringify({ email, password }),
       });
       if (reg.status !== 201) {
-        const err = await reg.json();
+        const err = await reg.json().catch(() => ({}));
         throw new Error(err.detail || "Registration failed");
       }
-      // direkt Code anfordern
+
+      /* immediately request 2FA code */
       const form = new URLSearchParams({ username: email, password });
       const login1 = await fetch(`${API}/users/login`, {
         method: "POST",
@@ -37,19 +56,20 @@ export default function Register() {
       });
       if (!login1.ok) throw new Error("Code request failed");
       const { temp_token } = await login1.json();
-      setTemp(temp_token);
+      setT(temp_token);
       setStep(2);
     } catch (err) {
-      setError(err.message);
+      setErr(err.message);
     } finally {
-      setLoading(false);
+      setLd(false);
     }
   };
 
+  /* ───────── Step 2: confirm code ───────── */
   const handleVerify = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setErr("");
+    setLd(true);
     try {
       const res = await fetch(`${API}/users/verify-code`, {
         method: "POST",
@@ -59,14 +79,16 @@ export default function Register() {
       if (!res.ok) throw new Error("Invalid code");
       const { access_token } = await res.json();
       localStorage.setItem("token", access_token);
+      await cacheProfile(access_token);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(err.message);
+      setErr(err.message);
     } finally {
-      setLoading(false);
+      setLd(false);
     }
   };
 
+  /* ───────── JSX ───────── */
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary to-primary-light flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 animate-fadeIn transform hover:scale-[1.02] transition-transform duration-300">
@@ -84,7 +106,7 @@ export default function Register() {
           <form onSubmit={handleRegister} className="space-y-4">
             <input
               type="email"
-              placeholder="E‑Mail"
+              placeholder="E-mail"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -94,7 +116,7 @@ export default function Register() {
               type="password"
               placeholder="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPw(e.target.value)}
               required
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent transition"
             />
@@ -106,9 +128,9 @@ export default function Register() {
               {loading ? "Please wait…" : "Register"}
             </button>
             <p className="text-center text-sm">
-              Hast du schon einen Account?{" "}
+              Already have an account?{" "}
               <NavLink to="/login" className="text-accent hover:underline">
-                Anmelden
+                Log in
               </NavLink>
             </p>
           </form>
@@ -116,7 +138,7 @@ export default function Register() {
           <form onSubmit={handleVerify} className="space-y-4">
             <input
               type="text"
-              placeholder="6-digit code via E‑Mail"
+              placeholder="6-digit code (e-mail)"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
@@ -127,7 +149,7 @@ export default function Register() {
               disabled={loading}
               className="w-full py-2 bg-accent text-white rounded-lg hover:bg-accent-dark transition-colors duration-200"
             >
-              {loading ? "Validation..." : "Confirm"}
+              {loading ? "Validating…" : "Confirm"}
             </button>
           </form>
         )}

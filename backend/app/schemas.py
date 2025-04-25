@@ -1,19 +1,24 @@
 # backend/app/schemas.py
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, ConfigDict
 
-# ——— User-Schemas ——————————————————————————————————————————
+# ───────── User schemas ────────────────────────────────────────────
 class UserBase(BaseModel):
     email: str
+
 
 class UserCreate(UserBase):
     password: str
 
+
 class User(UserBase):
     id: int
     email_reminders_enabled: bool
+    country: Optional[str] = None
+    currency: Optional[str] = None   # ✅ lower-case
     model_config = ConfigDict(from_attributes=True)
+
 
 class UserUpdate(BaseModel):
     old_password: str
@@ -21,10 +26,14 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class UserSettings(BaseModel):
     email_reminders_enabled: bool
+    country: Optional[str] = None
+    currency: Optional[str] = None
 
-# ——— Contract-Schemas ——————————————————————————————————————
+
+# ───────── Contract schemas ───────────────────────────────────────
 class ContractBase(BaseModel):
     name: str
     contract_type: str
@@ -35,8 +44,10 @@ class ContractBase(BaseModel):
     status: Optional[str] = "active"
     notes: Optional[str] = None
 
+
 class ContractCreate(ContractBase):
     pass
+
 
 class ContractUpdate(BaseModel):
     name: Optional[str] = None
@@ -49,12 +60,13 @@ class ContractUpdate(BaseModel):
     notes: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class Contract(ContractBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
 
-# ——— ContractFile-Schema ———————————————————————————————————
+# ───────── ContractFile schema ────────────────────────────────────
 class ContractFile(BaseModel):
     id: int
     contract_id: int
@@ -64,10 +76,11 @@ class ContractFile(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ——— Auth-Schemas ———————————————————————————————————————
+# ───────── Auth schemas ───────────────────────────────────────────
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 class TokenData(BaseModel):
     email: Optional[str] = None

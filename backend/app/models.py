@@ -1,25 +1,32 @@
 # backend/app/models.py
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey, Boolean
+from sqlalchemy import (
+    Column, Integer, String, DateTime, Float,
+    ForeignKey, Boolean
+)
 from sqlalchemy.orm import relationship
 from .database import Base
+
 
 class User(Base):
     __tablename__ = "users"
 
-    id                        = Column(Integer, primary_key=True, index=True)
-    email                     = Column(String, unique=True, index=True, nullable=False)
-    hashed_password           = Column(String, nullable=False)
-    is_admin                  = Column(Boolean, default=False, nullable=False)
-    last_2fa_at               = Column(DateTime, nullable=True)
-    email_reminders_enabled   = Column(Boolean, default=True, nullable=False)
+    id                      = Column(Integer, primary_key=True, index=True)
+    email                   = Column(String, unique=True, index=True, nullable=False)
+    hashed_password         = Column(String, nullable=False)
+    is_admin                = Column(Boolean, default=False, nullable=False)
+    last_2fa_at             = Column(DateTime, nullable=True)
+    email_reminders_enabled = Column(Boolean, default=True, nullable=False)
+    country                 = Column(String, nullable=True)
+    currency                = Column(String, nullable=True)   # ✅ lower-case & consistent
 
-    contracts          = relationship(
+    contracts = relationship(
         "Contract", back_populates="user", cascade="all, delete-orphan"
     )
     verification_codes = relationship(
         "VerificationCode", back_populates="user", cascade="all, delete-orphan"
     )
+
 
 class Contract(Base):
     __tablename__ = "contracts"
@@ -31,7 +38,7 @@ class Contract(Base):
     end_date         = Column(DateTime, nullable=True)
     amount           = Column(Float, nullable=False)
     payment_interval = Column(String, nullable=False)
-    status           = Column(String, nullable=False, default="active")
+    status           = Column(String, default="active", nullable=False)
     notes            = Column(String, nullable=True)
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -40,6 +47,7 @@ class Contract(Base):
     files = relationship(
         "ContractFile", back_populates="contract", cascade="all, delete-orphan"
     )
+
 
 class VerificationCode(Base):
     __tablename__ = "verification_codes"
@@ -50,6 +58,7 @@ class VerificationCode(Base):
     expires_at = Column(DateTime, nullable=False)
 
     user = relationship("User", back_populates="verification_codes")
+
 
 class ContractFile(Base):
     __tablename__ = "contract_files"
