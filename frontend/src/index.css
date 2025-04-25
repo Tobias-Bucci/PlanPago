@@ -1,17 +1,118 @@
+/* ─── Tailwind base ───────────────────────────────────────────── */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ─── Brand palette ───────────────────────────────────────────── */
+:root{
+  --brand          : #1e63ff;   /* sampled from logo */
+  --brand-light    : #4f7dff;   /* hover / lighter */
+  --secondary      : #9b5de5;   /* accent-violet */
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* ─── Global background  ──────────────────────────────────────── */
+body{
+  @apply text-white antialiased min-h-screen;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(30,99,255,.40) 0%, transparent 70%),
+    #0b0e17;
+  background-size:200% 200%;
+  animation:bgShift 15s ease-in-out infinite;
 }
+@keyframes bgShift{
+  0%,100%{background-position:0 0}
+  50%    {background-position:100% 100%}
+}
+
+/* ─── Glass card ──────────────────────────────────────────────── */
+.glass-card{
+  backdrop-filter:blur(20px) saturate(180%);
+  background-color:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.20);
+  border-radius:1.5rem;
+  box-shadow:0 25px 40px rgba(0,0,0,.30);
+}
+
+/* ─── Frosted inputs (input, select, textarea) ────────────────── */
+.frosted-input,
+.frosted-input[type="date"],
+.frosted-input[type="number"],
+.frosted-input[type="password"],
+.frosted-input[type="email"],
+select.frosted-input,
+textarea.frosted-input{
+  @apply w-full px-4 py-2 rounded-lg text-white placeholder-white/70 appearance-none;
+  backdrop-filter:blur(8px);
+  background-color:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.25);
+  transition:background .15s;
+}
+.frosted-input:focus{
+  outline:none;
+  box-shadow:0 0 0 2px var(--brand);
+  background-color:rgba(255,255,255,.15);
+}
+
+/* little chevron for selects */
+select.frosted-input{
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right .8rem center;
+  background-size:.8rem;
+}
+
+select.frosted-input option{
+  background-color:#152043;   /* dunkles Navy */
+  color:#ffffff;
+}
+
+/* gefrosteter File-Input (immer gleiches Aussehen) */
+input[type="file"].frosted-file{
+  @apply w-full cursor-pointer text-sm text-white/80 rounded-lg p-2;
+  backdrop-filter:blur(8px);
+  background-color:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.25);
+  transition:background .15s;
+}
+input[type="file"].frosted-file:hover{
+  background-color:rgba(255,255,255,.15);
+}
+
+/* ─── File input (hidden native + custom label) ───────────────── */
+.frosted-file{
+  @apply cursor-pointer w-full text-sm text-white/80 rounded-lg p-2 border border-white/25;
+  backdrop-filter:blur(8px);
+  background-color:rgba(255,255,255,.10);
+  transition:background .15s;
+}
+.frosted-file:hover{background-color:rgba(255,255,255,.15);}
+
+/* ─── Buttons ─────────────────────────────────────────────────── */
+.btn-primary,
+.btn-accent{
+  @apply font-semibold py-2 px-4 rounded-lg text-white transition
+         disabled:cursor-not-allowed disabled:opacity-60;
+}
+.btn-primary{
+  background:var(--brand);
+}
+.btn-primary:hover{
+  background:var(--brand-light);
+  transform:translateY(-2px);
+  box-shadow:0 10px 18px rgba(30,99,255,.35);
+}
+.btn-accent{
+  background:var(--secondary);
+}
+.btn-accent:hover{
+  background:#b07df8;
+  transform:translateY(-2px);
+  box-shadow:0 10px 18px rgba(155,93,229,.35);
+}
+
+/* ─── Pop-in anim for cards ───────────────────────────────────── */
+@keyframes pop{
+  0%  {opacity:0; transform:scale(.92) translateY(20px)}
+  100%{opacity:1; transform:scale(1)   translateY(0)}
+}
+.animate-pop{animation:pop .5s ease forwards}

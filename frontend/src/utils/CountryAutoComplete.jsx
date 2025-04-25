@@ -199,61 +199,44 @@ const ALL_COUNTRIES = [
   "Cyprus"
 ];
 
-function CountryAutoComplete({ value, onChange }) {
+export default function CountryAutoComplete({ value, onChange }) {
   const [suggestions, setSuggestions] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const wrapperRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
   const handleInputChange = (e) => {
-    const inputValue = e.target.value;
-    onChange(inputValue);
-    if (!inputValue) {
-      setSuggestions([]);
-      setIsOpen(false);
-      return;
-    }
-    const filtered = ALL_COUNTRIES.filter((country) =>
-      country.toLowerCase().startsWith(inputValue.toLowerCase())
+    const val = e.target.value;
+    onChange(val);
+    if (!val) { setSuggestions([]); setOpen(false); return; }
+    const list = ALL_COUNTRIES.filter(c =>
+      c.toLowerCase().startsWith(val.toLowerCase())
     );
-    setSuggestions(filtered);
-    setIsOpen(true);
+    setSuggestions(list); setOpen(true);
   };
+  const handleSelect = c => { onChange(c); setSuggestions([]); setOpen(false); };
 
-  const handleSelect = (country) => {
-    onChange(country);
-    setSuggestions([]);
-    setIsOpen(false);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  useEffect(()=>{
+    const click=(e)=>{ if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown",click); return()=>document.removeEventListener("mousedown",click);
+  },[]);
 
   return (
-    <div className="relative" ref={wrapperRef}>
+    <div className="relative" ref={ref}>
       <input
-        className="w-full border p-2 rounded"
+        className="frosted-input"
+        placeholder="Country"
         value={value}
         onChange={handleInputChange}
-        placeholder="Country"
       />
-      {isOpen && suggestions.length > 0 && (
-        <ul className="absolute z-10 bg-white border w-full max-h-40 overflow-y-auto rounded shadow">
-          {suggestions.map((country) => (
+      {open && suggestions.length>0 && (
+        <ul className="absolute z-20 w-full max-h-40 overflow-y-auto glass-card backdrop-blur-sm">
+          {suggestions.map(c=>(
             <li
-              key={country}
-              onClick={() => handleSelect(country)}
-              className="px-2 py-1 hover:bg-gray-200 cursor-pointer"
+              key={c}
+              onClick={()=>handleSelect(c)}
+              className="px-3 py-1 hover:bg-white/10 cursor-pointer"
             >
-              {country}
+              {c}
             </li>
           ))}
         </ul>
@@ -261,5 +244,3 @@ function CountryAutoComplete({ value, onChange }) {
     </div>
   );
 }
-
-export default CountryAutoComplete;
