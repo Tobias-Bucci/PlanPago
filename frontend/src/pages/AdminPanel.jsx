@@ -253,43 +253,65 @@ export default function AdminPanel() {
           <>
             {/* USERS --------------------------------------------------- */}
             {tab === "users" && (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left">
-                  <thead className="bg-white/10 text-white/80">
+            <div className="overflow-hidden rounded-lg ring-1 ring-white/10">
+              <table className="min-w-full text-left">
+                {/* Kopf */}
+                <thead className="bg-white/10 text-white/80">
+                  <tr>
+                    <th className="px-6 py-3 rounded-tl-lg">ID</th>
+                    <th className="px-6 py-3">E-mail</th>
+                    <th className="px-6 py-3 text-center rounded-tr-lg">Action</th>
+                  </tr>
+                </thead>
+
+                {/* Body */}
+                <tbody>
+                  {users.length === 0 ? (
                     <tr>
-                      <th className="px-6 py-3">ID</th>
-                      <th className="px-6 py-3">E-mail</th>
-                      <th className="px-6 py-3 text-center">Action</th>
+                      <td
+                        colSpan="3"
+                        className="px-6 py-4 text-center text-white/60 bg-black/20 rounded-b-lg"
+                      >
+                        No users.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {users.length === 0 ? (
-                      <tr>
-                        <td colSpan="3" className="px-6 py-4 text-center text-white/60">
-                          No users.
-                        </td>
-                      </tr>
-                    ) : (
-                      users.map((u, i) => (
-                        <tr key={u.id} className={i % 2 ? "bg-white/5" : undefined}>
-                          <td className="px-6 py-4">{u.id}</td>
+                  ) : (
+                    users.map((u, i) => {
+                      const isLast = i === users.length - 1;
+                      return (
+                        <tr
+                          key={u.id}
+                          className={`${
+                            i % 2 ? "bg-white/5" : "bg-white/10/0"
+                          } ${isLast ? "rounded-b-lg" : ""}`}
+                        >
+                          <td
+                            className={`px-6 py-4 ${i === 0 ? "pt-5" : ""} ${
+                              isLast ? "pb-5" : ""
+                            }`}
+                          >
+                            {u.id}
+                          </td>
                           <td className="px-6 py-4">{u.email}</td>
                           <td className="px-6 py-4 text-center">
                             <button
                               onClick={() => deleteUser(u.id)}
-                              className="p-2 bg-red-600 rounded-lg hover:bg-red-700 transition"
                               title="Delete user"
+                              className="p-2 bg-red-600 rounded-md hover:bg-red-700
+                                        focus:outline-none focus:ring-2 focus:ring-red-400
+                                        transition-shadow"
                             >
                               <Trash2 size={18} />
                             </button>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
 
             {/* SERVER LOGS -------------------------------------------- */}
             {tab === "logs" && (
