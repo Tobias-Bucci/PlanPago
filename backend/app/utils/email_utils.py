@@ -1,157 +1,203 @@
 # backend/app/utils/email_utils.py
+from __future__ import annotations
 
-from dotenv import load_dotenv
 import os
 import smtplib
-from email.message import EmailMessage
 from datetime import datetime, timedelta
+from email.message import EmailMessage
+from pathlib import Path
+from typing import Iterable, Sequence, Tuple
+
 from dateutil.relativedelta import relativedelta
+from dotenv import load_dotenv
+
 from ..database import SessionLocal
 from ..models import Contract, User
 from .email_templates import TEMPLATES
 
-# Umgebungsvariablen laden
-load_dotenv()
+# ────────────────────────────────────────────────────────────────
+#  ENVIRONMENT
+# ────────────────────────────────────────────────────────────────
+load_dotenv()  # .env / secrets
 
-EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 
+# ────────────────────────────────────────────────────────────────
+#  LOG DIRECTORY & FILES
+# ────────────────────────────────────────────────────────────────
+LOG_DIR: Path = Path(__file__).resolve().parent.parent.parent / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
-def send_code_via_email(to_address: str, code: str):
-    """Sendet den 2FA-Code per E‑Mail."""
-    if not EMAIL_USER or not EMAIL_PASS:
-        print("⚠️ E‑Mail‑Credentials fehlen (EMAIL_USER/EMAIL_PASS)!")
-        return
+MAIL_LOG: Path = LOG_DIR / "emails.log"        # <── NEW (one line per recipient)
 
-    msg = EmailMessage()
-    msg["Subject"] = "PlanPago Verifizierungscode"
-    msg["From"] = EMAIL_USER
-    msg["To"] = to_address
-    msg.set_content(
-        f"Ihr Verifizierungscode lautet:\n\n  {code}\n\nGültig für 10 Minuten."
+
+def _log_mail(to_addr: str | Sequence[str], subject: str) -> None:
+    """
+    Append a line per recipient to emails.log
+    Format: ISO-timestamp  recipient  subject
+    """
+    subject = subject.replace("\n", " ").replace("\r", " ").strip()
+    ts = datetime.utcnow().isoformat(timespec="milliseconds")
+    recipients: Iterable[str] = (
+        to_addr if isinstance(to_addr, (list, tuple)) else [to_addr]
     )
+    with MAIL_LOG.open("a", encoding="utf-8") as f:
+        for rcpt in recipients:
+            f.write(f"{ts}  {rcpt}  {subject}\n")
+
+
+# ────────────────────────────────────────────────────────────────
+#  GENERIC SEND HELPER
+# ────────────────────────────────────────────────────────────────
+def _smtp_send(msg: EmailMessage, to_addr: str | Sequence[str]) -> None:
+    """
+    Send *msg* via SMTP STARTTLS.
+    On success *or* simulated send (missing credentials) the e-mail is logged.
+    """
+    if not EMAIL_USER or not EMAIL_PASS:
+        print("⚠︎  EMAIL_USER / EMAIL_PASS not configured – skip real send.")
+        _log_mail(to_addr, msg["Subject"])
+        return
 
     try:
-        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as smtp:
-            smtp.ehlo()
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=30) as smtp:
             smtp.starttls()
-            smtp.ehlo()
             smtp.login(EMAIL_USER, EMAIL_PASS)
             smtp.send_message(msg)
-            print(f"✅ Code an {to_address} gesendet.")
-    except Exception as e:
-        print("❌ Fehler beim E‑Mail‑Versand:", e)
+        print(f"📧  Mail sent → {to_addr}")
+        _log_mail(to_addr, msg["Subject"])
+    except Exception as exc:
+        print("❌  SMTP error:", exc)
 
 
-def send_reminder_email(to_address: str, contract_id: int, days_before: int, reminder_type: str):
-    """
-    Baut auf TEMPLATES auf und versendet Erinnerung:
-    - reminder_type: "payment" oder "end"
-    - days_before: 3 oder 1
-    """
-    session = SessionLocal()
-
-    # Vertrag und User laden
-    contract: Contract = session.get(Contract, contract_id)
-    user: User = session.get(User, contract.user_id) if contract else None
-    session.close()
-
-    if not contract or not user:
-        return
-
-    # Prüfen, ob der Nutzer E‑Mail‑Reminder aktiviert hat
-    if not getattr(user, "email_reminders_enabled", True):
-        return
-
-    # Auswahl der passenden Sub-Template nach Vertragstyp oder Default
-    type_templates = TEMPLATES.get(reminder_type, {})
-    sub_tpl = type_templates.get(
-        contract.contract_type,
-        type_templates.get("Default")
+# ────────────────────────────────────────────────────────────────
+#  (1)  2-FA CODE
+# ────────────────────────────────────────────────────────────────
+def send_code_via_email(to_address: str, code: str) -> None:
+    msg = EmailMessage()
+    msg["Subject"] = "PlanPago – Your verification code"
+    msg["From"] = EMAIL_USER or "planpago@example.com"
+    msg["To"] = to_address
+    msg.set_content(
+        f"Your verification code is:\n\n  {code}\n\nValid for 10 minutes."
     )
-    if not sub_tpl:
-        return
+    _smtp_send(msg, to_address)
 
-    subject = sub_tpl["subject"].format(
-        name=contract.name,
-        type=contract.contract_type,
-        days=days_before
-    )
 
-    # Datum bestimmen
+# ────────────────────────────────────────────────────────────────
+#  (2)  REMINDER E-MAILS
+# ────────────────────────────────────────────────────────────────
+def _make_reminder_body(
+    contract: Contract, reminder_type: str, days: int
+) -> Tuple[str, str]:
+    """Return (subject, body) prepared from email_templates.py."""
+    tpl_group = TEMPLATES.get(reminder_type, {})
+    tpl = tpl_group.get(contract.contract_type, tpl_group.get("Default"))
+    if not tpl:
+        return "", ""
+
+    # calendar date shown in e-mail
     if reminder_type == "payment":
         due = contract.start_date
-        interval = contract.payment_interval.lower()
-        if interval == "monatlich":
-            step = relativedelta(months=1)
-        elif interval == "jährlich":
-            step = relativedelta(years=1)
-        else:
-            step = None
-
-        # nächstes Fälligkeitsdatum ≥ heute
-        while step and due < datetime.now():
+        step = (
+            relativedelta(months=1)
+            if contract.payment_interval.lower() == "monatlich"
+            else relativedelta(years=1)
+            if contract.payment_interval.lower() == "jährlich"
+            else None
+        )
+        while step and due < datetime.utcnow():
             due += step
         date_str = due.date().isoformat()
     else:
-        # Vertragsende
         date_str = contract.end_date.date().isoformat()
 
-    body = sub_tpl["body"].format(
+    subject = tpl["subject"].format(
+        name=contract.name, type=contract.contract_type, days=days
+    )
+    body = tpl["body"].format(
         name=contract.name,
         type=contract.contract_type,
         amount=contract.amount,
         date=date_str,
-        days=days_before
+        days=days,
     )
+    return subject, body
+
+
+def send_reminder_email(
+    to_address: str, contract_id: int, days_before: int, reminder_type: str
+) -> None:
+    session = SessionLocal()
+    contract: Contract | None = session.get(Contract, contract_id)
+    user: User | None = session.get(User, contract.user_id) if contract else None
+    session.close()
+
+    if not contract or not user or not user.email_reminders_enabled:
+        return
+
+    subj, body = _make_reminder_body(contract, reminder_type, days_before)
+    if not subj:
+        return
 
     msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_USER
+    msg["Subject"] = subj
+    msg["From"] = EMAIL_USER or "planpago@example.com"
     msg["To"] = to_address
     msg.set_content(body)
 
-    try:
-        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login(EMAIL_USER, EMAIL_PASS)
-            smtp.send_message(msg)
-            print(f"✅ Reminder ({reminder_type}-{days_before}d) an {to_address} gesendet.")
-    except Exception as e:
-        print("❌ Fehler beim Reminder‑Versand:", e)
+    _smtp_send(msg, to_address)
 
 
-def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False):
+# ────────────────────────────────────────────────────────────────
+#  (3)  BROADCAST / BULK MAIL
+# ────────────────────────────────────────────────────────────────
+def send_broadcast(to_addresses: list[str], subject: str, body: str) -> None:
+    """Send a simple bulk e-mail (admin panel feature)."""
+    if not to_addresses:
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = EMAIL_USER or "planpago@example.com"
+    msg["To"] = ", ".join(to_addresses)
+    msg.set_content(body)
+
+    _smtp_send(msg, to_addresses)
+
+
+# ────────────────────────────────────────────────────────────────
+#  (4)  APSCHEDULER ENTRY POINT
+# ────────────────────────────────────────────────────────────────
+def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False) -> None:
     """
-    Plant für den gegebenen Vertrag jeweils zwei Erinnerungen
-    (3 Tage und 1 Tag vorher) für Zahlungstermin und Vertragsende.
+    Schedule (3 d & 1 d) reminders for payment AND (optional) end of contract.
     """
     if replace:
         for job in scheduler.get_jobs():
             if job.id.startswith(f"rem_{contract.id}_"):
                 scheduler.remove_job(job.id)
 
+    from datetime import datetime  # local import to avoid circular ref
+
     for days in (3, 1):
-        # ─── Zahlungserinnerung ────────────────────────────────
+        # ─── payment ───────────────────────────────────────────
         due = contract.start_date
-        interval = contract.payment_interval.lower()
-        if interval == "monatlich":
-            step = relativedelta(months=1)
-        elif interval == "jährlich":
-            step = relativedelta(years=1)
-        else:
-            step = None
-
-        while step and due < datetime.now():
+        step = (
+            relativedelta(months=1)
+            if contract.payment_interval.lower() == "monatlich"
+            else relativedelta(years=1)
+            if contract.payment_interval.lower() == "jährlich"
+            else None
+        )
+        while step and due < datetime.utcnow():
             due += step
-
-        run_date = due - timedelta(days=days)
-        run_date = run_date.replace(hour=3, minute=0, second=0, microsecond=0)
-
+        run_date = (due - timedelta(days=days)).replace(
+            hour=3, minute=0, second=0, microsecond=0
+        )
         scheduler.add_job(
             send_reminder_email,
             trigger="date",
@@ -161,11 +207,11 @@ def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False)
             timezone="Europe/Berlin",
         )
 
-        # ─── Enderinnerung ──────────────────────────────────────
+        # ─── contract end ──────────────────────────────────────
         if contract.end_date:
-            end_run = contract.end_date - timedelta(days=days)
-            end_run = end_run.replace(hour=3, minute=0, second=0, microsecond=0)
-
+            end_run = (contract.end_date - timedelta(days=days)).replace(
+                hour=3, minute=0, second=0, microsecond=0
+            )
             scheduler.add_job(
                 send_reminder_email,
                 trigger="date",

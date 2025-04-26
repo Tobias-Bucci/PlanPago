@@ -1,121 +1,103 @@
 # backend/app/routes/users.py
-import os
-import secrets
+# ────────────────────────────────────────────────────────────────
+import os, secrets, smtplib, pathlib
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import List
 
 from fastapi import (
-    APIRouter, Depends, HTTPException, BackgroundTasks, status
+    APIRouter, Depends, HTTPException, BackgroundTasks
 )
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from dotenv import load_dotenv
 
 from .. import models, schemas, database
-from ..utils.email_utils import send_code_via_email
+from ..utils import email_utils                     #  ← send_code_via_email, send_broadcast
+from ..utils.email_utils import EMAIL_HOST, EMAIL_PORT
 
 load_dotenv()
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-# ───────── Auth / crypto setup ────────────────────────────────────
+# ───────── Auth / Crypto ─────────────────────────────────────────
 pwd_context   = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY    = os.getenv("SECRET_KEY")
 ALGORITHM     = "HS256"
 TOKEN_TTL_MIN = 30
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/verify-code")
 
-
-def _hash(password: str) -> str:
-    return pwd_context.hash(password)
-
+def _hash(pw: str) -> str:
+    return pwd_context.hash(pw)
 
 def _create_token(data: dict, ttl: timedelta | None = None) -> str:
-    expire = datetime.utcnow() + (ttl or timedelta(minutes=TOKEN_TTL_MIN))
-    payload = {**data, "exp": expire}
+    payload = data.copy()
+    payload["exp"] = datetime.utcnow() + (ttl or timedelta(minutes=TOKEN_TTL_MIN))
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-
-# ───────── DB helper ──────────────────────────────────────────────
+# ───────── DB-Helper ────────────────────────────────────────────
 def get_db():
     db = database.SessionLocal()
     try:
-        # bootstrap admin user once
+        # einmalig Admin-User anlegen
         if not db.query(models.User).filter(models.User.email == "admin@admin").first():
-            admin = models.User(
-                email="admin@admin",
-                hashed_password=_hash("admin"),
-                is_admin=True,
-            )
-            db.add(admin)
+            db.add(models.User(email="admin@admin",
+                               hashed_password=_hash("admin"),
+                               is_admin=True))
             db.commit()
         yield db
     finally:
         db.close()
 
+# ───────── Admin-Helper ─────────────────────────────────────────
+def _ensure_admin(user: models.User):
+    if not user.is_admin:
+        raise HTTPException(403, "Admin privileges required")
 
-# ───────── 1) Registration ───────────────────────────────────────
+# ───────── 1) Registrierung ─────────────────────────────────────
 @router.post("/", status_code=201, response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    if db.query(models.User).filter(models.User.email == user.email).first():
+def register(u: schemas.UserCreate, db: Session = Depends(get_db)):
+    if db.query(models.User).filter(models.User.email == u.email).first():
         raise HTTPException(400, "E-mail already in use")
+    user = models.User(email=u.email, hashed_password=_hash(u.password))
+    db.add(user); db.commit(); db.refresh(user)
+    return user
 
-    new_user = models.User(
-        email=user.email,
-        hashed_password=_hash(user.password),
-        country=None,
-        currency=None,
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
-
-# ───────── 2) Login – step 1 (request code) ──────────────────────
+# ───────── 2) Login – Schritt 1 (Code anfordern) ────────────────
 @router.post("/login")
 def login_step1(
     background_tasks: BackgroundTasks,
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db),
+    form: OAuth2PasswordRequestForm = Depends(),
+    db:   Session                   = Depends(get_db),
 ):
-    user = (
-        db.query(models.User)
-        .filter(models.User.email == form_data.username)
-        .first()
-    )
-    if not user or not pwd_context.verify(form_data.password, user.hashed_password):
+    user = db.query(models.User).filter(models.User.email == form.username).first()
+    if not user or not pwd_context.verify(form.password, user.hashed_password):
         raise HTTPException(400, "Wrong credentials")
 
-    # “trusted-window” for 10 min after last 2FA
+    # Trusted-Window 10 min
     if user.last_2fa_at and (datetime.utcnow() - user.last_2fa_at) < timedelta(minutes=10):
-        token = _create_token({"sub": user.email})
-        return {"access_token": token, "token_type": "bearer"}
+        return {"access_token": _create_token({"sub": user.email}),
+                "token_type":   "bearer"}
 
-    # otherwise send new 2FA code
-    code     = f"{secrets.randbelow(10**6):06d}"
-    expires  = datetime.utcnow() + timedelta(minutes=10)
-    vc       = models.VerificationCode(user_id=user.id, code=code, expires_at=expires)
-    db.add(vc)
+    code    = f"{secrets.randbelow(10**6):06d}"
+    expires = datetime.utcnow() + timedelta(minutes=10)
+    db.add(models.VerificationCode(user_id=user.id, code=code, expires_at=expires))
     db.commit()
 
-    recipient = "mainbuccitobias@gmail.com" if user.email == "admin@admin" else user.email
-    background_tasks.add_task(send_code_via_email, recipient, code)
+    rcpt = "mainbuccitobias@gmail.com" if user.email == "admin@admin" else user.email
+    background_tasks.add_task(email_utils.send_code_via_email, rcpt, code)
 
-    tmp_token = _create_token({"sub": user.email}, ttl=timedelta(minutes=10))
-    return {"temp_token": tmp_token}
+    temp_token = _create_token({"sub": user.email}, ttl=timedelta(minutes=10))
+    return {"temp_token": temp_token}
 
-
+# ───────── 3) Login – Schritt 2 (Code prüfen) ───────────────────
 class CodeVerify(BaseModel):
     temp_token: str
     code: str
 
-
-# ───────── 3) Login – step 2 (verify code) ───────────────────────
 @router.post("/verify-code", response_model=schemas.Token)
 def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
     try:
@@ -130,97 +112,77 @@ def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(401, "Invalid session")
 
-    vc = (
-        db.query(models.VerificationCode)
-        .filter(
-            models.VerificationCode.user_id == user.id,
-            models.VerificationCode.code == payload.code,
-            models.VerificationCode.expires_at >= datetime.utcnow(),
-        )
-        .first()
-    )
+    vc = db.query(models.VerificationCode).filter(
+        models.VerificationCode.user_id == user.id,
+        models.VerificationCode.code == payload.code,
+        models.VerificationCode.expires_at >= datetime.utcnow()
+    ).first()
     if not vc:
         raise HTTPException(400, "Invalid or expired code")
 
-    # mark 2FA-time & issue real access token
     user.last_2fa_at = datetime.utcnow()
-    db.delete(vc)
-    db.commit()
-
+    db.delete(vc); db.commit()
     token = _create_token({"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}
 
-
-# ───────── Current-user helper ───────────────────────────────────
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db),
-) -> models.User:
-    cred_exc = HTTPException(401, "Could not validate credentials")
+# ───────── Helper: aktuellen User ermitteln ─────────────────────
+def get_current_user(token: str = Depends(oauth2_scheme),
+                     db:    Session = Depends(get_db)):
+    exc = HTTPException(401, "Could not validate credentials")
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email   = payload.get("sub")
+        data  = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = data.get("sub")
         if not email:
-            raise cred_exc
+            raise JWTError()
     except JWTError:
-        raise cred_exc
-
+        raise exc
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
-        raise cred_exc
+        raise exc
     return user
 
-
-# ───────── 4) Profile (read) ─────────────────────────────────────
+# ───────── 4) Profil lesen ──────────────────────────────────────
 @router.get("/me", response_model=schemas.User)
-def read_me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+def read_me(cur: models.User = Depends(get_current_user)):
+    return cur
 
-
-# ───────── 5 & 6) change e-mail / password (2-step same as before)
+# ───────── 5 & 6) Passwort / E-Mail ändern (2-Stufen) ───────────
 class UpdateConfirm(BaseModel):
     temp_token: str
     code: str
-
 
 @router.patch("/me")
 def update_request(
     background_tasks: BackgroundTasks,
     upd: schemas.UserUpdate,
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    cur: models.User = Depends(get_current_user),
+    db:  Session     = Depends(get_db),
 ):
-    if not pwd_context.verify(upd.old_password, current_user.hashed_password):
+    if not pwd_context.verify(upd.old_password, cur.hashed_password):
         raise HTTPException(400, "Wrong current password")
-
     if not upd.email and not upd.password:
         raise HTTPException(400, "Nothing to change")
 
     if upd.email and db.query(models.User).filter(
         models.User.email == upd.email,
-        models.User.id != current_user.id,
+        models.User.id    != cur.id
     ).first():
         raise HTTPException(400, "E-mail already in use")
 
     new_hash = _hash(upd.password) if upd.password else None
 
-    code     = f"{secrets.randbelow(10**6):06d}"
-    expires  = datetime.utcnow() + timedelta(minutes=10)
-    vc       = models.VerificationCode(user_id=current_user.id, code=code, expires_at=expires)
-    db.add(vc)
+    code    = f"{secrets.randbelow(10**6):06d}"
+    expires = datetime.utcnow() + timedelta(minutes=10)
+    db.add(models.VerificationCode(user_id=cur.id, code=code, expires_at=expires))
     db.commit()
 
-    background_tasks.add_task(send_code_via_email, current_user.email, code)
+    background_tasks.add_task(email_utils.send_code_via_email, cur.email, code)
 
-    payload = {"sub": current_user.email}
-    if upd.email:
-        payload["new_email"] = upd.email
-    if new_hash:
-        payload["new_password"] = new_hash
-
-    temp_token = _create_token(payload, ttl=timedelta(minutes=10))
-    return {"temp_token": temp_token}
-
+    payload = {"sub": cur.email}
+    if upd.email:   payload["new_email"]    = upd.email
+    if new_hash:    payload["new_password"] = new_hash
+    tmp = _create_token(payload, ttl=timedelta(minutes=10))
+    return {"temp_token": tmp}
 
 @router.patch("/me/confirm", response_model=schemas.User)
 def update_confirm(payload: UpdateConfirm, db: Session = Depends(get_db)):
@@ -236,15 +198,11 @@ def update_confirm(payload: UpdateConfirm, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(401, "Invalid session")
 
-    vc = (
-        db.query(models.VerificationCode)
-        .filter(
-            models.VerificationCode.user_id == user.id,
-            models.VerificationCode.code == payload.code,
-            models.VerificationCode.expires_at >= datetime.utcnow(),
-        )
-        .first()
-    )
+    vc = db.query(models.VerificationCode).filter(
+        models.VerificationCode.user_id == user.id,
+        models.VerificationCode.code    == payload.code,
+        models.VerificationCode.expires_at >= datetime.utcnow()
+    ).first()
     if not vc:
         raise HTTPException(400, "Invalid or expired code")
 
@@ -253,65 +211,102 @@ def update_confirm(payload: UpdateConfirm, db: Session = Depends(get_db)):
     if data.get("new_password"):
         user.hashed_password = data["new_password"]
 
-    db.delete(vc)
-    db.commit()
-    db.refresh(user)
+    db.delete(vc); db.commit(); db.refresh(user)
     return user
 
-
-# ───────── 7) Settings (country/currency + reminders) ────────────
+# ───────── 7) Settings ──────────────────────────────────────────
 @router.patch("/me/settings", response_model=schemas.User)
-def update_settings(
-    settings: schemas.UserSettings,
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+def change_settings(
+    s:   schemas.UserSettings,
+    cur: models.User = Depends(get_current_user),
+    db:  Session     = Depends(get_db),
 ):
-    current_user.email_reminders_enabled = settings.email_reminders_enabled
-    current_user.country  = settings.country
-    current_user.currency = settings.currency
-    db.commit()
-    db.refresh(current_user)
-    return current_user
+    cur.email_reminders_enabled = s.email_reminders_enabled
+    cur.country  = s.country
+    cur.currency = s.currency
+    db.commit(); db.refresh(cur)
+    return cur
 
-
-# ───────── 8) Delete account ─────────────────────────────────────
+# ───────── 8) Account löschen ──────────────────────────────────
 @router.delete("/me", response_model=schemas.User)
-def delete_me(
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    db.query(models.Contract).filter(
-        models.Contract.user_id == current_user.id
-    ).delete()
-    db.delete(current_user)
-    db.commit()
-    return current_user
+def delete_me(cur: models.User = Depends(get_current_user),
+              db:  Session     = Depends(get_db)):
+    db.query(models.Contract).filter(models.Contract.user_id == cur.id).delete()
+    db.delete(cur); db.commit()
+    return cur
 
-
-# ───────── 9) Admin utilities ────────────────────────────────────
-def _ensure_admin(user: models.User):
-    if not user.is_admin:
-        raise HTTPException(403, "Admin privileges required")
-
-
+# ───────── 9) Admin – User-Verwaltung ──────────────────────────
 @router.get("/admin/users", response_model=List[schemas.User])
-def admin_list_users(
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    _ensure_admin(current_user)
+def admin_users(cur: models.User = Depends(get_current_user),
+                db:  Session     = Depends(get_db)):
+    _ensure_admin(cur)
     return db.query(models.User).all()
 
-
-@router.delete("/admin/users/{user_id}", status_code=204)
-def admin_delete_user(
-    user_id: int,
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    _ensure_admin(current_user)
-    target = db.get(models.User, user_id)
-    if not target:
+@router.delete("/admin/users/{uid}", status_code=204)
+def admin_del(uid: int,
+              cur: models.User = Depends(get_current_user),
+              db:  Session     = Depends(get_db)):
+    _ensure_admin(cur)
+    tgt = db.get(models.User, uid)
+    if not tgt:
         raise HTTPException(404, "User not found")
-    db.delete(target)
-    db.commit()
+    db.delete(tgt); db.commit()
+
+# ───────── 10) Admin – Impersonate / Health / Broadcast ────────
+@router.post("/admin/impersonate/{uid}", response_model=schemas.Token)
+def admin_impersonate(uid: int,
+                      cur: models.User = Depends(get_current_user),
+                      db:  Session     = Depends(get_db)):
+    _ensure_admin(cur)
+    tgt = db.get(models.User, uid)
+    if not tgt:
+        raise HTTPException(404, "User not found")
+    return {"access_token": _create_token({"sub": tgt.email}),
+            "token_type":   "bearer"}
+
+@router.get("/admin/health")
+def admin_health(cur: models.User = Depends(get_current_user),
+                 db:  Session     = Depends(get_db)):
+    _ensure_admin(cur)
+    # DB
+    try:
+        db.execute(text("SELECT 1")); db_ok = True
+    except Exception:
+        db_ok = False
+    # SMTP
+    try:
+        with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT, timeout=5) as s:
+            s.ehlo()
+        smtp_ok = True
+    except Exception:
+        smtp_ok = False
+    # Scheduler
+    try:
+        from ..main import app
+        sched_jobs = len(app.state.scheduler.get_jobs())
+    except Exception:
+        sched_jobs = 0
+    return {"db": db_ok, "smtp": smtp_ok, "scheduler_jobs": sched_jobs}
+
+# ───────── Broadcast an alle Nutzer ─────────────────────────────
+class _Broadcast(BaseModel):
+    subject: str
+    body: str
+
+@router.post("/admin/broadcast")
+def admin_broadcast(
+    mail: _Broadcast,
+    background_tasks: BackgroundTasks,
+    cur:  models.User = Depends(get_current_user),
+    db:   Session     = Depends(get_db),
+):
+    _ensure_admin(cur)
+    recipients = [u.email for u in db.query(models.User).all()]
+    # ein Task reicht, send_broadcast verschickt an alle in einer Mail
+    background_tasks.add_task(
+        email_utils.send_broadcast,
+        recipients,
+        mail.subject.strip(),
+        mail.body.strip()
+    )
+    return {"sent": len(recipients)}
