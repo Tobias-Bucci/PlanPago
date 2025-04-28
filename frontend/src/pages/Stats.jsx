@@ -1,4 +1,4 @@
-// Stats.jsx  –  glass cards + white text
+// Stats.jsx – new compact version (KPI grid • 2 donuts • upcoming list)
 import { API_BASE } from "../config";
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -10,30 +10,35 @@ import {
   Legend,
 } from "recharts";
 
-/* colours & labels ------------------------------------------------- */
+import Card from "../components/Card";
+import KPI from "../components/KPI";
+import { upcomingPayments } from "../utils/statsHelpers";
+
+/* ------------------------------------------------------------------ */
+/* colour map & frosted tooltip style                                 */
+/* ------------------------------------------------------------------ */
 const TYPE_COLORS = {
-  Gehalt: "#10B981",
   Miete: "#EF4444",
   Streaming: "#EC4899",
   Versicherung: "#3B82F6",
   Leasing: "#F59E0B",
   Sonstiges: "#6B7280",
 };
-const TYPE_LABEL = {
-  Gehalt: "Salary",
-  Miete: "Rent",
-  Streaming: "Streaming",
-  Versicherung: "Insurance",
-  Leasing: "Leasing",
-  Sonstiges: "Others",
+
+const glassTooltipStyle = {
+  background: "rgba(255,255,255,.08)",
+  backdropFilter: "blur(10px) saturate(180%)",
+  border: "1px solid rgba(255,255,255,.25)",
+  color: "#fff",
+  borderRadius: "0.75rem",
+  fontSize: "0.85rem",
+  padding: "0.4rem 0.6rem",
 };
 
+/* ------------------------------------------------------------------ */
 export default function Stats() {
   const [contracts, setContracts] = useState([]);
-  const [salary, setSalary] = useState(0);
-  const [fix, setFix] = useState(0);
-  const [avail, setAvail] = useState(0);
-  const [error, setErr] = useState("");
+  const [err, setErr] = useState("");
   const [loading, setLd] = useState(true);
 
   const API = API_BASE;
@@ -41,166 +46,214 @@ export default function Stats() {
     () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` }),
     []
   );
+  const cur =
+    localStorage.getItem(
+      `currency_${localStorage.getItem("currentEmail")}`
+    ) || "€";
 
-  /* ------------------------------------------------ data fetch ---- */
+  /* -------- fetch contracts (≤100) -------------------------------- */
   useEffect(() => {
     (async () => {
       try {
         setLd(true);
-        setErr("");
-
-        const pageSize = 100;
-        let skip = 0;
-        let all = [];
-        let total = Infinity; // wird evtl. vom Backend geliefert
-
-        while (all.length < total) {
-          const r = await fetch(
-            `${API}/contracts/?skip=${skip}&limit=${pageSize}`,
-            { headers: authHeader }
-          );
-
-          if (!r.ok) {
-            const msg = await r.text();
-            throw new Error(`${r.status} ${msg || r.statusText}`);
-          }
-
-          const raw = await r.json();
-          const items = Array.isArray(raw) ? raw : raw.items || [];
-          if (!Array.isArray(raw)) total = raw.total ?? Infinity;
-
-          all = all.concat(items);
-
-          if (items.length < pageSize) break; // letzte Seite erreicht
-          skip += pageSize;
-        }
-
-        /* nur aktive / zukünftige Verträge -------------------------- */
-        const now = new Date();
-        const data = all.filter(
-          (c) => !c.end_date || new Date(c.end_date) >= now
-        );
-        setContracts(data);
-
-        /* Kennzahlen ------------------------------------------------ */
-        const sal = data
-          .filter((c) => c.contract_type === "Gehalt")
-          .reduce((s, c) => s + Number(c.amount), 0);
-
-        const fixed = data.reduce((s, c) => {
-          if (c.contract_type === "Gehalt") return s;
-          const v = Number(c.amount);
-          const yearly =
-            c.payment_interval === "jährlich" ||
-            c.payment_interval === "yearly";
-          return s + (yearly ? v / 12 : v);
-        }, 0);
-
-        setSalary(sal);
-        setFix(fixed);
-        setAvail(sal - fixed);
+        const r = await fetch(`${API}/contracts/?limit=100`, {
+          headers: authHeader,
+        });
+        if (!r.ok) throw new Error(await r.text());
+        const raw = await r.json();
+        setContracts(Array.isArray(raw) ? raw : raw.items);
       } catch (e) {
-        setErr(e.message);
+        setErr(e.message || "Unknown error");
       } finally {
         setLd(false);
       }
     })();
   }, [API, authHeader]);
 
-  /* ------------------------------------------------ chart data ---- */
-  const chartData = useMemo(() => {
-    const map = Object.fromEntries(Object.keys(TYPE_COLORS).map((k) => [k, 0]));
-    contracts.forEach((c) => {
-      let v = Number(c.amount);
-      const yearly =
-        c.contract_type !== "Gehalt" &&
-        (c.payment_interval === "jährlich" || c.payment_interval === "yearly");
-      if (yearly) v /= 12;
+  /* -------- KPI values ------------------------------------------- */
+  const kpi = useMemo(() => {
+    const income = contracts
+      .filter((c) => c.contract_type === "Gehalt")
+      .reduce((s, c) => s + Number(c.amount), 0);
 
-      const key = TYPE_COLORS[c.contract_type] ? c.contract_type : "Sonstiges";
-      map[key] += v;
-    });
+    const fixed = contracts
+      .filter((c) => c.contract_type !== "Gehalt")
+      .reduce((s, c) => {
+        const yearly =
+          c.payment_interval === "jährlich" ||
+          c.payment_interval === "yearly";
+        return s + Number(c.amount) / (yearly ? 12 : 1);
+      }, 0);
+
+    const available = income - fixed;
+    const savingRate = income ? (available / income) * 100 : 0;
+
+    return { income, fixed, available, savingRate };
+  }, [contracts]);
+
+  /* -------- donut data ------------------------------------------- */
+  const expenseData = useMemo(() => {
+    const map = Object.fromEntries(Object.keys(TYPE_COLORS).map((k) => [k, 0]));
+    contracts
+      .filter((c) => c.contract_type !== "Gehalt")
+      .forEach((c) => {
+        const yearly =
+          c.payment_interval === "jährlich" ||
+          c.payment_interval === "yearly";
+        const v = Number(c.amount) / (yearly ? 12 : 1);
+        const key = TYPE_COLORS[c.contract_type] ? c.contract_type : "Sonstiges";
+        map[key] += v;
+      });
     return Object.entries(map)
       .filter(([, v]) => v > 0)
       .map(([name, value]) => ({ name, value }));
   }, [contracts]);
+  const expenseTotal = expenseData.reduce((s, e) => s + e.value, 0);
 
-  const total = chartData.reduce((s, e) => s + e.value, 0);
-  const legend = (val, entry) =>
-    `${TYPE_LABEL[val]}: ${((entry.payload.value / total) * 100).toFixed(0)}%`;
+  const incomeData = useMemo(() => {
+    const sal = contracts.filter((c) => c.contract_type === "Gehalt");
+    if (sal.length <= 1) return [];
+    return sal.map((c) => ({ name: c.name, value: c.amount }));
+  }, [contracts]);
+  const incomeTotal = incomeData.reduce((s, e) => s + e.value, 0);
 
-  const cur =
-    localStorage.getItem(
-      `currency_${localStorage.getItem("currentEmail")}`
-    ) || "€";
+  /* -------- upcoming list & sum ---------------------------------- */
+  const upcoming = useMemo(() => upcomingPayments(contracts), [contracts]);
+  const upcomingSum = upcoming.reduce((s, x) => s + x.amount, 0);
 
-  /* ------------------------------------------------ JSX ---------- */
+  /* -------- render ----------------------------------------------- */
+  if (loading)
+    return (
+      <main className="container mx-auto pt-24 p-6">
+        <p className="text-white/70">Loading …</p>
+      </main>
+    );
+  if (err)
+    return (
+      <main className="container mx-auto pt-24 p-6">
+        <p className="text-red-300">{err}</p>
+      </main>
+    );
+
   return (
-    <main className="container mx-auto pt-24 p-6 animate-fadeIn">
-      <h1 className="text-3xl font-semibold text-white mb-6">Statistics</h1>
+    <main className="container mx-auto pt-24 p-6 animate-fadeIn space-y-10">
+      {/* KPI grid */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPI label="Income" value={kpi.income.toFixed(2)} postfix={` ${cur}`} />
+        <KPI label="Fixed" value={kpi.fixed.toFixed(2)} postfix={` ${cur}`} color="rose" />
+        <KPI
+          label="Available"
+          value={kpi.available.toFixed(2)}
+          postfix={` ${cur}`}
+          color={kpi.available >= 0 ? "emerald" : "rose"}
+        />
+        <KPI
+          label="Savings Rate"
+          value={kpi.savingRate.toFixed(0)}
+          postfix="%"
+          color="sky"
+        />
+      </div>
 
-      {loading ? (
-        <div className="text-center text-white/70 py-10">Loading…</div>
-      ) : error ? (
-        <div className="glass-card p-4 text-red-300">{error}</div>
-      ) : (
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* overview card */}
-          <div className="glass-card p-6">
-            <h2 className="text-xl font-medium mb-4 text-white">Overview</h2>
-            <ul className="space-y-2 text-lg text-white/90">
-              <li>
-                <b>Income:</b> {salary.toFixed(2)} {cur}
-              </li>
-              <li>
-                <b>Fixed / month:</b> {fix.toFixed(2)} {cur}
-              </li>
-              <li>
-                <b>Available:</b> {avail.toFixed(2)} {cur}
-              </li>
-            </ul>
-          </div>
+      {/* two donuts */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Expense split */}
+        <Card title="Expense split (monthly)">
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie
+                data={expenseData}
+                dataKey="value"
+                innerRadius="55%"
+                paddingAngle={5}
+              >
+                {expenseData.map((e) => (
+                  <Cell key={e.name} fill={TYPE_COLORS[e.name]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(v) => `${v.toFixed(2)} ${cur}`}
+                contentStyle={glassTooltipStyle}
+              />
+              <Legend
+                verticalAlign="bottom"
+                formatter={(value) => {
+                  const item = expenseData.find((x) => x.name === value);
+                  const pct = ((item.value / expenseTotal) * 100).toFixed(0);
+                  return `${value} — ${pct}%`;
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </Card>
 
-          {/* donut */}
-          <div className="glass-card p-6">
-            <h2 className="text-xl font-medium mb-4 text-white">
-              Distribution by type
-            </h2>
-            <ResponsiveContainer width="100%" height={300}>
+        {/* Income split (if >1 salary) */}
+        {incomeData.length > 0 && (
+          <Card title="Income split">
+            <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
-                  data={chartData}
+                  data={incomeData}
                   dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="50%"
-                  outerRadius="80%"
-                  paddingAngle={6}
-                >
-                  {chartData.map((e) => (
-                    <Cell key={e.name} fill={TYPE_COLORS[e.name]} />
-                  ))}
-                </Pie>
+                  innerRadius="55%"
+                  paddingAngle={5}
+                  fill="#10B981"
+                />
                 <Tooltip
-                  contentStyle={{
-                    background: "rgba(0,0,0,.7)",
-                    border: "none",
-                    color: "#fff",
-                  }}
                   formatter={(v) => `${v.toFixed(2)} ${cur}`}
+                  contentStyle={glassTooltipStyle}
                 />
                 <Legend
-                  iconType="circle"
-                  layout="horizontal"
                   verticalAlign="bottom"
-                  formatter={legend}
-                  wrapperStyle={{ paddingTop: 10, color: "#fff" }}
+                  formatter={(value) => {
+                    const item = incomeData.find((x) => x.name === value);
+                    const pct = ((item.value / incomeTotal) * 100).toFixed(0);
+                    return `${value} — ${pct}%`;
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
-          </div>
-        </div>
+          </Card>
+        )}
+      </div>
+
+      {/* Upcoming payments */}
+      {upcoming.length > 0 && (
+        <Card title="Upcoming payments (next 30 days)">
+          <table className="min-w-full text-white/90 text-sm">
+            <thead>
+              <tr className="text-left">
+                <th className="pb-2">Date</th>
+                <th className="pb-2">Name</th>
+                <th className="pb-2">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {upcoming.map((u) => (
+                <tr key={u.id} className="border-t border-white/10">
+                  <td className="py-2">
+                    {u.date.toLocaleDateString(undefined, {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  </td>
+                  <td className="py-2">{u.name}</td>
+                  <td className="py-2">
+                    {u.amount.toFixed(2)} {cur}
+                  </td>
+                </tr>
+              ))}
+              {/* total row */}
+              <tr className="border-t border-white/10">
+                <td className="py-2 font-semibold">Total</td>
+                <td />
+                <td className="py-2 font-semibold">
+                  {upcomingSum.toFixed(2)} {cur}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </Card>
       )}
     </main>
   );
