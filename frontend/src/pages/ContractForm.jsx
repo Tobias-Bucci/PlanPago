@@ -12,7 +12,6 @@ const TYPE_OPTIONS = [
   ["Leasing",     "Leasing"],
   ["Other",       "Sonstiges"],
 ];
-/* Back-end keywords */
 const INTERVAL_OPTIONS = [
   ["Monthly",  "monthly"],
   ["Yearly",   "yearly"],
@@ -21,10 +20,10 @@ const INTERVAL_OPTIONS = [
 
 export default function ContractForm() {
   /* ───── routing info ─────────────────────────────── */
-  const { id }     = useParams();
-  const isEdit     = Boolean(id);
-  const { state }  = useLocation();
-  const navigate   = useNavigate();
+  const { id }   = useParams();
+  const isEdit   = Boolean(id);
+  const { state } = useLocation();
+  const navigate = useNavigate();
 
   /* ───── component state ──────────────────────────── */
   const [form, setForm] = useState({
@@ -35,7 +34,7 @@ export default function ContractForm() {
   const [country,  setCountry] = useState("");
   const [currency, setCur]     = useState("€");
   const [msg,      setMsg]     = useState("");
-  const [busy,     setBusy]    = useState(false);      // <── NEW: blocks double click
+  const [busy,     setBusy]    = useState(false);
 
   /* ───── preload user context & contract ──────────── */
   useEffect(() => {
@@ -54,9 +53,9 @@ export default function ContractForm() {
     setForm(f => ({
       ...f, ...c,
       start_date: c.start_date?.slice(0, 10) || "",
-      end_date:   c.end_date?.slice(0, 10)   || "",
-      netto: c.contract_type === "Gehalt" ? c.amount : "",
-      brutto: "",
+      end_date  : c.end_date?.slice(0, 10)   || "",
+      netto     : c.contract_type === "Gehalt" ? c.amount : "",
+      brutto    : "",
     }));
 
   const fetchContract = async () => {
@@ -81,15 +80,21 @@ export default function ContractForm() {
   const token    = localStorage.getItem("token");
 
   const buildPayload = () => {
-    if (!form.name || !form.contract_type || !form.start_date)
-      return setMsg("Please fill out all required fields."), null;
-    if (!country)
-      return setMsg("Please select a country first."), null;
+    if (!form.name || !form.contract_type || !form.start_date) {
+      setMsg("Please fill out all required fields.");
+      return null;
+    }
+    if (!country) {
+      setMsg("Please select a country first.");
+      return null;
+    }
     if (
       form.contract_type !== "Gehalt" &&
       (!form.amount || Number(form.amount) <= 0)
-    )
-      return setMsg("Please enter an amount."), null;
+    ) {
+      setMsg("Please enter an amount.");
+      return null;
+    }
 
     const amount =
       form.contract_type === "Gehalt"
@@ -97,38 +102,33 @@ export default function ContractForm() {
         : Number(form.amount);
 
     return {
-      name: form.name,
-      contract_type: form.contract_type,
-      start_date: iso(form.start_date),
-      end_date: iso(form.end_date),
+      name            : form.name,
+      contract_type   : form.contract_type,
+      start_date      : iso(form.start_date),
+      end_date        : iso(form.end_date),
       amount,
       payment_interval: form.payment_interval,
-      status: "active",
-      notes: form.notes,
+      status          : "active",
+      notes           : form.notes,
     };
   };
 
   /* ───── submit handler with lock ─────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (busy) return;              // already running
+    if (busy) return;
     const payload = buildPayload();
     if (!payload) return;
 
-    setBusy(true);
-    setMsg("");
-
+    setBusy(true); setMsg("");
     try {
       const method = isEdit ? "PATCH" : "POST";
       const url    = isEdit ? `${API}${id}` : API;
 
       const r = await fetch(url, {
         method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body   : JSON.stringify(payload),
       });
 
       if (!r.ok) {
@@ -149,11 +149,11 @@ export default function ContractForm() {
       /* optional file upload */
       if (form.files?.length) {
         const fd = new FormData();
-        Array.from(form.files).forEach((f) => fd.append("files", f));
+        Array.from(form.files).forEach(f => fd.append("files", f));
         await fetch(`${API}${cid}/files`, {
-          method: "POST",
+          method : "POST",
           headers: { Authorization: `Bearer ${token}` },
-          body: fd,
+          body   : fd,
         });
       }
       navigate("/dashboard");
@@ -192,9 +192,7 @@ export default function ContractForm() {
           >
             <option value="">Contract type</option>
             {TYPE_OPTIONS.map(([l, v]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
+              <option key={v} value={v}>{l}</option>
             ))}
           </select>
 
@@ -256,9 +254,7 @@ export default function ContractForm() {
           >
             <option value="">Payment interval</option>
             {INTERVAL_OPTIONS.map(([l, v]) => (
-              <option key={v} value={v}>
-                {l}
-              </option>
+              <option key={v} value={v}>{l}</option>
             ))}
           </select>
 
@@ -309,10 +305,7 @@ export default function ContractForm() {
             />
           </div>
 
-          <button
-            className="btn-primary w-full"
-            disabled={busy}
-          >
+          <button className="btn-primary w-full" disabled={busy}>
             {busy ? "Please wait…" : isEdit ? "Save" : "Create"}
           </button>
         </form>

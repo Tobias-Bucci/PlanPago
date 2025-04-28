@@ -1,6 +1,5 @@
-# backend/app/schemas.py
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
 
 # ───────── User schemas ────────────────────────────────────────────
@@ -16,7 +15,7 @@ class User(UserBase):
     id: int
     email_reminders_enabled: bool
     country: Optional[str] = None
-    currency: Optional[str] = None   # ✅ lower-case
+    currency: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -84,3 +83,9 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+
+# ───────── Pagination wrapper ─────────────────────────────────────
+class PaginatedContracts(BaseModel):
+    items: List[Contract]
+    total: int
