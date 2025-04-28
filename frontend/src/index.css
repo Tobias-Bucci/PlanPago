@@ -5,28 +5,32 @@
 
 /* ─── Brand palette ───────────────────────────────────────────── */
 :root{
-  --brand          : #1e63ff;   /* sampled from logo */
-  --brand-light    : #4f7dff;   /* hover / lighter */
-  --secondary      : #9b5de5;   /* accent-violet */
+  --brand       : #1e63ff;   /* Logo-Blau */
+  --brand-light : #4f7dff;   /* Hover */
+  --secondary   : #9b5de5;   /* Neon-Pink/Violet */
 }
 
-/* ─── Global background  ──────────────────────────────────────── */
+/* ─── Global background ──────────────────────────────────────── */
 body{
   @apply text-white antialiased min-h-screen;
+
   background:
-    radial-gradient(circle at 50% 30%, rgba(30,99,255,.40) 0%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(30,99,255,.40) 0%, transparent 70%),
+    radial-gradient(circle at 70% 70%, rgba(155,93,229,.30) 0%, transparent 70%),
     #0b0e17;
-  background-size:200% 200%;
-  animation:bgShift 15s ease-in-out infinite;
-}
-@keyframes bgShift{
-  0%,100%{background-position:0 0}
-  50%    {background-position:100% 100%}
+  background-repeat:no-repeat;
+  background-position:30% 30%, 70% 70%, center;
+  background-size:cover, cover, cover;
+  animation:none;
+
+  /* verhindert „weißes Aufleuchten“ in Safari */
+  color-scheme: dark light;
 }
 
 /* ─── Glass card ──────────────────────────────────────────────── */
 .glass-card{
   backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);   /* iOS */
   background-color:rgba(255,255,255,.05);
   border:1px solid rgba(255,255,255,.20);
   border-radius:1.5rem;
@@ -42,15 +46,36 @@ body{
 select.frosted-input,
 textarea.frosted-input{
   @apply w-full px-4 py-2 rounded-lg text-white placeholder-white/70 appearance-none;
+  font-size:16px;                              /* kein Auto-Zoom in iOS */
   backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
   background-color:rgba(255,255,255,.10);
   border:1px solid rgba(255,255,255,.25);
+  color:#ffffff;                               /* Fallback für ältere Safari-Versionen */
   transition:background .15s;
 }
 .frosted-input:focus{
   outline:none;
   box-shadow:0 0 0 2px var(--brand);
   background-color:rgba(255,255,255,.15);
+}
+
+/* iOS Spezial-Patch ─ verhindert weiße Felder & Textverlust */
+@supports (-webkit-touch-callout: none) {
+
+  /* forcierter dunkler Glas-Hintergrund, damit Blur nicht strahlend weiß wird */
+  .frosted-input{
+    background-color:rgba(30,34,47,.35) !important;   /* etwas dunkler als Desktop */
+    -webkit-text-fill-color:#ffffff !important;       /* Text immer weiß */
+  }
+
+  /* AutoFill-Layer (gelb-grün) überschreiben */
+  input.frosted-input:-webkit-autofill,
+  select.frosted-input:-webkit-autofill,
+  textarea.frosted-input:-webkit-autofill{
+    -webkit-box-shadow:0 0 0 1000px rgba(30,34,47,.35) inset !important;
+    -webkit-text-fill-color:#ffffff !important;
+  }
 }
 
 /* little chevron for selects */
@@ -60,16 +85,15 @@ select.frosted-input{
   background-position:right .8rem center;
   background-size:.8rem;
 }
-
 select.frosted-input option{
-  background-color:#152043;   /* dunkles Navy */
+  background-color:#152043;
   color:#ffffff;
 }
 
-/* gefrosteter File-Input (immer gleiches Aussehen) */
+/* ─── Gefrosteter File-Input ─────────────────────────────────── */
 input[type="file"].frosted-file{
   @apply w-full cursor-pointer text-sm text-white/80 rounded-lg p-2;
-  backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);  -webkit-backdrop-filter:blur(8px);
   background-color:rgba(255,255,255,.10);
   border:1px solid rgba(255,255,255,.25);
   transition:background .15s;
@@ -77,15 +101,6 @@ input[type="file"].frosted-file{
 input[type="file"].frosted-file:hover{
   background-color:rgba(255,255,255,.15);
 }
-
-/* ─── File input (hidden native + custom label) ───────────────── */
-.frosted-file{
-  @apply cursor-pointer w-full text-sm text-white/80 rounded-lg p-2 border border-white/25;
-  backdrop-filter:blur(8px);
-  background-color:rgba(255,255,255,.10);
-  transition:background .15s;
-}
-.frosted-file:hover{background-color:rgba(255,255,255,.15);}
 
 /* ─── Buttons ─────────────────────────────────────────────────── */
 .btn-primary,
@@ -110,7 +125,7 @@ input[type="file"].frosted-file:hover{
   box-shadow:0 10px 18px rgba(155,93,229,.35);
 }
 
-/* ─── Pop-in anim for cards ───────────────────────────────────── */
+/* ─── Pop-in anim for cards ──────────────────────────────────── */
 @keyframes pop{
   0%  {opacity:0; transform:scale(.92) translateY(20px)}
   100%{opacity:1; transform:scale(1)   translateY(0)}
