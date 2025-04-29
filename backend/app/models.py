@@ -33,12 +33,12 @@ class Contract(Base):
 
     id               = Column(Integer, primary_key=True, index=True)
     name             = Column(String, nullable=False)
-    contract_type    = Column(String, nullable=False)
+    contract_type    = Column(String, nullable=False)  # expects: rent, insurance, streaming, salary, leasing, other
     start_date       = Column(DateTime, nullable=False)
     end_date         = Column(DateTime, nullable=True)
     amount           = Column(Float, nullable=False)
-    payment_interval = Column(String, nullable=False)
-    status           = Column(String, default="active", nullable=False)
+    payment_interval = Column(String, nullable=False)  # expects: monthly, yearly, one-time
+    status           = Column(String, default="active", nullable=False)  # expects: active, cancelled, expired
     notes            = Column(String, nullable=True)
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)

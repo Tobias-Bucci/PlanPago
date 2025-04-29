@@ -16,11 +16,11 @@ import { upcomingPayments, buildMonthSeries } from "../utils/statsHelpers";
 
 /* Farb-Map & Glass-Tooltip-Style */
 const TYPE_COLORS = {
-  Miete: "#EF4444",
-  Streaming: "#EC4899",
-  Versicherung: "#3B82F6",
-  Leasing: "#F59E0B",
-  Sonstiges: "#6B7280",
+  rent: "#EF4444",
+  streaming: "#EC4899",
+  insurance: "#3B82F6",
+  leasing: "#F59E0B",
+  other: "#6B7280",
 };
 const glassTooltipStyle = {
   background: "rgba(255,255,255,.08)",
@@ -66,17 +66,15 @@ export default function Stats() {
     })();
   }, [API, authHeader]);
 
-  /* KPI-Berechnung */
+  /* KPI calculation */
   const kpi = useMemo(() => {
     const income = contracts
-      .filter((c) => c.contract_type === "Gehalt")
+      .filter((c) => c.contract_type === "salary")
       .reduce((s, c) => s + Number(c.amount), 0);
     const fixed = contracts
-      .filter((c) => c.contract_type !== "Gehalt")
+      .filter((c) => c.contract_type !== "salary")
       .reduce((s, c) => {
-        const yearly =
-          c.payment_interval === "jährlich" ||
-          c.payment_interval === "yearly";
+        const yearly = c.payment_interval === "yearly";
         return s + Number(c.amount) / (yearly ? 12 : 1);
       }, 0);
     const available   = income - fixed;
@@ -90,15 +88,13 @@ export default function Stats() {
       Object.keys(TYPE_COLORS).map((k) => [k, 0])
     );
     contracts
-      .filter((c) => c.contract_type !== "Gehalt")
+      .filter((c) => c.contract_type !== "salary")
       .forEach((c) => {
-        const yearly =
-          c.payment_interval === "jährlich" ||
-          c.payment_interval === "yearly";
+        const yearly = c.payment_interval === "yearly";
         const v = Number(c.amount) / (yearly ? 12 : 1);
         const key = TYPE_COLORS[c.contract_type]
           ? c.contract_type
-          : "Sonstiges";
+          : "other";
         map[key] += v;
       });
     return Object.entries(map)
@@ -107,16 +103,21 @@ export default function Stats() {
   }, [contracts]);
   const expenseTotal = expenseData.reduce((s, e) => s + e.value, 0);
 
-  /* Income-Donut (falls mehrere Gehälter vorhanden) */
+  /* Income-Donut (if multiple salaries) */
   const incomeData = useMemo(() => {
-    const sal = contracts.filter((c) => c.contract_type === "Gehalt");
-    return sal.map((c) => ({ name: c.name, value: Number(c.amount) }));
+    const sal = contracts.filter((c) => c.contract_type === "salary");
+    return sal.length > 1
+      ? sal.map((c) => ({ name: c.name, value: Number(c.amount) }))
+      : [];
   }, [contracts]);
   const incomeTotal = incomeData.reduce((s, e) => s + e.value, 0);
 
   /* Upcoming payments */
   const upcoming    = useMemo(() => upcomingPayments(contracts), [contracts]);
-  const upcomingSum = upcoming.reduce((s, x) => s + x.amount, 0);
+  const upcomingSum = useMemo(() => 
+    upcoming.reduce((s, x) => s + (x.type !== 'salary' ? x.amount : 0), 0),
+    [upcoming]
+  );
 
   if (loading)
     return (
@@ -182,7 +183,7 @@ export default function Stats() {
 
         {/* Income split */}
         <Card title="Income split">
-          {incomeData.length > 1 ? (
+          {incomeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
@@ -235,16 +236,16 @@ export default function Stats() {
                     })}
                   </td>
                   <td className="py-2">{u.name}</td>
-                  <td className="py-2">
-                    {u.amount.toFixed(2)} {cur}
+                  <td className={`py-2 ${u.type === 'salary' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {u.type === 'salary' ? '+' : '-'}{u.amount.toFixed(2)} {cur}
                   </td>
                 </tr>
               ))}
               <tr className="border-t border-white/10">
-                <td className="py-2 font-semibold">Total</td>
+                <td className="py-2 font-semibold">Total Expenses</td>
                 <td />
-                <td className="py-2 font-semibold">
-                  {upcomingSum.toFixed(2)} {cur}
+                <td className="py-2 font-semibold text-red-400">
+                  -{upcomingSum.toFixed(2)} {cur}
                 </td>
               </tr>
             </tbody>

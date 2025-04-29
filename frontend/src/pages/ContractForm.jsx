@@ -5,12 +5,12 @@ import { computeNet } from "../utils/taxUtils";
 
 const API = `${API_BASE}/contracts/`;
 const TYPE_OPTIONS = [
-  ["Rent",        "Miete"],
-  ["Insurance",   "Versicherung"],
-  ["Streaming",   "Streaming"],
-  ["Salary",      "Gehalt"],
-  ["Leasing",     "Leasing"],
-  ["Other",       "Sonstiges"],
+  ["Rent",        "rent"],
+  ["Insurance",   "insurance"],
+  ["Streaming",   "streaming"],
+  ["Salary",      "salary"],
+  ["Leasing",     "leasing"],
+  ["Other",       "other"],
 ];
 const INTERVAL_OPTIONS = [
   ["Monthly",  "monthly"],
@@ -54,7 +54,7 @@ export default function ContractForm() {
       ...f, ...c,
       start_date: c.start_date?.slice(0, 10) || "",
       end_date  : c.end_date?.slice(0, 10)   || "",
-      netto     : c.contract_type === "Gehalt" ? c.amount : "",
+      netto     : c.contract_type === "salary" ? c.amount : "",
       brutto    : "",
     }));
 
@@ -68,7 +68,7 @@ export default function ContractForm() {
 
   /* ───── live net-salary calculation ─────────────── */
   useEffect(() => {
-    if (form.contract_type === "Gehalt" && form.brutto && country) {
+    if (form.contract_type === "salary" && form.brutto && country) {
       const net = computeNet(Number(form.brutto), country);
       setForm(f => ({ ...f, netto: net.toFixed(2) }));
     }
@@ -89,7 +89,7 @@ export default function ContractForm() {
       return null;
     }
     if (
-      form.contract_type !== "Gehalt" &&
+      form.contract_type !== "salary" &&
       (!form.amount || Number(form.amount) <= 0)
     ) {
       setMsg("Please enter an amount.");
@@ -97,7 +97,7 @@ export default function ContractForm() {
     }
 
     const amount =
-      form.contract_type === "Gehalt"
+      form.contract_type === "salary"
         ? Number(form.netto || 0)
         : Number(form.amount);
 
@@ -196,7 +196,7 @@ export default function ContractForm() {
             ))}
           </select>
 
-          {form.contract_type === "Gehalt" && (
+          {form.contract_type === "salary" && (
             <>
               <input
                 className="frosted-input"
@@ -217,7 +217,7 @@ export default function ContractForm() {
             </>
           )}
 
-          {form.contract_type && form.contract_type !== "Gehalt" && (
+          {form.contract_type && form.contract_type !== "salary" && (
             <input
               className="frosted-input"
               type="number"

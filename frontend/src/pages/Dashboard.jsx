@@ -14,22 +14,22 @@ import ConfirmModal from "../components/ConfirmModal";
 /* ───────── constants ─────────────────────────────────────────── */
 const PAGE_SIZE = 10;
 
-/* label → value (English UI, German keyword for API) */
+/* label → value (English UI, English keyword for API) */
 const TYPE_OPTIONS = [
   { label: "All types", value: "" },
-  { label: "Rent", value: "Miete" },
-  { label: "Insurance", value: "Versicherung" },
-  { label: "Streaming", value: "Streaming" },
-  { label: "Salary", value: "Gehalt" },
-  { label: "Leasing", value: "Leasing" },
-  { label: "Other", value: "Sonstiges" },
+  { label: "Rent", value: "rent" },
+  { label: "Insurance", value: "insurance" },
+  { label: "Streaming", value: "streaming" },
+  { label: "Salary", value: "salary" },
+  { label: "Leasing", value: "leasing" },
+  { label: "Other", value: "other" },
 ];
 
 const STATUS_OPTIONS = [
   { label: "Any status", value: "" },
-  { label: "active", value: "active" },
-  { label: "cancelled", value: "cancelled" },
-  { label: "expired", value: "expired" },
+  { label: "Active", value: "active" },
+  { label: "Cancelled", value: "cancelled" },
+  { label: "Expired", value: "expired" },
 ];
 
 /* ───────── component ────────────────────────────────────────── */

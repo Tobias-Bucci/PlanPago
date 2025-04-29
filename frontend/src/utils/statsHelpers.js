@@ -13,7 +13,7 @@ export function buildMonthSeries(contracts) {
     const start = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1); // 12 months back +1
   
     contracts.forEach((c) => {
-      const isSalary = c.contract_type === "Gehalt";
+      const isSalary = c.contract_type === "salary";
       const monthly =
         c.payment_interval === "jährlich" ||
         c.payment_interval === "yearly"
@@ -42,21 +42,30 @@ export function buildMonthSeries(contracts) {
     const today = new Date();
   
     contracts.forEach((c) => {
-      if (c.contract_type === "Gehalt") return; // skip salaries
+      // Skip one-time payments that are already past
+      if (c.payment_interval === "one-time" && new Date(c.start_date) < today) return;
+
       let due = new Date(c.start_date);
   
-      // advance to next due date
-      const step =
-        c.payment_interval === "jährlich" || c.payment_interval === "yearly"
-          ? 365
-          : 30; // rough; good enough for list
-      while (due < today) due.setDate(due.getDate() + step);
+      // advance to next due date if not one-time
+      if (c.payment_interval !== "one-time") {
+        const step =
+          c.payment_interval === "yearly"
+            ? 365
+            : 30; // rough; good enough for list
+        while (due < today) due.setDate(due.getDate() + step);
+      }
   
       const diff = (due - today) / 864e5;
-      if (diff <= daysAhead)
-        res.push({ id: c.id, name: c.name, date: due, amount: c.amount });
+      if (diff <= daysAhead && diff >= 0) // Only include future or today's payments within the window
+        res.push({ 
+          id: c.id, 
+          name: c.name, 
+          date: due, 
+          amount: c.amount, 
+          type: c.contract_type // Include type
+        });
     });
   
     return res.sort((a, b) => a.date - b.date).slice(0, 5);
   }
-  

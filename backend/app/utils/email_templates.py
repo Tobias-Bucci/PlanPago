@@ -1,140 +1,142 @@
 TEMPLATES = {
     "payment": {
-        "Miete": {
-            "subject": "PlanPago: Mietzahlung für \"{name}\" in {days} Tagen fällig",
+        "rent": {
+            "subject": "PlanPago: Rent payment for '{name}' due in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihre Mietzahlung für den Vertrag \"{name}\" in Höhe von {amount} EUR ist in {days} Tagen fällig (am {date}).\n"
-                "Bitte stellen Sie sicher, dass der Betrag rechtzeitig überwiesen wird.\n\n"
-                "Mit besten Grüßen,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your rent payment for contract '{name}' of {amount} EUR is due in {days} days (on {date}).\n"
+                "Please ensure the amount is transferred on time.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Versicherung": {
-            "subject": "PlanPago: Versicherungsprämie für \"{name}\" in {days} Tagen fällig",
+        "insurance": {
+            "subject": "PlanPago: Insurance premium for '{name}' due in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Die Prämie für Ihre Versicherung \"{name}\" in Höhe von {amount} EUR ist in {days} Tagen fällig (am {date}).\n"
-                "Vergessen Sie nicht, rechtzeitig zu zahlen, damit Ihr Schutz bestehen bleibt.\n\n"
-                "Viele Grüße,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "The premium for your insurance '{name}' of {amount} EUR is due in {days} days (on {date}).\n"
+                "Please pay on time to keep your coverage active.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Streaming": {
-            "subject": "PlanPago: Abo-Verlängerung für \"{name}\" in {days} Tagen",
+        "streaming": {
+            "subject": "PlanPago: Streaming subscription for '{name}' due in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihr Streaming-Abonnement \"{name}\" für {amount} EUR läuft in {days} Tagen ab (am {date}).\n"
-                "Denken Sie daran, Ihr Abo rechtzeitig zu erneuern.\n\n"
-                "Beste Grüße,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your streaming subscription '{name}' of {amount} EUR is due in {days} days (on {date}).\n"
+                "Please renew your subscription on time.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Gehalt": {
-            "subject": "PlanPago: Gehaltszahlung in {days} Tagen",
+        "salary": {
+            "subject": "PlanPago: Salary payment in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihre Gehaltszahlung in Höhe von {amount} EUR wird in {days} Tagen eingehen (am {date}).\n"
-                "Überprüfen Sie bei Bedarf Ihre Kontoauszüge, um sicherzugehen.\n\n"
-                "Herzliche Grüße,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your salary payment of {amount} EUR will be received in {days} days (on {date}).\n"
+                "Please check your account statement if needed.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Leasing": {
-            "subject": "PlanPago: Leasingrate für \"{name}\" in {days} Tagen fällig",
+        "leasing": {
+            "subject": "PlanPago: Leasing rate for '{name}' due in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Die nächste Leasingrate für \"{name}\" in Höhe von {amount} EUR ist in {days} Tagen fällig (am {date}).\n"
-                "Bitte sorgen Sie dafür, dass das Geld rechtzeitig verfügbar ist.\n\n"
-                "Viele Grüße,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "The next leasing rate for '{name}' of {amount} EUR is due in {days} days (on {date}).\n"
+                "Please ensure the funds are available on time.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Sonstiges": {
-            "subject": "PlanPago: Zahlung für \"{name}\" in {days} Tagen",
+        "other": {
+            "subject": "PlanPago: Payment for '{name}' due in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Für Ihren Vertrag \"{name}\" ist eine Zahlung in Höhe von {amount} EUR in {days} Tagen fällig (am {date}).\n"
-                "Bitte überweisen Sie rechtzeitig.\n\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "A payment for your contract '{name}' of {amount} EUR is due in {days} days (on {date}).\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Default": {
-            "subject": "PlanPago: Zahlung in {days} Tagen fällig",
+        "default": {
+            "subject": "PlanPago: Payment due in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Eine Zahlung in Höhe von {amount} EUR ist in {days} Tagen fällig (am {date}).\n\n"
-                "Beste Grüße,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "A payment of {amount} EUR is due in {days} days (on {date}).\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         }
     },
     "end": {
-        "Miete": {
-            "subject": "PlanPago: Mietvertrag \"{name}\" endet in {days} Tagen",
+        "rent": {
+            "subject": "PlanPago: Rent contract '{name}' ends in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihr Mietvertrag \"{name}\" endet in {days} Tagen (am {date}).\n"
-                "Sie können ihn bei Bedarf rechtzeitig kündigen oder verlängern.\n\n"
-                "Mit freundlichen Grüßen,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your rent contract '{name}' ends in {days} days (on {date}).\n"
+                "You can cancel or renew it as needed.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Versicherung": {
-            "subject": "PlanPago: Versicherungsvertrag \"{name}\" endet in {days} Tagen",
+        "insurance": {
+            "subject": "PlanPago: Insurance contract '{name}' ends in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihr Versicherungsvertrag \"{name}\" läuft in {days} Tagen aus (am {date}).\n"
-                "Bitte prüfen Sie Ihre Optionen zur Verlängerung oder Änderung.\n\n"
-                "Beste Grüße,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your insurance contract '{name}' ends in {days} days (on {date}).\n"
+                "Please check your options for renewal or changes.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Streaming": {
-            "subject": "PlanPago: Streamingvertrag \"{name}\" endet in {days} Tagen",
+        "streaming": {
+            "subject": "PlanPago: Streaming contract '{name}' ends in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihr Streaming-Vertrag \"{name}\" endet in {days} Tagen (am {date}).\n"
-                "Denken Sie daran, Ihr Abo zu verlängern, um Unterbrechungen zu vermeiden.\n\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your streaming contract '{name}' ends in {days} days (on {date}).\n"
+                "Please renew your subscription to avoid interruptions.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Gehalt": {
-            "subject": "PlanPago: Gehaltsvertrag endet in {days} Tagen",
+        "salary": {
+            "subject": "PlanPago: Salary contract ends in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihr Gehaltsvertrag endet in {days} Tagen (am {date}).\n"
-                "Bitte klären Sie Änderungen oder Verlängerungen rechtzeitig.\n\n"
-                "Mit besten Grüßen,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your salary contract ends in {days} days (on {date}).\n"
+                "Please clarify changes or extensions in time.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Leasing": {
-            "subject": "PlanPago: Leasingvertrag \"{name}\" endet in {days} Tagen",
+        "leasing": {
+            "subject": "PlanPago: Leasing contract '{name}' ends in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihr Leasingvertrag \"{name}\" läuft in {days} Tagen aus (am {date}).\n"
-                "Überlegen Sie, ob Sie einen neuen Vertrag abschließen möchten.\n\n"
-                "Viele Grüße,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your leasing contract '{name}' ends in {days} days (on {date}).\n"
+                "Consider signing a new contract if needed.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Sonstiges": {
-            "subject": "PlanPago: Vertrag \"{name}\" endet in {days} Tagen",
+        "other": {
+            "subject": "PlanPago: Contract '{name}' ends in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ihr Vertrag \"{name}\" endet in {days} Tagen (am {date}).\n"
-                "Bitte beachten Sie das Ende und handeln Sie entsprechend.\n\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "Your contract '{name}' ends in {days} days (on {date}).\n"
+                "Please take appropriate action.\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         },
-        "Default": {
-            "subject": "PlanPago: Vertrag endet in {days} Tagen",
+        "default": {
+            "subject": "PlanPago: Contract ends in {days} days",
             "body": (
-                "Hallo,\n\n"
-                "Ein Vertrag endet in {days} Tagen (am {date}).\n\n"
-                "Beste Grüße,\n"
-                "Ihr PlanPago-Team"
+                "Hello,\n\n"
+                "A contract ends in {days} days (on {date}).\n\n"
+                "Best regards,\n"
+                "Your PlanPago Team"
             )
         }
     }

@@ -20,7 +20,7 @@ export default function AdminPanel() {
   const [msg,  setMsg]        = useState("");
   const [err,  setErr]        = useState("");
 
-  /* Dialog-State für ConfirmModal */
+  /* Dialog state for ConfirmModal */
   const [dialog, setDialog] = useState({ open: false });
 
   /* broadcast form */

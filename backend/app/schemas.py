@@ -35,12 +35,12 @@ class UserSettings(BaseModel):
 # ───────── Contract schemas ───────────────────────────────────────
 class ContractBase(BaseModel):
     name: str
-    contract_type: str
+    contract_type: str  # expects: rent, insurance, streaming, salary, leasing, other
     start_date: datetime
     end_date: Optional[datetime] = None
     amount: float
-    payment_interval: str
-    status: Optional[str] = "active"
+    payment_interval: str  # expects: monthly, yearly, one-time
+    status: Optional[str] = "active"  # expects: active, cancelled, expired
     notes: Optional[str] = None
 
 

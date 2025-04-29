@@ -39,8 +39,8 @@ def read_contracts(
     skip : int  = Query(0,  ge=0),
     limit: int  = Query(10, ge=1, le=100),
     q    : Optional[str] = Query(None, description="Free-text search"),
-    type : Optional[str] = Query(None, alias="type", description="Contract type filter"),
-    status: Optional[str] = Query(None, description="Status filter"),
+    type : Optional[str] = Query(None, alias="type", description="Contract type filter (rent, insurance, streaming, salary, leasing, other)"),
+    status: Optional[str] = Query(None, description="Status filter (active, cancelled, expired)"),
     db  : Session         = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
