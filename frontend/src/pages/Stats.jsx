@@ -1,4 +1,4 @@
-// Stats.jsx – new compact version (KPI grid • 2 donuts • upcoming list)
+// Stats.jsx – alle Charts & Upcoming payments immer anzeigen
 import { API_BASE } from "../config";
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -12,11 +12,9 @@ import {
 
 import Card from "../components/Card";
 import KPI from "../components/KPI";
-import { upcomingPayments } from "../utils/statsHelpers";
+import { upcomingPayments, buildMonthSeries } from "../utils/statsHelpers";
 
-/* ------------------------------------------------------------------ */
-/* colour map & frosted tooltip style                                 */
-/* ------------------------------------------------------------------ */
+/* Farb-Map & Glass-Tooltip-Style */
 const TYPE_COLORS = {
   Miete: "#EF4444",
   Streaming: "#EC4899",
@@ -24,7 +22,6 @@ const TYPE_COLORS = {
   Leasing: "#F59E0B",
   Sonstiges: "#6B7280",
 };
-
 const glassTooltipStyle = {
   background: "rgba(255,255,255,.08)",
   backdropFilter: "blur(10px) saturate(180%)",
@@ -35,13 +32,12 @@ const glassTooltipStyle = {
   padding: "0.4rem 0.6rem",
 };
 
-/* ------------------------------------------------------------------ */
 export default function Stats() {
   const [contracts, setContracts] = useState([]);
-  const [err, setErr] = useState("");
-  const [loading, setLd] = useState(true);
+  const [err, setErr]             = useState("");
+  const [loading, setLd]          = useState(true);
 
-  const API = API_BASE;
+  const API        = API_BASE;
   const authHeader = useMemo(
     () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` }),
     []
@@ -51,7 +47,7 @@ export default function Stats() {
       `currency_${localStorage.getItem("currentEmail")}`
     ) || "€";
 
-  /* -------- fetch contracts (≤100) -------------------------------- */
+  /* Contracts laden (limit=100) */
   useEffect(() => {
     (async () => {
       try {
@@ -70,12 +66,11 @@ export default function Stats() {
     })();
   }, [API, authHeader]);
 
-  /* -------- KPI values ------------------------------------------- */
+  /* KPI-Berechnung */
   const kpi = useMemo(() => {
     const income = contracts
       .filter((c) => c.contract_type === "Gehalt")
       .reduce((s, c) => s + Number(c.amount), 0);
-
     const fixed = contracts
       .filter((c) => c.contract_type !== "Gehalt")
       .reduce((s, c) => {
@@ -84,16 +79,16 @@ export default function Stats() {
           c.payment_interval === "yearly";
         return s + Number(c.amount) / (yearly ? 12 : 1);
       }, 0);
-
-    const available = income - fixed;
-    const savingRate = income ? (available / income) * 100 : 0;
-
+    const available   = income - fixed;
+    const savingRate  = income ? (available / income) * 100 : 0;
     return { income, fixed, available, savingRate };
   }, [contracts]);
 
-  /* -------- donut data ------------------------------------------- */
+  /* Expense-Donut (monthly) */
   const expenseData = useMemo(() => {
-    const map = Object.fromEntries(Object.keys(TYPE_COLORS).map((k) => [k, 0]));
+    const map = Object.fromEntries(
+      Object.keys(TYPE_COLORS).map((k) => [k, 0])
+    );
     contracts
       .filter((c) => c.contract_type !== "Gehalt")
       .forEach((c) => {
@@ -101,7 +96,9 @@ export default function Stats() {
           c.payment_interval === "jährlich" ||
           c.payment_interval === "yearly";
         const v = Number(c.amount) / (yearly ? 12 : 1);
-        const key = TYPE_COLORS[c.contract_type] ? c.contract_type : "Sonstiges";
+        const key = TYPE_COLORS[c.contract_type]
+          ? c.contract_type
+          : "Sonstiges";
         map[key] += v;
       });
     return Object.entries(map)
@@ -110,18 +107,17 @@ export default function Stats() {
   }, [contracts]);
   const expenseTotal = expenseData.reduce((s, e) => s + e.value, 0);
 
+  /* Income-Donut (falls mehrere Gehälter vorhanden) */
   const incomeData = useMemo(() => {
     const sal = contracts.filter((c) => c.contract_type === "Gehalt");
-    if (sal.length <= 1) return [];
-    return sal.map((c) => ({ name: c.name, value: c.amount }));
+    return sal.map((c) => ({ name: c.name, value: Number(c.amount) }));
   }, [contracts]);
   const incomeTotal = incomeData.reduce((s, e) => s + e.value, 0);
 
-  /* -------- upcoming list & sum ---------------------------------- */
-  const upcoming = useMemo(() => upcomingPayments(contracts), [contracts]);
+  /* Upcoming payments */
+  const upcoming    = useMemo(() => upcomingPayments(contracts), [contracts]);
   const upcomingSum = upcoming.reduce((s, x) => s + x.amount, 0);
 
-  /* -------- render ----------------------------------------------- */
   if (loading)
     return (
       <main className="container mx-auto pt-24 p-6">
@@ -137,59 +133,56 @@ export default function Stats() {
 
   return (
     <main className="container mx-auto pt-24 p-6 animate-fadeIn space-y-10">
-      {/* KPI grid */}
+
+      {/* KPI-Grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPI label="Income" value={kpi.income.toFixed(2)} postfix={` ${cur}`} />
-        <KPI label="Fixed" value={kpi.fixed.toFixed(2)} postfix={` ${cur}`} color="rose" />
-        <KPI
-          label="Available"
-          value={kpi.available.toFixed(2)}
-          postfix={` ${cur}`}
-          color={kpi.available >= 0 ? "emerald" : "rose"}
-        />
-        <KPI
-          label="Savings Rate"
-          value={kpi.savingRate.toFixed(0)}
-          postfix="%"
-          color="sky"
-        />
+        <KPI label="Income"        value={kpi.income.toFixed(2)}      postfix={` ${cur}`} />
+        <KPI label="Fixed"         value={kpi.fixed.toFixed(2)}       postfix={` ${cur}`} color="rose" />
+        <KPI label="Available"     value={kpi.available.toFixed(2)}   postfix={` ${cur}`} color={kpi.available>=0 ? "emerald":"rose"} />
+        <KPI label="Savings Rate"  value={kpi.savingRate.toFixed(0)}  postfix="%"      color="sky" />
       </div>
 
-      {/* two donuts */}
+      {/* Donut-Charts */}
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Expense split */}
         <Card title="Expense split (monthly)">
-          <ResponsiveContainer width="100%" height={280}>
-            <PieChart>
-              <Pie
-                data={expenseData}
-                dataKey="value"
-                innerRadius="55%"
-                paddingAngle={5}
-              >
-                {expenseData.map((e) => (
-                  <Cell key={e.name} fill={TYPE_COLORS[e.name]} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(v) => `${v.toFixed(2)} ${cur}`}
-                contentStyle={glassTooltipStyle}
-              />
-              <Legend
-                verticalAlign="bottom"
-                formatter={(value) => {
-                  const item = expenseData.find((x) => x.name === value);
-                  const pct = ((item.value / expenseTotal) * 100).toFixed(0);
-                  return `${value} — ${pct}%`;
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          {expenseData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={expenseData}
+                  dataKey="value"
+                  innerRadius="55%"
+                  paddingAngle={5}
+                >
+                  {expenseData.map((e) => (
+                    <Cell key={e.name} fill={TYPE_COLORS[e.name]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v) => `${v.toFixed(2)} ${cur}`}
+                  contentStyle={glassTooltipStyle}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  formatter={(value) => {
+                    const item = expenseData.find((x) => x.name === value);
+                    const pct = ((item.value / expenseTotal) * 100).toFixed(0);
+                    return `${value} — ${pct}%`;
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-white/70">
+              No expense data available.
+            </p>
+          )}
         </Card>
 
-        {/* Income split (if >1 salary) */}
-        {incomeData.length > 0 && (
-          <Card title="Income split">
+        {/* Income split */}
+        <Card title="Income split">
+          {incomeData.length > 1 ? (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
@@ -213,13 +206,17 @@ export default function Stats() {
                 />
               </PieChart>
             </ResponsiveContainer>
-          </Card>
-        )}
+          ) : (
+            <p className="text-white/70">
+              No income split data available.
+            </p>
+          )}
+        </Card>
       </div>
 
-      {/* Upcoming payments */}
-      {upcoming.length > 0 && (
-        <Card title="Upcoming payments (next 30 days)">
+      {/* Upcoming payments (next 30 days) */}
+      <Card title="Upcoming payments (next 30 days)">
+        {upcoming.length > 0 ? (
           <table className="min-w-full text-white/90 text-sm">
             <thead>
               <tr className="text-left">
@@ -243,7 +240,6 @@ export default function Stats() {
                   </td>
                 </tr>
               ))}
-              {/* total row */}
               <tr className="border-t border-white/10">
                 <td className="py-2 font-semibold">Total</td>
                 <td />
@@ -253,8 +249,12 @@ export default function Stats() {
               </tr>
             </tbody>
           </table>
-        </Card>
-      )}
+        ) : (
+          <p className="text-white/70">
+            No upcoming payments in the next 30 days.
+          </p>
+        )}
+      </Card>
     </main>
   );
 }
