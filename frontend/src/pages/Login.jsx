@@ -27,6 +27,12 @@ export default function Login() {
   const [error, setError]     = useState("");
   const [loading, setLoad]    = useState(false);
 
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetPwd, setResetPwd] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
+
   const navigate = useNavigate();
   const target   = useLocation().state?.from || "/dashboard";
   const API      = API_BASE;
@@ -79,12 +85,51 @@ export default function Login() {
     finally      { setLoad(false) }
   };
 
+  /* ── step 3: password reset ──────────────────────────────── */
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    setError(""); setResetMsg(""); setLoad(true);
+    try {
+      const r = await fetch(`${API}/users/password-reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+      if (!r.ok) throw new Error("Failed to send reset email");
+      setResetMsg("Password reset email sent. Check your inbox.");
+      setStep(4);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoad(false);
+    }
+  };
+
+  const handlePasswordResetConfirm = async (e) => {
+    e.preventDefault();
+    setError(""); setResetMsg(""); setLoad(true);
+    try {
+      const r = await fetch(`${API}/users/password-reset/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail, code: resetCode, new_password: resetPwd }),
+      });
+      if (!r.ok) throw new Error("Invalid code or expired");
+      setResetMsg("Password has been reset successfully.");
+      setResetSuccess(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoad(false);
+    }
+  };
+
   /* ── JSX ─────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="glass-card w-full max-w-md p-8 animate-pop">
         <h2 className="text-2xl font-semibold text-center mb-6 tracking-wide">
-          {step === 1 ? "Log in" : "Confirm code"}
+          {step === 1 ? "Log in" : step === 2 ? "Confirm code" : step === 3 ? "Reset Password" : "Set New Password"}
         </h2>
 
         {error && (
@@ -125,6 +170,16 @@ export default function Login() {
                 Register
               </NavLink>
             </p>
+
+            <p className="text-center text-sm text-white/80">
+              <button
+                type="button"
+                className="underline text-white"
+                onClick={() => setStep(3)}
+              >
+                Forgot Password?
+              </button>
+            </p>
           </form>
         )}
 
@@ -143,6 +198,54 @@ export default function Login() {
             <button className="btn-accent w-full" disabled={loading}>
               {loading ? "Validating…" : "Confirm"}
             </button>
+          </form>
+        )}
+
+        {/* ─── FORM – step 3 ─────────────────────────────── */}
+        {step === 3 && (
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="frosted-input"
+              value={resetEmail}
+              onChange={e => setResetEmail(e.target.value)}
+              required
+            />
+            <button className="btn-primary w-full" disabled={loading}>
+              {loading ? "Sending..." : "Send Reset Email"}
+            </button>
+            {resetMsg && (
+              <div className="mb-4 p-3 bg-emerald-700/20 text-emerald-300 rounded-lg">{resetMsg}</div>
+            )}
+          </form>
+        )}
+
+        {/* ─── FORM – step 4 ─────────────────────────────── */}
+        {step === 4 && (
+          <form onSubmit={handlePasswordResetConfirm} className="space-y-4">
+            <input
+              type="text"
+              placeholder="6-digit code"
+              className="frosted-input"
+              value={resetCode}
+              onChange={e => setResetCode(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="New password"
+              className="frosted-input"
+              value={resetPwd}
+              onChange={e => setResetPwd(e.target.value)}
+              required
+            />
+            <button className="btn-primary w-full" disabled={loading || resetSuccess}>
+              {loading ? "Resetting..." : resetSuccess ? "Done" : "Set new password"}
+            </button>
+            {resetMsg && (
+              <div className="mb-4 p-3 bg-emerald-700/20 text-emerald-300 rounded-lg">{resetMsg}</div>
+            )}
           </form>
         )}
       </div>

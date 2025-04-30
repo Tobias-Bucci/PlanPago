@@ -25,7 +25,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 # ───────── Auth / Crypto ─────────────────────────────────────────
 pwd_context   = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY    = os.getenv("e5b9c96e7b5f7fc48fbec023fb24f1b5b0f775243c2669094fb6df38a52be84a")
+SECRET_KEY    = os.getenv("SECRET_KEY")
 ALGORITHM     = "HS256"
 TOKEN_TTL_MIN = 30
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/verify-code")
@@ -313,3 +313,49 @@ def admin_broadcast(
         mail.body.strip()
     )
     return {"sent": len(recipients)}
+
+# ───────── Password Reset ───────────────────────────────────────────
+class PasswordResetRequest(BaseModel):
+    email: str
+
+class PasswordResetConfirm(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+@router.post("/password-reset")
+def request_password_reset(
+    payload: PasswordResetRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    code = f"{secrets.randbelow(10**6):06d}"
+    expires = datetime.utcnow() + timedelta(minutes=10)
+    db.add(models.VerificationCode(user_id=user.id, code=code, expires_at=expires))
+    db.commit()
+    background_tasks.add_task(email_utils.send_code_via_email, user.email, code)
+    return {"message": "Password reset email sent.", "email": user.email}
+
+@router.post("/password-reset/confirm")
+def confirm_password_reset(
+    payload: PasswordResetConfirm,
+    db: Session = Depends(get_db),
+):
+    user = db.query(models.User).filter(models.User.email == payload.email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    vc = db.query(models.VerificationCode).filter(
+        models.VerificationCode.user_id == user.id,
+        models.VerificationCode.code == payload.code,
+        models.VerificationCode.expires_at >= datetime.utcnow()
+    ).first()
+    if not vc:
+        raise HTTPException(400, "Invalid or expired code")
+    user.hashed_password = _hash(payload.new_password)
+    db.delete(vc)
+    db.commit()
+    return {"message": "Password has been reset successfully."}
