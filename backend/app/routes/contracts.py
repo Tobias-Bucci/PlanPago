@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional
+from fastapi.responses import StreamingResponse
+import csv
+from io import StringIO
 
 from .. import models, schemas, database
 from .users import get_current_user
@@ -123,3 +126,36 @@ def delete_contract(
 
     db.delete(contract); db.commit()
     return contract
+
+# ───────── Export CSV ────────────────────────────────────────────
+@router.get("/export/csv")
+def export_contracts_csv(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    contracts = db.query(models.Contract).filter(models.Contract.user_id == current_user.id).all()
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow([
+        "ID", "Name", "Type", "Start Date", "End Date", "Amount", "Payment Interval", "Status", "Notes"
+    ])
+    for c in contracts:
+        writer.writerow([
+            c.id,
+            c.name,
+            c.contract_type,
+            c.start_date.strftime("%Y-%m-%d"),
+            c.end_date.strftime("%Y-%m-%d") if c.end_date else "",
+            c.amount,
+            c.payment_interval,
+            c.status,
+            c.notes or ""
+        ])
+    si.seek(0)
+    return StreamingResponse(
+        si,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=contracts.csv"
+        },
+    )

@@ -172,13 +172,35 @@ export default function Dashboard() {
       {/* header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-semibold text-white">Overview</h1>
-        <button
-          className="btn-accent rounded-full p-3"
-          title="New contract"
-          onClick={() => navigate("/contracts/new")}
-        >
-          <PlusCircle size={24} />
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="btn-accent rounded-full p-3"
+            title="New contract"
+            onClick={() => navigate("/contracts/new")}
+          >
+            <PlusCircle size={24} />
+          </button>
+          <button
+            className="btn-primary rounded-full p-3 flex items-center gap-2"
+            title="Export all contracts as CSV"
+            onClick={async () => {
+              const res = await fetch(`${API}/contracts/export/csv`, { headers: authHeader });
+              if (!res.ok) return setErr("Export failed");
+              const blob = await res.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "contracts.csv";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="inline w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* filters */}
