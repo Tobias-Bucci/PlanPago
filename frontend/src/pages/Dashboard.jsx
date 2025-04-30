@@ -1,5 +1,6 @@
+// Dashboard.jsx  –  overview, filters, inline-expand rows & exports
 import { API_BASE } from "../config";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   PlusCircle,
@@ -8,73 +9,73 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Search,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 
 /* ───────── constants ─────────────────────────────────────────── */
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 10;                     // ← 0 caused empty pages
 
-/* label → value (English UI, English keyword for API) */
 const TYPE_OPTIONS = [
-  { label: "All types", value: "" },
-  { label: "Rent", value: "rent" },
-  { label: "Insurance", value: "insurance" },
-  { label: "Streaming", value: "streaming" },
-  { label: "Salary", value: "salary" },
-  { label: "Leasing", value: "leasing" },
-  { label: "Other", value: "other" },
+  { label: "All types",  value: "" },
+  { label: "Rent",       value: "rent" },
+  { label: "Insurance",  value: "insurance" },
+  { label: "Streaming",  value: "streaming" },
+  { label: "Salary",     value: "salary" },
+  { label: "Leasing",    value: "leasing" },
+  { label: "Other",      value: "other" },
 ];
 
 const STATUS_OPTIONS = [
   { label: "Any status", value: "" },
-  { label: "Active", value: "active" },
-  { label: "Cancelled", value: "cancelled" },
-  { label: "Expired", value: "expired" },
+  { label: "Active",     value: "active" },
+  { label: "Cancelled",  value: "cancelled" },
+  { label: "Expired",    value: "expired" },
 ];
 
 /* ───────── component ────────────────────────────────────────── */
 export default function Dashboard() {
-  /* main data */
+  /* main data & ui state */
   const [contracts, setContracts] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(0);
+  const [total, setTotal]         = useState(0);
+  const [page, setPage]           = useState(0);
 
-  /* filters & search */
-  const [query, setQuery] = useState("");
-  const [filterType, setFType] = useState("");
-  const [filterStat, setFStat] = useState("");
+  const [query, setQuery]         = useState("");
+  const [filterType, setFType]    = useState("");
+  const [filterStat, setFStat]    = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
-  /* misc UI */
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
-  const [loading, setLd] = useState(true);
+  const [msg, setMsg]     = useState("");
+  const [err, setErr]     = useState("");
+  const [loading, setLd]  = useState(true);
   const [dialog, setDialog] = useState({ open: false });
   const [expandedId, setExpandedId] = useState(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef();
 
-  const navigate = useNavigate();
-  const API = API_BASE;
-  const authHeader = useMemo(
+  const navigate    = useNavigate();
+  const API         = API_BASE;
+  const authHeader  = useMemo(
     () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` }),
     []
   );
   const currency =
-    localStorage.getItem(
-      `currency_${localStorage.getItem("currentEmail")}`
-    ) || "€";
+    localStorage.getItem(`currency_${localStorage.getItem("currentEmail")}`) ||
+    "€";
 
-  /* ───── fetch & enrich page of contracts ───────────────────── */
+  /* ───── fetch contracts page ───────────────────────────────── */
   const loadPage = useCallback(async () => {
     setLd(true);
     setErr("");
     try {
       const p = new URLSearchParams({
-        skip: page * PAGE_SIZE,
+        skip : page * PAGE_SIZE,
         limit: PAGE_SIZE,
       });
-      if (query.trim()) p.append("q", query.trim());
-      if (filterType) p.append("type", filterType);
-      if (filterStat) p.append("status", filterStat);
+      if (query.trim())   p.append("q", query.trim());
+      if (filterType)     p.append("type", filterType);
+      if (filterStat)     p.append("status", filterStat);
 
       const r = await fetch(`${API}/contracts/?${p.toString()}`, {
         headers: authHeader,
@@ -82,16 +83,17 @@ export default function Dashboard() {
       if (!r.ok) throw new Error(await r.text());
       const { items, total } = await r.json();
 
-      /* fetch attachments for visible rows only */
+      /* enrich with attachments of visible rows */
       const withFiles = await Promise.all(
         items.map(async (c) => {
-          const fr = await fetch(`${API}/contracts/${c.id}/files`, {
+          const fr   = await fetch(`${API}/contracts/${c.id}/files`, {
             headers: authHeader,
           });
           const files = fr.ok ? await fr.json() : [];
           return { ...c, files };
         })
       );
+
       setContracts(withFiles);
       setTotal(total);
     } catch (e) {
@@ -101,14 +103,12 @@ export default function Dashboard() {
     }
   }, [API, authHeader, page, query, filterType, filterStat]);
 
-  /* initial load + all dependencies */
-  useEffect(() => {
-    loadPage();
-  }, [loadPage]);
+  /* initial + dependents */
+  useEffect(() => { loadPage(); }, [loadPage]);
 
-  /* instant reload when the user types into the search box */
+  /* reload on filters/search change */
   useEffect(() => {
-    setPage(0);          // jump back to first page
+    setPage(0);
     loadPage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, filterType, filterStat]);
@@ -123,9 +123,7 @@ export default function Dashboard() {
       if (!r.ok) throw new Error("Deletion failed");
       setMsg("Contract deleted");
       loadPage();
-    } catch (e) {
-      setErr(e.message);
-    }
+    } catch (e) { setErr(e.message); }
   };
   const deleteContract = (id) =>
     setDialog({
@@ -144,9 +142,7 @@ export default function Dashboard() {
       if (!r.ok) throw new Error("Attachment could not be deleted");
       setMsg("Attachment deleted");
       loadPage();
-    } catch (e) {
-      setErr(e.message);
-    }
+    } catch (e) { setErr(e.message); }
   };
   const deleteFile = (cid, fid) =>
     setDialog({
@@ -157,11 +153,11 @@ export default function Dashboard() {
     });
 
   /* ───── pagination helpers ─────────────────────────────────── */
-  const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+  const totalPages  = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageNumbers = useMemo(() => {
     if (totalPages <= 5) return [...Array(totalPages).keys()];
     const start = Math.max(0, Math.min(page - 2, totalPages - 5));
-    return [0, 1, 2, 3, 4].map((i) => i + start);
+    return [0, 1, 2, 3, 4].map(i => i + start);
   }, [page, totalPages]);
 
   const today = new Date();
@@ -169,10 +165,11 @@ export default function Dashboard() {
   /* ───── JSX ────────────────────────────────────────────────── */
   return (
     <main className="container mx-auto pt-24 p-6 animate-fadeIn">
-      {/* header */}
+
+      {/* Header + action buttons */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-semibold text-white">Overview</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 relative">
           <button
             className="btn-accent rounded-full p-3"
             title="New contract"
@@ -181,36 +178,61 @@ export default function Dashboard() {
             <PlusCircle size={24} />
           </button>
           <button
-            className="btn-primary rounded-full p-3 flex items-center gap-2"
-            title="Export all contracts as CSV"
-            onClick={async () => {
-              const res = await fetch(`${API}/contracts/export/csv`, { headers: authHeader });
-              if (!res.ok) return setErr("Export failed");
-              const blob = await res.blob();
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = "contracts.csv";
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-              window.URL.revokeObjectURL(url);
-            }}
+            className="btn-primary rounded-full px-4 py-2 flex items-center gap-2"
+            title="Export contracts"
+            onClick={() => setExportOpen((v) => !v)}
+            ref={exportRef}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="inline w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            Export CSV
+            <FileSpreadsheet size={18} strokeWidth={2} /> / <FileText size={18} strokeWidth={2} /> Export
           </button>
+          {exportOpen && (
+            <div className="absolute right-0 mt-12 z-10 bg-[#181f3a] border border-white/10 rounded-lg shadow-lg min-w-[160px] animate-pop">
+              <button
+                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
+                onClick={async () => {
+                  setExportOpen(false);
+                  const res = await fetch(`${API}/contracts/export/csv`, { headers: authHeader });
+                  if (!res.ok) return setErr("Export failed");
+                  const blob = await res.blob();
+                  const url  = window.URL.createObjectURL(blob);
+                  const a    = Object.assign(document.createElement("a"), {
+                    href: url,
+                    download: "contracts.csv",
+                  });
+                  a.click(); window.URL.revokeObjectURL(url);
+                }}
+              >
+                <FileSpreadsheet size={18} strokeWidth={2} /> Export as CSV
+              </button>
+              <button
+                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
+                onClick={async () => {
+                  setExportOpen(false);
+                  const res = await fetch(`${API}/contracts/export/pdf`, { headers: authHeader });
+                  if (!res.ok) return setErr("Export failed");
+                  const blob = await res.blob();
+                  const url  = window.URL.createObjectURL(blob);
+                  const a    = Object.assign(document.createElement("a"), {
+                    href: url,
+                    download: "contracts.pdf",
+                  });
+                  a.click(); window.URL.revokeObjectURL(url);
+                }}
+              >
+                <FileText size={18} strokeWidth={2} /> Export as PDF
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* filters */}
+      {/* Filters */}
       <div className="glass-card p-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <button
           className="btn-primary flex items-center gap-2 sm:w-auto"
           onClick={() => setModalOpen(true)}
         >
-          <Search size={18} />
-          Search
+          <Search size={18} /> Search
         </button>
 
         <select
@@ -219,9 +241,7 @@ export default function Dashboard() {
           onChange={(e) => setFType(e.target.value)}
         >
           {TYPE_OPTIONS.map(({ label, value }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
+            <option key={value} value={value}>{label}</option>
           ))}
         </select>
 
@@ -231,18 +251,16 @@ export default function Dashboard() {
           onChange={(e) => setFStat(e.target.value)}
         >
           {STATUS_OPTIONS.map(({ label, value }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
+            <option key={value} value={value}>{label}</option>
           ))}
         </select>
       </div>
 
-      {/* flash messages */}
+      {/* Flash messages */}
       {msg && <div className="glass-card mb-4 p-3 text-emerald-200">{msg}</div>}
       {err && <div className="glass-card mb-4 p-3 text-red-300">{err}</div>}
 
-      {/* table */}
+      {/* Table */}
       {loading ? (
         <p className="text-center py-10 text-white/70">Loading contracts…</p>
       ) : contracts.length === 0 ? (
@@ -264,44 +282,30 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {contracts.map((c, idx) => {
-                const end = new Date(c.end_date || "");
-                const expired = c.end_date && end < today;
-                const isExpanded = expandedId === c.id;
+                const end       = new Date(c.end_date || "");
+                const expired   = c.end_date && end < today;
+                const expanded  = expandedId === c.id;
+
                 return (
                   <React.Fragment key={c.id}>
                     <tr
-                      className={
-                        (expired ? "opacity-50 " : "") +
-                        "hover:bg-white/10 transition cursor-pointer"
-                      }
-                      onClick={() => setExpandedId(isExpanded ? null : c.id)}
+                      className={`${expired ? "opacity-50" : ""} hover:bg-white/10 transition cursor-pointer`}
+                      onClick={() => setExpandedId(expanded ? null : c.id)}
                     >
                       <td className="px-6 py-4">{c.name}</td>
                       <td className="px-6 py-4">{c.contract_type}</td>
+                      <td className="px-6 py-4">{new Date(c.start_date).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">{c.end_date ? end.toLocaleDateString() : "-"}</td>
+                      <td className="px-6 py-4">{c.amount} {currency}</td>
                       <td className="px-6 py-4">
-                        {new Date(c.start_date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        {c.end_date ? end.toLocaleDateString() : "-"}
-                      </td>
-                      <td className="px-6 py-4">
-                        {c.amount} {currency}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={expired ? "text-red-400" : "text-emerald-300"}
-                        >
+                        <span className={expired ? "text-red-400" : "text-emerald-300"}>
                           {expired ? "Expired" : c.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 flex flex-wrap gap-2">
                         {c.files.map((f) => (
                           <div key={f.id} className="relative">
-                            <a
-                              href={`${API}${f.url}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
+                            <a href={`${API}${f.url}`} target="_blank" rel="noopener noreferrer">
                               {f.url.endsWith(".pdf") ? (
                                 <span className="text-2xl">📄</span>
                               ) : (
@@ -314,10 +318,7 @@ export default function Dashboard() {
                             </a>
                             <button
                               className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteFile(c.id, f.id);
-                              }}
+                              onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
                             >
                               ×
                             </button>
@@ -329,62 +330,40 @@ export default function Dashboard() {
                           className="btn-primary p-2"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/contracts/${c.id}/edit`, {
-                              state: { contract: c },
-                            });
+                            navigate(`/contracts/${c.id}/edit`, { state: { contract: c } });
                           }}
                         >
                           <Edit3 size={18} />
                         </button>
                         <button
                           className="btn-accent bg-red-600 hover:bg-red-700 p-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteContract(c.id);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); deleteContract(c.id); }}
                         >
                           <Trash2 size={18} />
                         </button>
                       </td>
                     </tr>
-                    {/* Notes row with animation */}
+
+                    {/* expandable notes row */}
                     <tr>
                       <td colSpan="8" style={{ padding: 0, border: 0 }}>
                         <div
-                          className={`contract-notes-transition ${
-                            isExpanded ? "open" : ""
-                          }`}
-                          style={{
-                            maxHeight: isExpanded ? 120 : 0,
-                            opacity: isExpanded ? 1 : 0,
-                            overflow: "hidden",
-                            transition:
-                              "max-height 0.35s cubic-bezier(.4,2,.6,1), opacity 0.25s",
-                          }}
+                          className={`transition-[max-height,opacity] duration-300 ${expanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"} overflow-hidden`}
                         >
-                          {isExpanded && (
+                          {expanded && (
                             <div className="p-6 bg-white/5 border-t border-white/10 animate-pop text-white/90">
                               <div className="font-semibold mb-1">Notes</div>
                               <div className="whitespace-pre-line text-white/80 min-h-[1.5em]">
-                                {c.notes ? (
-                                  c.notes
-                                ) : (
-                                  <span className="italic text-white/40">
-                                    No notes entered.
-                                  </span>
-                                )}
+                                {c.notes ? c.notes : <span className="italic text-white/40">No notes entered.</span>}
                               </div>
                             </div>
                           )}
                         </div>
                       </td>
                     </tr>
+
                     {idx < contracts.length - 1 && (
-                      <tr>
-                        <td colSpan="8">
-                          <div className="border-b border-white/10" />
-                        </td>
-                      </tr>
+                      <tr><td colSpan="8"><div className="border-b border-white/10" /></td></tr>
                     )}
                   </React.Fragment>
                 );
@@ -394,7 +373,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* pagination */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-6">
           <button
@@ -409,9 +388,7 @@ export default function Dashboard() {
             <button
               key={n}
               onClick={() => setPage(n)}
-              className={`px-3 py-1 rounded-lg ${
-                n === page ? "bg-[var(--secondary)]" : "hover:bg-white/10"
-              }`}
+              className={`px-3 py-1 rounded-lg ${n === page ? "bg-[var(--secondary)]" : "hover:bg-white/10"}`}
             >
               {n + 1}
             </button>
@@ -427,7 +404,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Confirm dialog (reuse component) */}
+      {/* Confirm dialog */}
       <ConfirmModal
         open={dialog.open}
         title={dialog.title}
@@ -436,7 +413,7 @@ export default function Dashboard() {
         onClose={() => setDialog({ open: false })}
       />
 
-      {/* Search-Modal */}
+      {/* Search modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="glass-card p-6 w-80 animate-pop">

@@ -2,9 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 import csv
-from io import StringIO
+from io import StringIO, BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.units import cm
+from reportlab.platypus import Table, TableStyle, Image as RLImage
+import base64
+import os
 
 from .. import models, schemas, database
 from .users import get_current_user
@@ -137,7 +144,7 @@ def export_contracts_csv(
     si = StringIO()
     writer = csv.writer(si)
     writer.writerow([
-        "ID", "Name", "Type", "Start Date", "End Date", "Amount", "Payment Interval", "Status", "Notes"
+        "ID", "Name", "Type", "Start Date", "End Date", "Amount", "Payment Interval", "Status"
     ])
     for c in contracts:
         writer.writerow([
@@ -148,8 +155,7 @@ def export_contracts_csv(
             c.end_date.strftime("%Y-%m-%d") if c.end_date else "",
             c.amount,
             c.payment_interval,
-            c.status,
-            c.notes or ""
+            c.status
         ])
     si.seek(0)
     return StreamingResponse(
@@ -159,3 +165,69 @@ def export_contracts_csv(
             "Content-Disposition": "attachment; filename=contracts.csv"
         },
     )
+
+# ───────── Export PDF ────────────────────────────────────────────
+@router.get("/export/pdf")
+def export_contracts_pdf(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    contracts = db.query(models.Contract).filter(models.Contract.user_id == current_user.id).all()
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    margin = 1*cm
+    table_width = width - 2*margin
+
+    # Logo
+    logo_path = os.path.join(os.path.dirname(__file__), "../../..", "frontend", "public", "PlanPago-trans.png")
+    if os.path.exists(logo_path):
+        c.drawImage(logo_path, x=(width-4*cm)/2, y=height-5*cm, width=4*cm, height=4*cm, mask='auto')
+    c.setFont("Helvetica-Bold", 22)
+    c.setFillColorRGB(30/255, 64/255, 175/255)
+    c.drawCentredString(width/2, height-6*cm, "PlanPago – Contract Overview")
+    c.setFont("Helvetica", 12)
+    c.setFillColorRGB(0,0,0)
+    c.drawCentredString(width/2, height-6.8*cm, f"Exported: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}")
+
+    # Table data (English, no notes)
+    data = [[
+        "ID", "Name", "Type", "Start Date", "End Date", "Amount", "Payment Interval", "Status"
+    ]]
+    for cobj in contracts:
+        data.append([
+            cobj.id,
+            cobj.name,
+            cobj.contract_type,
+            cobj.start_date.strftime("%Y-%m-%d"),
+            cobj.end_date.strftime("%Y-%m-%d") if cobj.end_date else "",
+            f"{cobj.amount:.2f}",
+            cobj.payment_interval,
+            cobj.status
+        ])
+    col_widths = [table_width * w for w in [0.07, 0.18, 0.13, 0.13, 0.13, 0.12, 0.12, 0.12]]
+    table = Table(data, repeatRows=1, hAlign='CENTER', colWidths=col_widths)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1E40AF")),
+        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,0), 12),
+        ("ALIGN", (0,0), (-1,0), "CENTER"),
+        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
+        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.whitesmoke, colors.lightgrey]),
+        ("FONTSIZE", (0,1), (-1,-1), 10),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("ALIGN", (0,1), (-1,-1), "CENTER"),
+        ("LEFTPADDING", (0,0), (-1,-1), 6),
+        ("RIGHTPADDING", (0,0), (-1,-1), 6),
+        ("TOPPADDING", (0,0), (-1,-1), 4),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+    table_height = table.wrapOn(c, table_width, height)[1]
+    table_x = margin
+    table_y = height-8*cm-table_height
+    table.drawOn(c, table_x, table_y)
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=contracts.pdf"})
