@@ -250,13 +250,41 @@ export default function AdminPanel() {
                           >
                             <td className={`px-6 py-4 ${i === 0 ? "pt-5" : ""} ${isLast ? "pb-5" : ""}`}>{u.id}</td>
                             <td className="px-6 py-4">{u.email}</td>
-                            <td className="px-6 py-4 text-center">
+                            <td className="px-6 py-4 text-center flex gap-2 justify-center">
                               <button
                                 onClick={() => deleteUser(u.id)}
                                 title="Delete user"
                                 className="p-2 bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 transition-shadow"
                               >
                                 <Trash2 size={18} />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setBusy(true);
+                                  setMsg("");
+                                  setErr("");
+                                  try {
+                                    const r = await fetch(`${API}/users/admin/impersonate/${u.id}`, {
+                                      method: "POST",
+                                      headers: authHeader,
+                                    });
+                                    if (!r.ok) throw new Error(await r.text());
+                                    const data = await r.json();
+                                    localStorage.setItem("token", data.access_token);
+                                    localStorage.setItem("currentEmail", u.email);
+                                    // Optionally: fetch and cache profile/currency/country here
+                                    navigate("/dashboard", { replace: true });
+                                  } catch (e) {
+                                    setErr(e.message);
+                                  } finally {
+                                    setBusy(false);
+                                  }
+                                }}
+                                title="Login as user"
+                                className="p-2 bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-shadow text-white"
+                              >
+                                <span className="sr-only">Login as user</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="inline w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H3m0 0l4-4m-4 4l4 4m13-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                               </button>
                             </td>
                           </tr>

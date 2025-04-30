@@ -12,7 +12,7 @@ import {
 
 import Card from "../components/Card";
 import KPI from "../components/KPI";
-import { upcomingPayments, buildMonthSeries } from "../utils/statsHelpers";
+import { upcomingPayments } from "../utils/statsHelpers";
 
 /* Farb-Map & Glass-Tooltip-Style */
 const TYPE_COLORS = {

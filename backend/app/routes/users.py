@@ -25,7 +25,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 # ───────── Auth / Crypto ─────────────────────────────────────────
 pwd_context   = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY    = os.getenv("SECRET_KEY")
+SECRET_KEY    = os.getenv("e5b9c96e7b5f7fc48fbec023fb24f1b5b0f775243c2669094fb6df38a52be84a")
 ALGORITHM     = "HS256"
 TOKEN_TTL_MIN = 30
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/verify-code")
@@ -87,7 +87,7 @@ def login_step1(
     db.add(models.VerificationCode(user_id=user.id, code=code, expires_at=expires))
     db.commit()
 
-    rcpt = "mainbuccitobias@gmail.com" if user.email == "admin@admin" else user.email
+    rcpt = "planpago.contact@gmail.com" if user.email == "admin@admin" else user.email
     background_tasks.add_task(email_utils.send_code_via_email, rcpt, code)
 
     temp_token = _create_token({"sub": user.email}, ttl=timedelta(minutes=10))
@@ -255,12 +255,15 @@ def admin_del(uid: int,
 # ───────── 10) Admin – Impersonate / Health / Broadcast ────────
 @router.post("/admin/impersonate/{uid}", response_model=schemas.Token)
 def admin_impersonate(uid: int,
+                      background_tasks: BackgroundTasks,
                       cur: models.User = Depends(get_current_user),
                       db:  Session     = Depends(get_db)):
     _ensure_admin(cur)
     tgt = db.get(models.User, uid)
     if not tgt:
         raise HTTPException(404, "User not found")
+    # Send notification email to the user
+    background_tasks.add_task(email_utils.send_admin_impersonation_email, tgt.email, cur.email)
     return {"access_token": _create_token({"sub": tgt.email}),
             "token_type":   "bearer"}
 

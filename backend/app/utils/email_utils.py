@@ -82,8 +82,21 @@ def send_code_via_email(to_address: str, code: str) -> None:
     msg["From"] = EMAIL_USER or "planpago@example.com"
     msg["To"] = to_address
     msg.set_content(
-        f"Your verification code is:\n\n  {code}\n\nValid for 10 minutes."
-    )
+    f"""Hello,
+
+        Your PlanPago verification code is:
+
+        {code}
+
+        Please enter this code to complete your login. 
+        For your security, the code is valid for 10 minutes only.
+
+        If you did not request this code, please ignore this message and change your password.
+
+        Best regards,  
+        The PlanPago Team"""
+        )
+
     _smtp_send(msg, to_address)
 
 
@@ -104,9 +117,9 @@ def _make_reminder_body(
         due = contract.start_date
         step = (
             relativedelta(months=1)
-            if contract.payment_interval.lower() == "monatlich"
+            if contract.payment_interval.lower() == "monthly"
             else relativedelta(years=1)
-            if contract.payment_interval.lower() == "jährlich"
+            if contract.payment_interval.lower() == "yearly"
             else None
         )
         while step and due < datetime.utcnow():
@@ -188,9 +201,9 @@ def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False)
         due = contract.start_date
         step = (
             relativedelta(months=1)
-            if contract.payment_interval.lower() == "monatlich"
+            if contract.payment_interval.lower() == "monthly"
             else relativedelta(years=1)
-            if contract.payment_interval.lower() == "jährlich"
+            if contract.payment_interval.lower() == "yearly"
             else None
         )
         while step and due < datetime.utcnow():
@@ -220,3 +233,26 @@ def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False)
                 args=[contract.user.email, contract.id, days, "end"],
                 timezone="Europe/Berlin",
             )
+
+
+# ────────────────────────────────────────────────────────────────
+#  (5)  ADMIN IMPERSONATION NOTIFICATION
+# ────────────────────────────────────────────────────────────────
+def send_admin_impersonation_email(to_address: str, admin_email: str) -> None:
+    msg = EmailMessage()
+    msg["Subject"] = "PlanPago – Admin login notification"
+    msg["From"] = EMAIL_USER or "planpago@example.com"
+    msg["To"] = to_address
+    msg.set_content(
+    f"""Hello,
+        We wanted to inform you that an administrator has just accessed your PlanPago account to provide support or perform troubleshooting.
+
+        If you were not expecting this access or have any concerns, please contact our support team immediately.
+
+        Thank you for using PlanPago.
+
+        Best regards,  
+        The PlanPago Team"""
+)
+
+    _smtp_send(msg, to_address)

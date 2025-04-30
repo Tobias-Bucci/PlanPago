@@ -131,3 +131,15 @@ input[type="file"].frosted-file:hover{
   100%{opacity:1; transform:scale(1)   translateY(0)}
 }
 .animate-pop{animation:pop .5s ease forwards}
+
+/* ─── Contract notes expand animation ───────────────────────── */
+.contract-notes-transition {
+  transition: max-height 0.35s cubic-bezier(.4,2,.6,1), opacity 0.25s;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+.contract-notes-transition.open {
+  max-height: 120px;
+  opacity: 1;
+}

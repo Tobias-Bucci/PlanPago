@@ -50,6 +50,7 @@ export default function Dashboard() {
   const [err, setErr] = useState("");
   const [loading, setLd] = useState(true);
   const [dialog, setDialog] = useState({ open: false });
+  const [expandedId, setExpandedId] = useState(null);
 
   const navigate = useNavigate();
   const API = API_BASE;
@@ -243,12 +244,15 @@ export default function Dashboard() {
               {contracts.map((c, idx) => {
                 const end = new Date(c.end_date || "");
                 const expired = c.end_date && end < today;
+                const isExpanded = expandedId === c.id;
                 return (
                   <React.Fragment key={c.id}>
                     <tr
                       className={
-                        expired ? "opacity-50" : "hover:bg-white/5 transition"
+                        (expired ? "opacity-50 " : "") +
+                        "hover:bg-white/10 transition cursor-pointer"
                       }
+                      onClick={() => setExpandedId(isExpanded ? null : c.id)}
                     >
                       <td className="px-6 py-4">{c.name}</td>
                       <td className="px-6 py-4">{c.contract_type}</td>
@@ -263,9 +267,7 @@ export default function Dashboard() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={
-                            expired ? "text-red-400" : "text-emerald-300"
-                          }
+                          className={expired ? "text-red-400" : "text-emerald-300"}
                         >
                           {expired ? "Expired" : c.status}
                         </span>
@@ -290,7 +292,10 @@ export default function Dashboard() {
                             </a>
                             <button
                               className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
-                              onClick={() => deleteFile(c.id, f.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteFile(c.id, f.id);
+                              }}
                             >
                               ×
                             </button>
@@ -300,20 +305,56 @@ export default function Dashboard() {
                       <td className="px-6 py-4 text-center space-x-2">
                         <button
                           className="btn-primary p-2"
-                          onClick={() =>
+                          onClick={(e) => {
+                            e.stopPropagation();
                             navigate(`/contracts/${c.id}/edit`, {
                               state: { contract: c },
-                            })
-                          }
+                            });
+                          }}
                         >
                           <Edit3 size={18} />
                         </button>
                         <button
                           className="btn-accent bg-red-600 hover:bg-red-700 p-2"
-                          onClick={() => deleteContract(c.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteContract(c.id);
+                          }}
                         >
                           <Trash2 size={18} />
                         </button>
+                      </td>
+                    </tr>
+                    {/* Notes row with animation */}
+                    <tr>
+                      <td colSpan="8" style={{ padding: 0, border: 0 }}>
+                        <div
+                          className={`contract-notes-transition ${
+                            isExpanded ? "open" : ""
+                          }`}
+                          style={{
+                            maxHeight: isExpanded ? 120 : 0,
+                            opacity: isExpanded ? 1 : 0,
+                            overflow: "hidden",
+                            transition:
+                              "max-height 0.35s cubic-bezier(.4,2,.6,1), opacity 0.25s",
+                          }}
+                        >
+                          {isExpanded && (
+                            <div className="p-6 bg-white/5 border-t border-white/10 animate-pop text-white/90">
+                              <div className="font-semibold mb-1">Notes</div>
+                              <div className="whitespace-pre-line text-white/80 min-h-[1.5em]">
+                                {c.notes ? (
+                                  c.notes
+                                ) : (
+                                  <span className="italic text-white/40">
+                                    No notes entered.
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                     {idx < contracts.length - 1 && (
@@ -373,28 +414,40 @@ export default function Dashboard() {
         onClose={() => setDialog({ open: false })}
       />
 
-       {/* Search-Modal */}
-       {modalOpen && (
+      {/* Search-Modal */}
+      {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="glass-card p-6 w-80 animate-pop">
             <h3 className="text-lg font-semibold mb-4 text-white flex items-center gap-2">
-              <Search size={18}/> Search by name
+              <Search size={18} /> Search by name
             </h3>
-            <input className="frosted-input mb-4" autoFocus placeholder="Type a name…"
-                   value={query} onChange={e=>setQuery(e.target.value)}/>
+            <input
+              className="frosted-input mb-4"
+              autoFocus
+              placeholder="Type a name…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
             <div className="flex justify-end gap-2">
               <button
                 className="btn-accent"
-                onClick={()=>{
+                onClick={() => {
                   setQuery("");
                   setPage(0);
                   loadPage();
                   setModalOpen(false);
-                }}>
+                }}
+              >
                 Cancel
               </button>
-              <button className="btn-primary"
-                      onClick={()=>{setPage(0); loadPage(); setModalOpen(false);}}>
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  setPage(0);
+                  loadPage();
+                  setModalOpen(false);
+                }}
+              >
                 Search
               </button>
             </div>

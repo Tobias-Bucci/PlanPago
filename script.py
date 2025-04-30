@@ -19,7 +19,7 @@ Beispiel:
 import os, random, datetime, argparse, sys, requests
 from typing import Dict
 
-TYPES   = ["Miete", "Versicherung", "Streaming", "Gehalt", "Leasing", "Sonstiges"]
+TYPES   = ["rent", "insurance", "streaming", "salary", "leasing", "other"]
 PAY_INT = ["monthly", "yearly", "one-time"]
 TODAY   = datetime.date.today()
 
@@ -27,12 +27,12 @@ TODAY   = datetime.date.today()
 def fake_contract(idx: int) -> Dict:
     ctype  = TYPES[idx % len(TYPES)]
     amount = {
-        "Miete"       : random.randint(600, 1400),
-        "Versicherung": random.randint(20, 80),
-        "Streaming"   : random.randint(8, 20),
-        "Gehalt"      : random.randint(1700, 3000),
-        "Leasing"     : random.randint(200, 600),
-        "Sonstiges"   : random.randint(15, 80),
+        "rent"       : random.randint(600, 1400),
+        "insurance"  : random.randint(20, 80),
+        "streaming"  : random.randint(8, 20),
+        "salary"     : random.randint(1700, 3000),
+        "leasing"    : random.randint(200, 600),
+        "other"      : random.randint(15, 80),
     }[ctype]
 
     start = TODAY + datetime.timedelta(days=idx)             # etwas verteilt
@@ -40,7 +40,7 @@ def fake_contract(idx: int) -> Dict:
 
     return {
         "name"            : f"Demo #{idx+1}",
-        "contract_type"   : ctype,
+        "contract_type"   : ctype,  # lowercase to match API
         "start_date"      : f"{start}T00:00:00",
         "end_date"        : f"{end}T00:00:00" if end else None,
         "amount"          : float(amount),
@@ -72,7 +72,8 @@ def main():
         resp    = requests.post(url, json=payload, headers=headers, verify=verify, timeout=15)
         if resp.status_code == 201:
             cid = resp.json()["id"]
-            print(f"   ✓  id {cid:<4}  {payload['name']:<10} ({payload['contract_type']})")
+            # Print type in title case
+            print(f"   ✓  id {cid:<4}  {payload['name']:<10} ({payload['contract_type'].title()})")
         else:
             print("   ⚠︎  Fehler:", resp.status_code, resp.text)
             break
