@@ -13,6 +13,7 @@ import {
   FileText,
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
+import { fetchWithAuth } from "../utils/fetchWithAuth";
 
 /* ───────── constants ─────────────────────────────────────────── */
 const PAGE_SIZE = 10;                     // ← 0 caused empty pages
@@ -77,18 +78,14 @@ export default function Dashboard() {
       if (filterType)     p.append("type", filterType);
       if (filterStat)     p.append("status", filterStat);
 
-      const r = await fetch(`${API}/contracts/?${p.toString()}`, {
-        headers: authHeader,
-      });
+      const r = await fetchWithAuth(`${API}/contracts/?${p.toString()}`, { headers: authHeader }, navigate);
       if (!r.ok) throw new Error(await r.text());
       const { items, total } = await r.json();
 
       /* enrich with attachments of visible rows */
       const withFiles = await Promise.all(
         items.map(async (c) => {
-          const fr   = await fetch(`${API}/contracts/${c.id}/files`, {
-            headers: authHeader,
-          });
+          const fr   = await fetchWithAuth(`${API}/contracts/${c.id}/files`, { headers: authHeader }, navigate);
           const files = fr.ok ? await fr.json() : [];
           return { ...c, files };
         })
@@ -101,7 +98,7 @@ export default function Dashboard() {
     } finally {
       setLd(false);
     }
-  }, [API, authHeader, page, query, filterType, filterStat]);
+  }, [API, authHeader, page, query, filterType, filterStat, navigate]);
 
   /* initial + dependents */
   useEffect(() => { loadPage(); }, [loadPage]);
@@ -116,10 +113,10 @@ export default function Dashboard() {
   /* ───── deletion helpers ───────────────────────────────────── */
   const reallyDeleteContract = async (id) => {
     try {
-      const r = await fetch(`${API}/contracts/${id}`, {
+      const r = await fetchWithAuth(`${API}/contracts/${id}`, {
         method: "DELETE",
         headers: authHeader,
-      });
+      }, navigate);
       if (!r.ok) throw new Error("Deletion failed");
       setMsg("Contract deleted");
       loadPage();
@@ -135,10 +132,10 @@ export default function Dashboard() {
 
   const reallyDeleteFile = async (cid, fid) => {
     try {
-      const r = await fetch(`${API}/contracts/${cid}/files/${fid}`, {
+      const r = await fetchWithAuth(`${API}/contracts/${cid}/files/${fid}`, {
         method: "DELETE",
         headers: authHeader,
-      });
+      }, navigate);
       if (!r.ok) throw new Error("Attachment could not be deleted");
       setMsg("Attachment deleted");
       loadPage();
@@ -191,7 +188,7 @@ export default function Dashboard() {
                 className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
                 onClick={async () => {
                   setExportOpen(false);
-                  const res = await fetch(`${API}/contracts/export/csv`, { headers: authHeader });
+                  const res = await fetchWithAuth(`${API}/contracts/export/csv`, { headers: authHeader }, navigate);
                   if (!res.ok) return setErr("Export failed");
                   const blob = await res.blob();
                   const url  = window.URL.createObjectURL(blob);
@@ -208,7 +205,7 @@ export default function Dashboard() {
                 className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
                 onClick={async () => {
                   setExportOpen(false);
-                  const res = await fetch(`${API}/contracts/export/pdf`, { headers: authHeader });
+                  const res = await fetchWithAuth(`${API}/contracts/export/pdf`, { headers: authHeader }, navigate);
                   if (!res.ok) return setErr("Export failed");
                   const blob = await res.blob();
                   const url  = window.URL.createObjectURL(blob);
