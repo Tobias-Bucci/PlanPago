@@ -20,6 +20,10 @@ class User(Base):
     country                 = Column(String, nullable=True)
     currency                = Column(String, nullable=True)   # ✅ lower-case & consistent
 
+    # Login cooldown fields
+    failed_login_count   = Column(Integer, default=0, nullable=False)
+    login_cooldown_until = Column(DateTime, nullable=True)
+
     contracts = relationship(
         "Contract", back_populates="user", cascade="all, delete-orphan"
     )

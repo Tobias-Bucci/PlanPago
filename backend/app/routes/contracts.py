@@ -10,7 +10,6 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 from reportlab.platypus import Table, TableStyle, Image as RLImage
-import base64
 import os
 
 from .. import models, schemas, database

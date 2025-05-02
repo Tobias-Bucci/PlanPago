@@ -1,11 +1,12 @@
 # backend/app/routes/users.py
 # ────────────────────────────────────────────────────────────────
 import os, secrets, smtplib, pathlib
+import time
 from datetime import datetime, timedelta
 from typing import List
 
 from fastapi import (
-    APIRouter, Depends, HTTPException, BackgroundTasks
+    APIRouter, Depends, HTTPException, BackgroundTasks, Request
 )
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -38,6 +39,26 @@ def _create_token(data: dict, ttl: timedelta | None = None) -> str:
     payload["exp"] = datetime.utcnow() + (ttl or timedelta(minutes=TOKEN_TTL_MIN))
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
+# ───────── Login Cooldown (Brute-Force-Schutz) ───────────────
+LOGIN_ATTEMPTS = {}  # {email: [timestamps]}
+MAX_ATTEMPTS = 10
+WINDOW_SECONDS = 600  # 10 Minuten
+COOLDOWN_SECONDS = 600  # 10 Minuten
+
+def is_login_allowed(email):
+    now = time.time()
+    attempts = LOGIN_ATTEMPTS.get(email, [])
+    # Entferne alte Versuche
+    attempts = [t for t in attempts if now - t < WINDOW_SECONDS]
+    LOGIN_ATTEMPTS[email] = attempts
+    if len(attempts) >= MAX_ATTEMPTS:
+        # Prüfe, ob Cooldown vorbei ist
+        if now - attempts[0] < COOLDOWN_SECONDS:
+            return False, int(COOLDOWN_SECONDS - (now - attempts[0]))
+        # Entferne ältesten Versuch nach Cooldown
+        LOGIN_ATTEMPTS[email] = attempts[1:]
+    return True, 0
+
 # ───────── DB-Helper ────────────────────────────────────────────
 def get_db():
     db = database.SessionLocal()
@@ -69,13 +90,23 @@ def register(u: schemas.UserCreate, db: Session = Depends(get_db)):
 # ───────── 2) Login – Schritt 1 (Code anfordern) ────────────────
 @router.post("/login")
 def login_step1(
+    request: Request,
     background_tasks: BackgroundTasks,
     form: OAuth2PasswordRequestForm = Depends(),
     db:   Session                   = Depends(get_db),
 ):
-    user = db.query(models.User).filter(models.User.email == form.username).first()
+    email = form.username.lower().strip()
+    allowed, wait = is_login_allowed(email)
+    if not allowed:
+        raise HTTPException(429, f"Too many login attempts. Try again in {wait} seconds.")
+
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user or not pwd_context.verify(form.password, user.hashed_password):
+        LOGIN_ATTEMPTS.setdefault(email, []).append(time.time())
         raise HTTPException(400, "Wrong credentials")
+
+    # Bei Erfolg: Reset der Versuche
+    LOGIN_ATTEMPTS[email] = []
 
     # Trusted-Window 10 min
     if user.last_2fa_at and (datetime.utcnow() - user.last_2fa_at) < timedelta(minutes=10):

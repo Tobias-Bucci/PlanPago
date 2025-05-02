@@ -10,3 +10,4 @@ pytest
 python-dateutil
 apscheduler
 reportlab
+alembic
