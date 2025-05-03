@@ -121,22 +121,21 @@ export default function Stats() {
 
   if (loading)
     return (
-      <main className="container mx-auto pt-24 p-6">
+      <main className="container mx-auto pt-8 p-6">
         <p className="text-white/70">Loading …</p>
       </main>
     );
   if (err)
     return (
-      <main className="container mx-auto pt-24 p-6">
+      <main className="container mx-auto pt-8 p-6">
         <p className="text-red-300">{err}</p>
       </main>
     );
 
   return (
-    <main className="container mx-auto pt-24 p-6 animate-fadeIn space-y-10">
-
+    <main className="container mx-auto pt-8 p-6 animate-fadeIn space-y-10">
       {/* KPI-Grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPI label="Income"        value={kpi.income.toFixed(2)}      postfix={` ${cur}`} />
         <KPI label="Fixed"         value={kpi.fixed.toFixed(2)}       postfix={` ${cur}`} color="rose" />
         <KPI label="Available"     value={kpi.available.toFixed(2)}   postfix={` ${cur}`} color={kpi.available>=0 ? "emerald":"rose"} />
@@ -144,11 +143,11 @@ export default function Stats() {
       </div>
 
       {/* Donut-Charts */}
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Expense split */}
         <Card title="Expense split (monthly)">
           {expenseData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={expenseData}
@@ -184,7 +183,7 @@ export default function Stats() {
         {/* Income split */}
         <Card title="Income split">
           {incomeData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={incomeData}
@@ -218,38 +217,19 @@ export default function Stats() {
       {/* Upcoming payments (next 30 days) */}
       <Card title="Upcoming payments (next 30 days)">
         {upcoming.length > 0 ? (
-          <table className="min-w-full text-white/90 text-sm">
-            <thead>
-              <tr className="text-left">
-                <th className="pb-2">Date</th>
-                <th className="pb-2">Name</th>
-                <th className="pb-2">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {upcoming.map((u) => (
-                <tr key={u.id} className="border-t border-white/10">
-                  <td className="py-2">
-                    {u.date.toLocaleDateString(undefined, {
-                      day: "2-digit",
-                      month: "short",
-                    })}
-                  </td>
-                  <td className="py-2">{u.name}</td>
-                  <td className={`py-2 ${u.type === 'salary' ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {u.type === 'salary' ? '+' : '-'}{u.amount.toFixed(2)} {cur}
-                  </td>
-                </tr>
-              ))}
-              <tr className="border-t border-white/10">
-                <td className="py-2 font-semibold">Total Expenses</td>
-                <td />
-                <td className="py-2 font-semibold text-red-400">
-                  -{upcomingSum.toFixed(2)} {cur}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="divide-y divide-white/10">
+            {upcoming.map((u) => (
+              <div key={u.id} className="flex items-center justify-between py-3 text-sm">
+                <span className="font-mono text-white/80 w-20">{u.date.toLocaleDateString(undefined, {day: "2-digit", month: "short"})}</span>
+                <span className="flex-1 px-2">{u.name}</span>
+                <span className={`font-semibold ${u.type === 'salary' ? 'text-emerald-400' : 'text-red-400'}`}>{u.type === 'salary' ? '+' : '-'}{u.amount.toFixed(2)} {cur}</span>
+              </div>
+            ))}
+            <div className="flex items-center justify-between py-3 font-semibold text-red-400">
+              <span>Total Expenses</span>
+              <span>-{upcomingSum.toFixed(2)} {cur}</span>
+            </div>
+          </div>
         ) : (
           <p className="text-white/70">
             No upcoming payments in the next 30 days.

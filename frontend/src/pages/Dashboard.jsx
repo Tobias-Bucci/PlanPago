@@ -161,7 +161,7 @@ export default function Dashboard() {
 
   /* ───── JSX ────────────────────────────────────────────────── */
   return (
-    <main className="container mx-auto pt-24 p-6 animate-fadeIn">
+    <main className="container mx-auto pt-8 p-6 animate-fadeIn">
 
       {/* Header + action buttons */}
       <div className="flex items-center justify-between mb-6">
@@ -257,14 +257,82 @@ export default function Dashboard() {
       {msg && <div className="glass-card mb-4 p-3 text-emerald-200">{msg}</div>}
       {err && <div className="glass-card mb-4 p-3 text-red-300">{err}</div>}
 
-      {/* Table */}
+      {/* Table/Card-List */}
       {loading ? (
         <p className="text-center py-10 text-white/70">Loading contracts…</p>
       ) : contracts.length === 0 ? (
         <p className="text-center py-10 text-white/70">No contracts found.</p>
       ) : (
         <div className="glass-card overflow-x-auto">
-          <table className="min-w-full text-white/90">
+          {/* Mobile: Cards, Desktop: Table */}
+          <div className="block sm:hidden">
+            {contracts.slice(0, PAGE_SIZE).map((c, idx) => {
+              const end = new Date(c.end_date || "");
+              const expired = c.end_date && end < today;
+              return (
+                <div key={c.id} className="mb-4 p-4 rounded-xl bg-white/5 shadow flex flex-col gap-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-lg">{c.name}</span>
+                    <span className={`text-xs px-2 py-1 rounded ${expired ? "bg-red-600/30 text-red-300" : "bg-emerald-600/20 text-emerald-300"}`}>{expired ? "Expired" : c.status}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    <span className="bg-white/10 rounded px-2 py-1">{c.contract_type}</span>
+                    <span className="bg-white/10 rounded px-2 py-1">{new Date(c.start_date).toLocaleDateString()}</span>
+                    <span className="bg-white/10 rounded px-2 py-1">{c.end_date ? end.toLocaleDateString() : "-"}</span>
+                    <span className="bg-white/10 rounded px-2 py-1">{c.amount} {currency}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {c.files.map((f) => (
+                      <a key={f.id} href={`${API}${f.url}`} target="_blank" rel="noopener noreferrer" className="inline-block">
+                        {f.url.endsWith(".pdf") ? (
+                          <span className="text-2xl">📄</span>
+                        ) : (
+                          <img src={`${API}${f.url}`} alt={f.original_filename} className="h-10 w-10 rounded object-cover" />
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button className="btn-primary flex-1" onClick={() => navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })}>Edit</button>
+                    <button className="btn-accent flex-1 bg-red-600 hover:bg-red-700" onClick={() => deleteContract(c.id)}>Delete</button>
+                  </div>
+                  {c.notes && (
+                    <div className="mt-2 text-white/80 text-sm bg-white/5 rounded p-2">
+                      <span className="font-semibold">Notes:</span> {c.notes}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-4 mb-2">
+                <button
+                  className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
+                  onClick={() => setPage((p) => p - 1)}
+                  disabled={page === 0}
+                >
+                  <ChevronsLeft size={18} />
+                </button>
+                {pageNumbers.map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setPage(n)}
+                    className={`px-3 py-1 rounded-lg ${n === page ? "bg-[var(--secondary)]" : "hover:bg-white/10"}`}
+                  >
+                    {n + 1}
+                  </button>
+                ))}
+                <button
+                  className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page === totalPages - 1}
+                >
+                  <ChevronsRight size={18} />
+                </button>
+              </div>
+            )}
+          </div>
+          <table className="min-w-full text-white/90 hidden sm:table">
             <thead className="text-white uppercase text-sm bg-white/10">
               <tr>
                 <th className="px-6 py-3 text-left">Name</th>
@@ -370,9 +438,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Pagination für Desktop bleibt wie gehabt */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
+        <div className="hidden sm:flex items-center justify-center gap-2 mt-6">
           <button
             className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
             onClick={() => setPage((p) => p - 1)}
@@ -380,7 +448,6 @@ export default function Dashboard() {
           >
             <ChevronsLeft size={18} />
           </button>
-
           {pageNumbers.map((n) => (
             <button
               key={n}
@@ -390,7 +457,6 @@ export default function Dashboard() {
               {n + 1}
             </button>
           ))}
-
           <button
             className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
             onClick={() => setPage((p) => p + 1)}

@@ -104,40 +104,58 @@ export default function Profile() {
 
   /* UI */
   return (
-    <main className="container mx-auto pt-24 p-6 space-y-8">
+    <main className="container mx-auto pt-8 p-6 space-y-8">
       <h1 className="text-3xl font-semibold text-white">Settings</h1>
 
       {msg && <div className="glass-card p-4 text-emerald-200">{msg}</div>}
 
       {/* change email / pw */}
       {tmp ? (
-        <form onSubmit={confirmChange} className="glass-card p-6 space-y-4 animate-pop">
+        <form onSubmit={confirmChange} className="glass-card p-6 space-y-6 animate-pop">
           <h2 className="text-xl font-medium text-white">Confirm code</h2>
-          <input className="frosted-input" placeholder="6-digit code"
-                 value={code} onChange={e => setCode(e.target.value)} required />
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">6-digit code</label>
+            <input className="frosted-input" placeholder="6-digit code"
+                   value={code} onChange={e => setCode(e.target.value)} required />
+          </div>
           <button className="btn-accent w-full">Confirm</button>
         </form>
       ) : (
-        <form onSubmit={requestChange} className="glass-card p-6 space-y-4 animate-pop">
+        <form onSubmit={requestChange} className="glass-card p-6 space-y-6 animate-pop">
           <h2 className="text-xl font-medium text-white">Change profile</h2>
-          <input className="frosted-input" type="email" placeholder="E-mail"
-                 value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className="frosted-input" type="password" placeholder="Current password"
-                 value={oldPw} onChange={e => setOldPw(e.target.value)} required />
-          <input className="frosted-input" type="password" placeholder="New password (optional)"
-                 value={newPw} onChange={e => setNewPw(e.target.value)} />
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">E-mail</label>
+            <input className="frosted-input" type="email" placeholder="E-mail"
+                   value={email} onChange={e => setEmail(e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">Current password</label>
+            <input className="frosted-input" type="password" placeholder="Current password"
+                   value={oldPw} onChange={e => setOldPw(e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">New password (optional)</label>
+            <input className="frosted-input" type="password" placeholder="New password (optional)"
+                   value={newPw} onChange={e => setNewPw(e.target.value)} />
+          </div>
           <button className="btn-primary w-full">Request change</button>
         </form>
       )}
 
       {/* personal settings */}
-      <section className="glass-card p-6 space-y-4 animate-pop">
+      <section className="glass-card p-6 space-y-6 animate-pop">
         <h2 className="text-xl font-medium text-white">Personal settings</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <CountryAutoComplete value={country} onChange={setCountry} />
-          <select className="frosted-input" value={currency} onChange={e => setCurrency(e.target.value)}>
-            <option>EUR</option><option>USD</option><option>CHF</option><option>GBP</option>
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">Country</label>
+            <CountryAutoComplete value={country} onChange={setCountry} />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">Currency</label>
+            <select className="frosted-input" value={currency} onChange={e => setCurrency(e.target.value)}>
+              <option>EUR</option><option>USD</option><option>CHF</option><option>GBP</option>
+            </select>
+          </div>
         </div>
         <label className="flex items-center gap-2 text-white/90">
           <input type="checkbox" checked={emailRem}

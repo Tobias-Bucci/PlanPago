@@ -173,102 +173,130 @@ export default function ContractForm() {
 
         {msg && <p className="mb-4 text-red-300">{msg}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            className="frosted-input"
-            placeholder="Name"
-            value={form.name}
-            onChange={(e) => setField("name", e.target.value)}
-            required
-            disabled={busy}
-          />
-
-          <select
-            className="frosted-input"
-            value={form.contract_type}
-            onChange={(e) => setField("contract_type", e.target.value)}
-            required
-            disabled={busy}
-          >
-            <option value="">Contract type</option>
-            {TYPE_OPTIONS.map(([l, v]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
-
-          {form.contract_type === "salary" && (
-            <>
-              <input
-                className="frosted-input"
-                type="number"
-                placeholder="Gross salary"
-                value={form.brutto}
-                onChange={(e) => setField("brutto", e.target.value)}
-                disabled={busy}
-              />
-              <input
-                className="frosted-input"
-                type="number"
-                placeholder="Net salary"
-                value={form.netto}
-                onChange={(e) => setField("netto", e.target.value)}
-                disabled={busy}
-              />
-            </>
-          )}
-
-          {form.contract_type && form.contract_type !== "salary" && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">Name</label>
             <input
               className="frosted-input"
-              type="number"
-              placeholder={`Amount (${currency})`}
-              value={form.amount}
-              onChange={(e) => setField("amount", e.target.value)}
+              placeholder="Name"
+              value={form.name}
+              onChange={(e) => setField("name", e.target.value)}
               required
               disabled={busy}
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">Contract type</label>
+            <select
+              className="frosted-input"
+              value={form.contract_type}
+              onChange={(e) => setField("contract_type", e.target.value)}
+              required
+              disabled={busy}
+            >
+              <option value="">Select type</option>
+              {TYPE_OPTIONS.map(([l, v]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          </div>
+
+          {form.contract_type === "salary" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-white/80 mb-1">Gross salary</label>
+                <input
+                  className="frosted-input"
+                  type="number"
+                  placeholder="Gross salary"
+                  value={form.brutto}
+                  onChange={(e) => setField("brutto", e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-white/80 mb-1">Net salary</label>
+                <input
+                  className="frosted-input"
+                  type="number"
+                  placeholder="Net salary"
+                  value={form.netto}
+                  onChange={(e) => setField("netto", e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+            </div>
           )}
 
-          <input
-            className="frosted-input"
-            type="date"
-            value={form.start_date}
-            onChange={(e) => setField("start_date", e.target.value)}
-            required
-            disabled={busy}
-          />
-          <input
-            className="frosted-input"
-            type="date"
-            value={form.end_date || ""}
-            onChange={(e) => setField("end_date", e.target.value)}
-            disabled={busy}
-          />
+          {form.contract_type && form.contract_type !== "salary" && (
+            <div className="space-y-2">
+              <label className="block text-white/80 mb-1">Amount</label>
+              <input
+                className="frosted-input"
+                type="number"
+                placeholder={`Amount (${currency})`}
+                value={form.amount}
+                onChange={(e) => setField("amount", e.target.value)}
+                required
+                disabled={busy}
+              />
+            </div>
+          )}
 
-          <select
-            className="frosted-input"
-            value={form.payment_interval}
-            onChange={(e) => setField("payment_interval", e.target.value)}
-            required
-            disabled={busy}
-          >
-            <option value="">Payment interval</option>
-            {INTERVAL_OPTIONS.map(([l, v]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-white/80 mb-1">Start date</label>
+              <input
+                className="frosted-input"
+                type="date"
+                value={form.start_date}
+                onChange={(e) => setField("start_date", e.target.value)}
+                required
+                disabled={busy}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-white/80 mb-1">End date</label>
+              <input
+                className="frosted-input"
+                type="date"
+                value={form.end_date || ""}
+                onChange={(e) => setField("end_date", e.target.value)}
+                disabled={busy}
+              />
+            </div>
+          </div>
 
-          <textarea
-            className="frosted-input"
-            rows={3}
-            placeholder="Notes"
-            value={form.notes}
-            onChange={(e) => setField("notes", e.target.value)}
-            disabled={busy}
-          />
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">Payment interval</label>
+            <select
+              className="frosted-input"
+              value={form.payment_interval}
+              onChange={(e) => setField("payment_interval", e.target.value)}
+              required
+              disabled={busy}
+            >
+              <option value="">Select interval</option>
+              {INTERVAL_OPTIONS.map(([l, v]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          </div>
 
-          {/* File input */}
-          <div>
+          <div className="space-y-2">
+            <label className="block text-white/80 mb-1">Notes</label>
+            <textarea
+              className="frosted-input"
+              rows={3}
+              placeholder="Notes"
+              value={form.notes}
+              onChange={(e) => setField("notes", e.target.value)}
+              disabled={busy}
+            />
+          </div>
+
+          <div className="space-y-2">
             <label className="block mb-1 text-white/80">Attachments</label>
             <input
               type="file"
@@ -280,9 +308,9 @@ export default function ContractForm() {
             />
           </div>
 
-          {/* Country & Currency */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
+              <label className="block text-white/80 mb-1">Country</label>
               <input
                 className="frosted-input bg-white/5"
                 readOnly
@@ -294,15 +322,18 @@ export default function ContractForm() {
                   onClick={() => !busy && navigate("/profile")}
                   className="mt-1 text-sm text-red-300 cursor-pointer hover:underline"
                 >
-                  ⚠ Please select a country in settings
+                  ⚠️ Please select a country in settings
                 </p>
               )}
             </div>
-            <input
-              className="frosted-input bg-white/5"
-              readOnly
-              value={currency}
-            />
+            <div>
+              <label className="block text-white/80 mb-1">Currency</label>
+              <input
+                className="frosted-input bg-white/5"
+                readOnly
+                value={currency}
+              />
+            </div>
           </div>
 
           <button className="btn-primary w-full" disabled={busy}>
