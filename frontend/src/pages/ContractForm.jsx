@@ -101,11 +101,14 @@ export default function ContractForm() {
         ? Number(form.netto || 0)
         : Number(form.amount);
 
+    // Fix: end_date explizit auf null setzen, wenn leer
+    const end_date = form.end_date === "" ? null : iso(form.end_date);
+
     return {
       name            : form.name,
       contract_type   : form.contract_type,
       start_date      : iso(form.start_date),
-      end_date        : iso(form.end_date),
+      end_date        : end_date,
       amount,
       payment_interval: form.payment_interval,
       status          : "active",
@@ -263,8 +266,21 @@ export default function ContractForm() {
                 type="date"
                 value={form.end_date || ""}
                 onChange={(e) => setField("end_date", e.target.value)}
-                disabled={busy}
+                disabled={busy || form.payment_interval === "one-time"}
               />
+              {form.payment_interval === "one-time" && (
+                <p className="text-xs text-white/60 mt-1">End date is not applicable for one-time contracts.</p>
+              )}
+              {isEdit && form.end_date && form.payment_interval !== "one-time" && (
+                <button
+                  type="button"
+                  className="text-xs text-red-400 underline mt-1"
+                  onClick={() => setField("end_date", "")}
+                  disabled={busy}
+                >
+                  Remove end date
+                </button>
+              )}
             </div>
           </div>
 

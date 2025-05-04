@@ -70,7 +70,10 @@ export default function Stats() {
   const kpi = useMemo(() => {
     const income = contracts
       .filter((c) => c.contract_type === "salary")
-      .reduce((s, c) => s + Number(c.amount), 0);
+      .reduce((s, c) => {
+        const yearly = c.payment_interval === "yearly";
+        return s + Number(c.amount) / (yearly ? 12 : 1);
+      }, 0);
     const fixed = contracts
       .filter((c) => c.contract_type !== "salary")
       .reduce((s, c) => {
@@ -103,12 +106,19 @@ export default function Stats() {
   }, [contracts]);
   const expenseTotal = expenseData.reduce((s, e) => s + e.value, 0);
 
-  /* Income-Donut (if multiple salaries) */
+  /* Income-Donut (monthly, wie bei Ausgaben) */
   const incomeData = useMemo(() => {
-    const sal = contracts.filter((c) => c.contract_type === "salary");
-    return sal.length > 1
-      ? sal.map((c) => ({ name: c.name, value: Number(c.amount) }))
-      : [];
+    const map = {};
+    contracts
+      .filter((c) => c.contract_type === "salary")
+      .forEach((c) => {
+        const yearly = c.payment_interval === "yearly";
+        const v = Number(c.amount) / (yearly ? 12 : 1);
+        map[c.name] = (map[c.name] || 0) + v;
+      });
+    return Object.entries(map)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name, value }));
   }, [contracts]);
   const incomeTotal = incomeData.reduce((s, e) => s + e.value, 0);
 
@@ -180,8 +190,8 @@ export default function Stats() {
           )}
         </Card>
 
-        {/* Income split */}
-        <Card title="Income split">
+        {/* Income split (monthly) */}
+        <Card title="Income split (monthly)">
           {incomeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
