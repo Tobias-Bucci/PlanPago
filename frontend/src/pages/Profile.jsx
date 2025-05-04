@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import CountryAutoComplete from "../utils/CountryAutoComplete";
 import ConfirmModal from "../components/ConfirmModal";
 
+const passwordValid = pw =>
+  !pw || /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(pw);
+
 export default function Profile() {
   /* state */
   const [email, setEmail]     = useState("");
@@ -15,6 +18,9 @@ export default function Profile() {
   const [msg, setMsg]         = useState("");
   const [tmp, setTmp]         = useState("");
   const [code, setCode]       = useState("");
+  const [newPwError, setNewPwError] = useState("");
+  const [showOldPw, setShowOldPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
 
   /* Dialog-State */
   const [dialog, setDialog]   = useState({ open: false });
@@ -104,7 +110,7 @@ export default function Profile() {
 
   /* UI */
   return (
-    <main className="container mx-auto pt-8 p-6 space-y-8">
+    <main className="container mx-auto pt-24 p-6 space-y-8">
       <h1 className="text-3xl font-semibold text-white">Settings</h1>
 
       {msg && <div className="glass-card p-4 text-emerald-200">{msg}</div>}
@@ -130,15 +136,39 @@ export default function Profile() {
           </div>
           <div className="space-y-2">
             <label className="block text-white/80 mb-1">Current password</label>
-            <input className="frosted-input" type="password" placeholder="Current password"
-                   value={oldPw} onChange={e => setOldPw(e.target.value)} required />
+            <div className="relative">
+              <input className="frosted-input pr-10" type={showOldPw ? "text" : "password"} placeholder="Current password"
+                     value={oldPw} onChange={e => setOldPw(e.target.value)} required />
+              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={() => setShowOldPw(v => !v)} aria-label={showOldPw ? "Hide password" : "Show password"}>
+                {showOldPw ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.223-3.592m3.31-2.687A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.043 5.306M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" /></svg>
+                )}
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             <label className="block text-white/80 mb-1">New password (optional)</label>
-            <input className="frosted-input" type="password" placeholder="New password (optional)"
-                   value={newPw} onChange={e => setNewPw(e.target.value)} />
+            <div className="relative">
+              <input className="frosted-input pr-10" type={showNewPw ? "text" : "password"} placeholder="New password (optional)"
+                     value={newPw} onChange={e => {
+                       setNewPw(e.target.value);
+                       setNewPwError(e.target.value && !passwordValid(e.target.value)
+                         ? "Password must be at least 8 characters, include upper/lowercase, number, and special character."
+                         : "");
+                     }} />
+              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={() => setShowNewPw(v => !v)} aria-label={showNewPw ? "Hide password" : "Show password"}>
+                {showNewPw ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.223-3.592m3.31-2.687A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.043 5.306M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" /></svg>
+                )}
+              </button>
+            </div>
+            {newPw && newPwError && <div className="text-red-400 text-sm">{newPwError}</div>}
           </div>
-          <button className="btn-primary w-full">Request change</button>
+          <button className="btn-primary w-full" disabled={!!newPw && !!newPwError}>Request change</button>
         </form>
       )}
 

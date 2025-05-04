@@ -161,7 +161,7 @@ export default function Dashboard() {
 
   /* ───── JSX ────────────────────────────────────────────────── */
   return (
-    <main className="container mx-auto pt-8 p-6 animate-fadeIn">
+    <main className="container mx-auto pt-24 p-6 animate-fadeIn">
 
       {/* Header + action buttons */}
       <div className="flex items-center justify-between mb-6">

@@ -121,19 +121,19 @@ export default function Stats() {
 
   if (loading)
     return (
-      <main className="container mx-auto pt-8 p-6">
+      <main className="container mx-auto pt-24 p-6">
         <p className="text-white/70">Loading …</p>
       </main>
     );
   if (err)
     return (
-      <main className="container mx-auto pt-8 p-6">
+      <main className="container mx-auto pt-24 p-6">
         <p className="text-red-300">{err}</p>
       </main>
     );
 
   return (
-    <main className="container mx-auto pt-8 p-6 animate-fadeIn space-y-10">
+    <main className="container mx-auto pt-24 p-6 animate-fadeIn space-y-10">
       {/* KPI-Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPI label="Income"        value={kpi.income.toFixed(2)}      postfix={` ${cur}`} />

@@ -19,7 +19,7 @@ export default function NavBar() {
   };
 
   return (
-    <header className="w-full z-40 text-white">
+    <header className="fixed top-0 left-0 w-full z-50">
       <nav className="backdrop-blur-lg bg-white/5 border-b border-white/10">
         <div className="container mx-auto flex items-center justify-between p-4">
           {/* logo / brand */}
