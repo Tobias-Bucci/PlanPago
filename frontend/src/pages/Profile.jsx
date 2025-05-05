@@ -21,6 +21,7 @@ export default function Profile() {
   const [newPwError, setNewPwError] = useState("");
   const [showOldPw, setShowOldPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
+  const [twofaMethod, setTwofaMethod] = useState("email");
 
   /* Dialog-State */
   const [dialog, setDialog]   = useState({ open: false });
@@ -39,6 +40,7 @@ export default function Profile() {
       setCountry(me.country || "");
       setCurrency(me.currency || "EUR");
       setEmailRem(me.email_reminders_enabled);
+      setTwofaMethod(me.twofa_method || "email");
       localStorage.setItem("currentEmail", me.email);
     })();
   }, [API, navigate, token]);
@@ -120,9 +122,17 @@ export default function Profile() {
         <form onSubmit={confirmChange} className="glass-card p-6 space-y-6 animate-pop">
           <h2 className="text-xl font-medium text-white">Confirm code</h2>
           <div className="space-y-2">
-            <label className="block text-white/80 mb-1">6-digit code</label>
-            <input className="frosted-input" placeholder="6-digit code"
+            <label className="block text-white/80 mb-1">
+              {twofaMethod === "totp" ? "Authenticator app code" : "6-digit code"}
+            </label>
+            <input className="frosted-input" placeholder={twofaMethod === "totp" ? "Authenticator app code" : "6-digit code"}
                    value={code} onChange={e => setCode(e.target.value)} required />
+            {twofaMethod === "email" && (
+              <div className="text-xs text-white/60">Code was sent via email.</div>
+            )}
+            {twofaMethod === "totp" && (
+              <div className="text-xs text-white/60">Enter the code from your Authenticator app.</div>
+            )}
           </div>
           <button className="btn-accent w-full">Confirm</button>
         </form>

@@ -79,13 +79,25 @@ def _ensure_admin(user: models.User):
         raise HTTPException(403, "Admin privileges required")
 
 # ───────── 1) Registrierung ─────────────────────────────────────
-@router.post("/", status_code=201, response_model=schemas.User)
+@router.post("/", status_code=201)
 def register(u: schemas.UserCreate, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.email == u.email).first():
         raise HTTPException(400, "E-mail already in use")
-    user = models.User(email=u.email, hashed_password=_hash(u.password))
+    user = models.User(email=u.email, hashed_password=_hash(u.password), twofa_method=u.twofa_method)
+    qr_url = None
+    if u.twofa_method == "totp":
+        try:
+            import pyotp
+            secret = pyotp.random_base32()
+            user.totp_secret = secret
+            qr_url = pyotp.totp.TOTP(secret).provisioning_uri(name=u.email, issuer_name="PlanPago")
+        except Exception as e:
+            raise HTTPException(500, f"TOTP setup failed: {e}")
     db.add(user); db.commit(); db.refresh(user)
-    return user
+    resp = {"id": user.id, "email": user.email, "twofa_method": user.twofa_method}
+    if qr_url:
+        resp["totp_qr_url"] = qr_url
+    return resp
 
 # ───────── 2) Login – Schritt 1 (Code anfordern) ────────────────
 @router.post("/login")
@@ -113,6 +125,11 @@ def login_step1(
         return {"access_token": _create_token({"sub": user.email}),
                 "token_type":   "bearer"}
 
+    if user.twofa_method == "totp":
+        temp_token = _create_token({"sub": user.email}, ttl=timedelta(minutes=10))
+        return {"temp_token": temp_token, "twofa_method": "totp"}
+
+    # Standard: E-Mail-Code
     code    = f"{secrets.randbelow(10**6):06d}"
     expires = datetime.utcnow() + timedelta(minutes=10)
     db.add(models.VerificationCode(user_id=user.id, code=code, expires_at=expires))
@@ -122,7 +139,7 @@ def login_step1(
     background_tasks.add_task(email_utils.send_code_via_email, rcpt, code)
 
     temp_token = _create_token({"sub": user.email}, ttl=timedelta(minutes=10))
-    return {"temp_token": temp_token}
+    return {"temp_token": temp_token, "twofa_method": "email"}
 
 # ───────── 3) Login – Schritt 2 (Code prüfen) ───────────────────
 class CodeVerify(BaseModel):
@@ -143,6 +160,19 @@ def verify_code(payload: CodeVerify, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(401, "Invalid session")
 
+    if user.twofa_method == "totp":
+        import pyotp
+        if not user.totp_secret:
+            raise HTTPException(400, "No TOTP secret set")
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(payload.code, valid_window=1):
+            raise HTTPException(400, "Invalid or expired code")
+        user.last_2fa_at = datetime.utcnow()
+        db.commit()
+        token = _create_token({"sub": user.email})
+        return {"access_token": token, "token_type": "bearer"}
+
+    # Standard: E-Mail-Code
     vc = db.query(models.VerificationCode).filter(
         models.VerificationCode.user_id == user.id,
         models.VerificationCode.code == payload.code,
@@ -202,18 +232,25 @@ def update_request(
 
     new_hash = _hash(upd.password) if upd.password else None
 
+    if cur.twofa_method == "totp":
+        payload = {"sub": cur.email}
+        if upd.email:   payload["new_email"]    = upd.email
+        if new_hash:    payload["new_password"] = new_hash
+        tmp = _create_token(payload, ttl=timedelta(minutes=10))
+        return {"temp_token": tmp, "twofa_method": "totp"}
+
+    # Standard: E-Mail-Code
     code    = f"{secrets.randbelow(10**6):06d}"
     expires = datetime.utcnow() + timedelta(minutes=10)
     db.add(models.VerificationCode(user_id=cur.id, code=code, expires_at=expires))
     db.commit()
-
     background_tasks.add_task(email_utils.send_code_via_email, cur.email, code)
 
     payload = {"sub": cur.email}
     if upd.email:   payload["new_email"]    = upd.email
     if new_hash:    payload["new_password"] = new_hash
     tmp = _create_token(payload, ttl=timedelta(minutes=10))
-    return {"temp_token": tmp}
+    return {"temp_token": tmp, "twofa_method": "email"}
 
 @router.patch("/me/confirm", response_model=schemas.User)
 def update_confirm(payload: UpdateConfirm, db: Session = Depends(get_db)):
@@ -364,12 +401,17 @@ def request_password_reset(
     if not user:
         raise HTTPException(404, "User not found")
 
+    if user.twofa_method == "totp":
+        temp_token = _create_token({"sub": user.email}, ttl=timedelta(minutes=10))
+        return {"temp_token": temp_token, "twofa_method": "totp"}
+
+    # Standard: E-Mail-Code
     code = f"{secrets.randbelow(10**6):06d}"
     expires = datetime.utcnow() + timedelta(minutes=10)
     db.add(models.VerificationCode(user_id=user.id, code=code, expires_at=expires))
     db.commit()
     background_tasks.add_task(email_utils.send_code_via_email, user.email, code)
-    return {"message": "Password reset email sent.", "email": user.email}
+    return {"message": "Password reset email sent.", "email": user.email, "twofa_method": "email"}
 
 @router.post("/password-reset/confirm")
 def confirm_password_reset(

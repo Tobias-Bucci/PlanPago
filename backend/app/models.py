@@ -24,6 +24,9 @@ class User(Base):
     failed_login_count   = Column(Integer, default=0, nullable=False)
     login_cooldown_until = Column(DateTime, nullable=True)
 
+    twofa_method = Column(String, default="email", nullable=False)  # "email" oder "totp"
+    totp_secret = Column(String, nullable=True)
+
     contracts = relationship(
         "Contract", back_populates="user", cascade="all, delete-orphan"
     )

@@ -9,6 +9,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    twofa_method: str = "email"  # "email" oder "totp"
 
 
 class User(UserBase):

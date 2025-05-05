@@ -36,6 +36,8 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
 
+  const [twofaMethod, setTwofaMethod] = useState("email");
+
   const navigate = useNavigate();
   const target   = useLocation().state?.from || "/dashboard";
   const API      = API_BASE;
@@ -61,6 +63,7 @@ export default function Login() {
       }
       if (data.temp_token){
         setTemp(data.temp_token);
+        setTwofaMethod(data.twofa_method || "email");
         setStep(2);
       } else {
         throw new Error("Unexpected server response");
@@ -98,9 +101,17 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resetEmail }),
       });
-      if (!r.ok) throw new Error("Failed to send reset email");
-      setResetMsg("Password reset email sent. Check your inbox.");
-      setStep(4);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || "Failed to reset");
+      if (data.temp_token) {
+        setTemp(data.temp_token);
+        setTwofaMethod(data.twofa_method || "email");
+        setStep(5); // neuer Schritt für TOTP-Reset
+      } else {
+        setResetMsg("Password reset email sent. Check your inbox.");
+        setTwofaMethod(data.twofa_method || "email");
+        setStep(4); // wie bisher für E-Mail-Code
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -132,7 +143,13 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="glass-card w-full max-w-md p-8 animate-pop">
         <h2 className="text-2xl font-semibold text-center mb-6 tracking-wide">
-          {step === 1 ? "Log in" : step === 2 ? "Confirm code" : step === 3 ? "Reset Password" : "Set New Password"}
+          {step === 1 ? "Log in"
+            : step === 2 ? "Confirm code"
+            : step === 3 ? "Reset Password"
+            : step === 4 ? "Set New Password"
+            : step === 5 ? "Confirm code" // für TOTP-Reset
+            : step === 6 ? "Set New Password" // für TOTP-Reset: neues Passwort
+            : ""}
         </h2>
 
         {error && (
@@ -200,13 +217,18 @@ export default function Login() {
           <form onSubmit={handleVerify} className="space-y-4">
             <input
               type="text"
-              placeholder="6-digit code"
+              placeholder={twofaMethod==="totp" ? "Code from Authenticator-App" : "6-digit code from email"}
               className="frosted-input"
               value={code}
               onChange={e=>setCode(e.target.value)}
               required
             />
-
+            {twofaMethod==="email" && (
+              <div className="text-xs text-white/60">A 6-digit code was sent to your email.</div>
+            )}
+            {twofaMethod==="totp" && (
+              <div className="text-xs text-white/60">Enter the 6-digit code from your Authenticator-App.</div>
+            )}
             <button className="btn-accent w-full" disabled={loading}>
               {loading ? "Validating…" : "Confirm"}
             </button>
@@ -244,6 +266,88 @@ export default function Login() {
               onChange={e => setResetCode(e.target.value)}
               required
             />
+            <div className="relative">
+              <input
+                type={showResetPw ? "text" : "password"}
+                placeholder="New password"
+                className="frosted-input pr-10"
+                value={resetPwd}
+                onChange={e => setResetPwd(e.target.value)}
+                required
+              />
+              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={()=>setShowResetPw(v=>!v)} aria-label={showResetPw?"Hide password":"Show password"}>
+                {showResetPw ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.223-3.592m3.31-2.687A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.956 9.956 0 01-4.043 5.306M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" /></svg>
+                )}
+              </button>
+            </div>
+            <button className="btn-primary w-full" disabled={loading || resetSuccess}>
+              {loading ? "Resetting..." : resetSuccess ? "Done" : "Set new password"}
+            </button>
+            {resetMsg && (
+              <div className="mb-4 p-3 bg-emerald-700/20 text-emerald-300 rounded-lg">{resetMsg}</div>
+            )}
+          </form>
+        )}
+
+        {/* ─── FORM – step 5 (TOTP-Reset) ─────────────────────── */}
+        {step === 5 && (
+          <form onSubmit={async e => {
+            e.preventDefault();
+            setError(""); setLoad(true);
+            try {
+              const r = await fetch(`${API}/users/verify-code`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ temp_token: tempToken, code }),
+              });
+              const data = await r.json();
+              if (!r.ok) throw new Error(data.detail || "Invalid code");
+              // Nach erfolgreicher TOTP-Validierung: Passwort-Reset-Dialog anzeigen
+              setStep(6);
+            } catch (err) {
+              setError(err.message);
+            } finally {
+              setLoad(false);
+            }
+          }} className="space-y-4">
+            <input
+              type="text"
+              placeholder="Code from Authenticator-App"
+              className="frosted-input"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+              required
+            />
+            <div className="text-xs text-white/60">Enter the 6-digit code from your Authenticator-App.</div>
+            <button className="btn-accent w-full" disabled={loading}>
+              {loading ? "Validating…" : "Confirm"}
+            </button>
+          </form>
+        )}
+
+        {/* ─── FORM – step 6 (TOTP-Reset: neues Passwort) ─────── */}
+        {step === 6 && (
+          <form onSubmit={async e => {
+            e.preventDefault();
+            setError(""); setResetMsg(""); setLoad(true);
+            try {
+              const r = await fetch(`${API}/users/password-reset/confirm`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: resetEmail, code, new_password: resetPwd }),
+              });
+              if (!r.ok) throw new Error("Invalid code or expired");
+              setResetMsg("Password has been reset successfully.");
+              setResetSuccess(true);
+            } catch (err) {
+              setError(err.message);
+            } finally {
+              setLoad(false);
+            }
+          }} className="space-y-4">
             <div className="relative">
               <input
                 type={showResetPw ? "text" : "password"}

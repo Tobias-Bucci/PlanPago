@@ -30,6 +30,8 @@ export default function Register(){
   const [ld,  setLd]      = useState(false);
   const [pwError, setPwError] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [twofa, setTwofa] = useState("email");
+  const [qrUrl, setQrUrl] = useState("");
 
   const navigate = useNavigate();
   const API      = API_BASE;
@@ -42,11 +44,19 @@ export default function Register(){
       const r = await fetch(`${API}/users/`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({email,password:pw}),
+        body:JSON.stringify({email,password:pw,twofa_method:twofa}),
       });
-      if(r.status!==201){
-        const d = await r.json();
-        throw new Error(d.detail||"Registration failed");
+      let regData;
+      try {
+        regData = await r.json();
+      } catch {
+        regData = { detail: await r.text() };
+      }
+      if(r.status!==201 && r.status!==200){
+        throw new Error(regData.detail||"Registration failed");
+      }
+      if(twofa==="totp" && regData.totp_qr_url){
+        setQrUrl(regData.totp_qr_url);
       }
 
       /* immediately trigger code */
@@ -57,8 +67,8 @@ export default function Register(){
         body:form.toString(),
       });
       if(!login1.ok) throw new Error("Code request failed");
-      const {temp_token}=await login1.json();
-      setTemp(temp_token); setStep(2);
+      const loginData = await login1.json();
+      setTemp(loginData.temp_token); setStep(2);
     }catch(e){ setErr(e.message) }
     finally   { setLd(false) }
   };
@@ -129,6 +139,13 @@ export default function Register(){
                 )}
               </button>
             </div>
+            <div>
+              <label className="block text-white/80 mb-1">2FA-Methode</label>
+              <select className="frosted-input" value={twofa} onChange={e=>setTwofa(e.target.value)}>
+                <option value="email">E-Mail-Code</option>
+                <option value="totp">Authenticator-App (TOTP)</option>
+              </select>
+            </div>
             {pwError && <div className="text-red-400 text-sm">{pwError}</div>}
             <button className="btn-primary w-full" disabled={ld || !!pwError || !passwordValid(pw)}>
               {ld?"Please wait…":"Register"}
@@ -145,14 +162,27 @@ export default function Register(){
         {/* step 2 form */}
         {step===2 && (
           <form onSubmit={handleVerify} className="space-y-4">
+            {twofa==="totp" && qrUrl && (
+              <div className="mb-2 text-center">
+                <div className="mb-2 text-white/80">Scan this QR-Code in your Authenticator app:</div>
+                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`} alt="QR Code" className="mx-auto mb-2" />
+                <div className="text-xs text-white/60 break-all">{qrUrl}</div>
+              </div>
+            )}
             <input
               type="text"
-              placeholder="6-digit code"
+              placeholder={twofa==="totp" ? "Authenticator app code" : "6-digit code"}
               className="frosted-input"
               value={code}
               onChange={e=>setCode(e.target.value)}
               required
             />
+            {twofa==="email" && (
+              <div className="text-xs text-white/60">Code was sent via email.</div>
+            )}
+            {twofa==="totp" && (
+              <div className="text-xs text-white/60">Enter the code from your Authenticator app.</div>
+            )}
             <button className="btn-accent w-full" disabled={ld}>
               {ld?"Validating…":"Confirm"}
             </button>
