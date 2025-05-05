@@ -1,5 +1,5 @@
 import { API_BASE } from "../config";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { computeNet } from "../utils/taxUtils";
 
@@ -35,6 +35,8 @@ export default function ContractForm() {
   const [currency, setCur]     = useState("€");
   const [msg,      setMsg]     = useState("");
   const [busy,     setBusy]    = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef(null);
 
   /* ───── preload user context & contract ──────────── */
   useEffect(() => {
@@ -314,14 +316,36 @@ export default function ContractForm() {
 
           <div className="space-y-2">
             <label className="block mb-1 text-white/80">Attachments</label>
-            <input
-              type="file"
-              multiple
-              accept="image/*,application/pdf"
-              onChange={(e) => setField("files", e.target.files)}
-              className="frosted-file"
-              disabled={busy}
-            />
+            <div
+              className={`frosted-file border-dashed border-2 ${busy ? 'opacity-60' : 'hover:border-emerald-400'} ${dragActive ? 'border-emerald-400 bg-emerald-900/10' : 'border-white/20 bg-transparent'}`}
+              style={{ minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', cursor: busy ? 'not-allowed' : 'pointer' }}
+              onDragOver={e => { e.preventDefault(); if (!busy) setDragActive(true); }}
+              onDragLeave={e => { e.preventDefault(); setDragActive(false); }}
+              onDrop={e => {
+                e.preventDefault(); setDragActive(false);
+                if (busy) return;
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  setField("files", e.dataTransfer.files);
+                }
+              }}
+              onClick={() => !busy && fileInputRef.current && fileInputRef.current.click()}
+            >
+              <input
+                type="file"
+                multiple
+                accept="image/*,application/pdf"
+                onChange={e => setField("files", e.target.files)}
+                className="frosted-file"
+                disabled={busy}
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+              />
+              <span className="text-white/70 select-none pointer-events-none">
+                {form.files && form.files.length > 0
+                  ? Array.from(form.files).map(f => f.name).join(", ")
+                  : "Click or drag files here (PDF, images)"}
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
