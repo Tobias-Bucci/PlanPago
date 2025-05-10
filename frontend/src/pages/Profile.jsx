@@ -123,15 +123,15 @@ export default function Profile() {
           <h2 className="text-xl font-medium text-white">Confirm code</h2>
           <div className="space-y-2">
             <label className="block text-white/80 mb-1">
-              {twofaMethod === "totp" ? "Authenticator app code" : "6-digit code"}
+              {twofaMethod==="totp" ? "Code from Authenticator-App" : "6-digit code from email"}
             </label>
-            <input className="frosted-input" placeholder={twofaMethod === "totp" ? "Authenticator app code" : "6-digit code"}
+            <input className="frosted-input" placeholder={twofaMethod==="totp" ? "Code from Authenticator-App" : "6-digit code from email"}
                    value={code} onChange={e => setCode(e.target.value)} required />
             {twofaMethod === "email" && (
-              <div className="text-xs text-white/60">Code was sent via email.</div>
+              <div className="text-xs text-white/60">A 6-digit code was sent to your email.</div>
             )}
             {twofaMethod === "totp" && (
-              <div className="text-xs text-white/60">Enter the code from your Authenticator app.</div>
+              <div className="text-xs text-white/60">Enter the 6-digit code from your Authenticator-App.</div>
             )}
           </div>
           <button className="btn-accent w-full">Confirm</button>

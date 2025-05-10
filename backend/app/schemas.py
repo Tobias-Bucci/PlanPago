@@ -17,6 +17,7 @@ class User(UserBase):
     email_reminders_enabled: bool
     country: Optional[str] = None
     currency: Optional[str] = None
+    twofa_method: str  # <--- Hinzugefügt, damit das Feld im Response enthalten ist
     model_config = ConfigDict(from_attributes=True)
 
 

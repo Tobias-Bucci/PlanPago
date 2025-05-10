@@ -429,7 +429,7 @@ def request_password_reset(
     db.add(models.VerificationCode(user_id=user.id, code=code, expires_at=expires))
     db.commit()
     background_tasks.add_task(email_utils.send_code_via_email, user.email, code)
-    return {"message": "Password reset email sent.", "email": user.email, "twofa_method": "email"}
+    return {"email": user.email, "twofa_method": "email"}
 
 @router.post("/password-reset/confirm")
 def confirm_password_reset(
