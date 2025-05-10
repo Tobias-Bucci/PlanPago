@@ -39,7 +39,7 @@ def create_contract(
     db.add(db_contract); db.commit(); db.refresh(db_contract)
 
     scheduler = request.app.state.scheduler
-    schedule_all_reminders(db_contract, scheduler)
+    schedule_all_reminders(db_contract, scheduler, replace=True)  # Fix: replace=True, damit Reminder-Jobs nicht dupliziert werden
     return db_contract
 
 # ───────── Read (paginated, filterable) ───────────────────────────

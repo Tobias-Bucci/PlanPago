@@ -68,7 +68,7 @@ def load_existing_reminders():
     """Beim Start Reminder für alle vorhandenen Verträge neu planen."""
     session = SessionLocal()
     for c in session.query(models.Contract).all():
-        schedule_all_reminders(c, scheduler)
+        schedule_all_reminders(c, scheduler, replace=True)  # Fix: replace=True, damit Reminder-Jobs nicht dupliziert werden
     session.close()
 
 # ────────────── Router registrieren ──────────────────────────────
