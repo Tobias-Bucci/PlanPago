@@ -81,22 +81,26 @@ def send_code_via_email(to_address: str, code: str) -> None:
     msg["Subject"] = "PlanPago – Your verification code"
     msg["From"] = EMAIL_USER or "planpago@example.com"
     msg["To"] = to_address
-    msg.set_content(
-    f"""Hello,
-
-        Your PlanPago verification code is:
-
-        {code}
-
-        Please enter this code to complete your login. 
-        For your security, the code is valid for 10 minutes only.
-
-        If you did not request this code, please ignore this message and change your password.
-
-        Best regards,  
-        The PlanPago Team"""
-        )
-
+    # HTML email with logo and professional layout
+    logo_url = "https://planpago.buccilab.com/PlanPago-trans.png"  # Update to your real public logo URL if available
+    html = f'''
+    <div style="font-family: 'Inter', Arial, sans-serif; background: #f6f8fa; padding: 32px 0;">
+      <div style="max-width: 420px; margin: auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(30,99,255,0.08); padding: 32px 32px 24px 32px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <img src="{logo_url}" alt="PlanPago Logo" style="height: 48px; margin-bottom: 8px;"/>
+        </div>
+        <h2 style="color: #1e63ff; font-size: 1.5rem; margin-bottom: 12px; text-align: center; font-weight: 700; letter-spacing: 0.01em;">Your Verification Code</h2>
+        <p style="font-size: 1.08rem; color: #222; margin-bottom: 18px; text-align: center;">Thank you for using PlanPago.<br>Your verification code is:</p>
+        <div style="font-size: 2.2rem; font-weight: 700; color: #1e63ff; background: #f3f7ff; border-radius: 10px; padding: 18px 0; text-align: center; letter-spacing: 0.18em; margin-bottom: 18px;">{code}</div>
+        <p style="font-size: 1rem; color: #444; margin-bottom: 18px; text-align: center;">Please enter this code to complete your login.<br>For your security, the code is valid for <b>10 minutes</b> only.</p>
+        <p style="font-size: 0.98rem; color: #888; margin-bottom: 18px; text-align: center;">If you did not request this code, you can ignore this message and we recommend changing your password.</p>
+        <div style="text-align: center; color: #aaa; font-size: 0.95rem; margin-top: 24px;">Best regards,<br><b>The PlanPago Team</b></div>
+      </div>
+      <div style="text-align: center; color: #bbb; font-size: 0.9rem; margin-top: 18px;">&copy; {datetime.utcnow().year} PlanPago</div>
+    </div>
+    '''
+    msg.set_content(f"""Hello,\n\nYour PlanPago verification code is: {code}\n\nPlease enter this code to complete your login. For your security, the code is valid for 10 minutes only.\n\nIf you did not request this code, please ignore this message and change your password.\n\nBest regards,\nThe PlanPago Team""")
+    msg.add_alternative(html, subtype="html")
     _smtp_send(msg, to_address)
 
 
