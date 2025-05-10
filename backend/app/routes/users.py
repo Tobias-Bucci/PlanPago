@@ -266,6 +266,24 @@ def update_confirm(payload: UpdateConfirm, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(401, "Invalid session")
 
+    # NEU: Prüfe TOTP, wenn User TOTP nutzt
+    if user.twofa_method == "totp":
+        import pyotp
+        if not user.totp_secret:
+            raise HTTPException(400, "No TOTP secret set")
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(payload.code, valid_window=1):
+            raise HTTPException(400, "Invalid or expired code")
+        user.last_2fa_at = datetime.utcnow()
+        # Änderungen übernehmen
+        if data.get("new_email"):
+            user.email = data["new_email"]
+        if data.get("new_password"):
+            user.hashed_password = data["new_password"]
+        db.commit(); db.refresh(user)
+        return user
+
+    # Standard: E-Mail-Code
     vc = db.query(models.VerificationCode).filter(
         models.VerificationCode.user_id == user.id,
         models.VerificationCode.code    == payload.code,
