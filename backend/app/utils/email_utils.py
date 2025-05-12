@@ -24,8 +24,8 @@ EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 
-REMINDER_EMAIL_HOUR   = 23
-REMINDER_EMAIL_MINUTE = 22
+REMINDER_EMAIL_HOUR   = 14
+REMINDER_EMAIL_MINUTE = 32
 
 # ────────────────────────────────────────────────────────────────
 #  LOGGING
@@ -198,6 +198,15 @@ def send_broadcast(to_addresses: list[str], subject: str, body: str) -> None:
 #  (4)  APSCHEDULER ENTRY POINT
 # ────────────────────────────────────────────────────────────────
 def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False) -> None:
+    if contract.status == "expired":  # Add this check
+        # Remove existing jobs for expired contracts
+        for job_type in ["payment", "end"]:
+            for days in [1, 3]:  # Assuming these are the typical reminder days
+                job_id = f"reminder_{contract.id}_{job_type}_{days}"
+                if scheduler.get_job(job_id):
+                    scheduler.remove_job(job_id)
+        return  # Do not schedule new reminders for expired contracts
+
     if replace:
         for job in list(scheduler.get_jobs()):
             if job.id.startswith(f"rem_{contract.id}_"):

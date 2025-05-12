@@ -11,6 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import cm
 from reportlab.platypus import Table, TableStyle, Image as RLImage
 import os
+from datetime import datetime  # Add datetime import
 
 from .. import models, schemas, database
 from .users import get_current_user
@@ -53,6 +54,17 @@ def read_contracts(
     db  : Session         = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    # Update status of expired contracts
+    now = datetime.utcnow()
+    expired_contracts = db.query(models.Contract).filter(
+        models.Contract.user_id == current_user.id,
+        models.Contract.end_date < now,
+        models.Contract.status == "active"
+    ).all()
+    for contract in expired_contracts:
+        contract.status = "expired"
+    db.commit()
+
     query = db.query(models.Contract).filter(models.Contract.user_id == current_user.id)
 
     if q:

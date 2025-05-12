@@ -44,6 +44,8 @@ export function buildMonthSeries(contracts) {
     contracts.forEach((c) => {
       // Skip one-time payments that are already past
       if (c.payment_interval === "one-time" && new Date(c.start_date) < today) return;
+      // Skip expired contracts
+      if (c.status === "expired") return;
 
       let due = new Date(c.start_date);
   
