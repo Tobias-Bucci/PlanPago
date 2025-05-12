@@ -12,6 +12,8 @@ router = APIRouter(
     tags=["contract files"]
 )
 
+MAX_FILE_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MB
+
 def get_db():
     db = SessionLocal()
     try:
@@ -37,6 +39,13 @@ async def upload_files(
 
     saved = []
     for up in files:
+        # Check file size
+        if up.size > MAX_FILE_UPLOAD_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File size exceeds the limit of {MAX_FILE_UPLOAD_SIZE / 1024 / 1024} MB.",
+            )
+
         # Dateiendung ermitteln (optional)
         ext = mimetypes.guess_extension(up.content_type) or ""
         # Eindeutigen Dateinamen generieren

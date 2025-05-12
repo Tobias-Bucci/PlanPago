@@ -18,6 +18,8 @@ const INTERVAL_OPTIONS = [
   ["One-time", "one-time"],
 ];
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
 export default function ContractForm() {
   /* ───── routing info ─────────────────────────────── */
   const { id }   = useParams();
@@ -153,8 +155,17 @@ export default function ContractForm() {
 
       /* optional file upload */
       if (form.files?.length) {
+        let filesToUpload = Array.from(form.files);
+        let totalSize = filesToUpload.reduce((acc, file) => acc + file.size, 0);
+
+        if (filesToUpload.some(file => file.size > MAX_FILE_SIZE)) {
+          setMsg(`One or more files are too large. Max size per file is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
+          setBusy(false);
+          return;
+        }
+        
         const fd = new FormData();
-        Array.from(form.files).forEach(f => fd.append("files", f));
+        filesToUpload.forEach(f => fd.append("files", f));
         await fetch(`${API}${cid}/files`, {
           method : "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -325,6 +336,13 @@ export default function ContractForm() {
                 e.preventDefault(); setDragActive(false);
                 if (busy) return;
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  const files = Array.from(e.dataTransfer.files);
+                  if (files.some(file => file.size > MAX_FILE_SIZE)) {
+                    setMsg(`One or more files are too large. Max size per file is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
+                    setField("files", null); // Clear previous selection if any
+                    return;
+                  }
+                  setMsg(""); // Clear previous error messages
                   setField("files", e.dataTransfer.files);
                 }
               }}
@@ -334,7 +352,19 @@ export default function ContractForm() {
                 type="file"
                 multiple
                 accept="image/*,application/pdf"
-                onChange={e => setField("files", e.target.files)}
+                onChange={e => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    const files = Array.from(e.target.files);
+                    if (files.some(file => file.size > MAX_FILE_SIZE)) {
+                      setMsg(`One or more files are too large. Max size per file is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
+                      setField("files", null); // Clear previous selection
+                      e.target.value = null; // Reset file input
+                      return;
+                    }
+                    setMsg(""); // Clear previous error messages
+                    setField("files", e.target.files);
+                  }
+                }}
                 className="frosted-file"
                 disabled={busy}
                 ref={fileInputRef}
