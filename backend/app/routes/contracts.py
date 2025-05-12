@@ -105,7 +105,7 @@ def update_contract(
     if not contract:
         raise HTTPException(404, "Contract not found")
 
-    for field, value in upd.model_dump(exclude_none=True).items():
+    for field, value in upd.model_dump(exclude_unset=True).items():
         setattr(contract, field, value)
 
     db.commit(); db.refresh(contract)
