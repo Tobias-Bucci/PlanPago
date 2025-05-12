@@ -59,6 +59,14 @@ export default function Login() {
       if (data.access_token) {            // 2-FA already trusted
         localStorage.setItem("token", data.access_token);
         await cacheProfile(data.access_token);
+        // Check if admin
+        const meRes = await fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${data.access_token}` } });
+        let me = null;
+        if (meRes.ok) me = await meRes.json();
+        if (me && me.email === "admin@admin") {
+          localStorage.setItem("currentEmail", me.email);
+          return navigate("/adminpanel", { replace: true });
+        }
         return navigate(target, { replace: true });
       }
       if (data.temp_token){
@@ -86,6 +94,14 @@ export default function Login() {
       if (!r.ok) throw new Error(data.detail || "Invalid code");
       localStorage.setItem("token", data.access_token);
       await cacheProfile(data.access_token);
+      // Check if admin
+      const meRes = await fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${data.access_token}` } });
+      let me = null;
+      if (meRes.ok) me = await meRes.json();
+      if (me && me.email === "admin@admin") {
+        localStorage.setItem("currentEmail", me.email);
+        return navigate("/adminpanel", { replace:true });
+      }
       navigate(target, { replace:true });
     } catch (err){ setError(err.message) }
     finally      { setLoad(false) }

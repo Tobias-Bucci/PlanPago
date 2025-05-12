@@ -5,6 +5,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 export default function NavBar() {
   const navigate   = useNavigate();
   const isAuth     = Boolean(localStorage.getItem("token"));
+  const isAdmin    = isAuth && localStorage.getItem("currentEmail") === "admin@admin";
   const [menuOpen, setMenuOpen] = useState(false);
 
   /* — activeLink helper (works for both desktop & mobile) — */
@@ -35,6 +36,9 @@ export default function NavBar() {
                 <NavLink to="/dashboard" className={linkClass}>Dashboard</NavLink>
                 <NavLink to="/stats"      className={linkClass}>Statistics</NavLink>
                 <NavLink to="/profile"    className={linkClass}>Settings</NavLink>
+                {isAdmin && (
+                  <NavLink to="/adminpanel" className={linkClass}>Adminpanel</NavLink>
+                )}
                 <button
                   onClick={handleLogout}
                   className="btn-accent ml-2"
@@ -75,6 +79,9 @@ export default function NavBar() {
               <NavLink to="/dashboard" onClick={()=>setMenuOpen(false)} className="btn-primary w-full text-lg py-3">Dashboard</NavLink>
               <NavLink to="/stats" onClick={()=>setMenuOpen(false)} className="btn-primary w-full text-lg py-3">Statistics</NavLink>
               <NavLink to="/profile" onClick={()=>setMenuOpen(false)} className="btn-primary w-full text-lg py-3">Settings</NavLink>
+              {isAdmin && (
+                <NavLink to="/adminpanel" onClick={()=>setMenuOpen(false)} className="btn-primary w-full text-lg py-3">Adminpanel</NavLink>
+              )}
               <button onClick={handleLogout} className="btn-accent w-full text-lg py-3 mt-2 bg-red-600 hover:bg-red-700">Logout</button>
             </>
           ) : (
