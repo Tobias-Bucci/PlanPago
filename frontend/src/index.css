@@ -215,3 +215,38 @@ input[type="file"].frosted-file:hover{
     padding: 1.2rem !important;
   }
 }
+
+/* ─── Gradient-Pill (2×1s, bleibt stehen) ─────────────────────── */
+@keyframes gradientShiftOnce {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+.gradient-bg {
+  background: linear-gradient(
+    90deg,
+    var(--brand),
+    var(--secondary),
+    var(--brand)
+  );
+  background-size: 200% 200%;
+  animation: gradientShiftOnce 1s ease 2 both;
+}
+
+/* schnellerer Gradient-Shift, nur 2 Durchläufe */
+@keyframes gradientShiftOnce {
+  0%   { background-position:   0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}
+/* wir spielen den Gradient nur 2 mal ab und dann bleibt er stehen */
+.gradient-bg {
+  background: linear-gradient(
+    90deg,
+    var(--brand),
+    var(--secondary),
+    var(--brand)
+  );
+  background-size: 200% 200%;
+  animation: gradientShiftOnce 1s ease 2 both;
+}
