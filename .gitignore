@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+venv/
+.mypy_cache/
+.pytest_cache/
+*.pkl
+*.cache
+
+# Environment variables
+.env
+*.env
+.env.*
+
+# Database files
+*.db*
+*.sqlite*
+
+# Logs
+*.log
+logs/
+
+# Uploaded files
+uploaded_files/
+
+# Alembic
+alembic/versions/__pycache__/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build
+frontend/build/
+
+# System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+
+# VSCode
+.vscode/
+
+# Misc
+*.bak
+*.swp
+*.swo
+*.tmp
+*.orig
+*.rej
+*.seed
+*.pid
+*.pid.lock
+
+# Private/large files (optional, falls nicht öffentlich)
+Files/*.pdf
+Files/*.png
+Files/*.md
