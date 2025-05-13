@@ -1,0 +1,67 @@
+[33mfb3a985[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m Add .gitignore to exclude sensitive and unnecessary files
+[33m60e7426[m cancel function
+[33me0a5d30[m Security Header
+[33m8c09ddb[m sort function (newest on top)
+[33m36a2448[m Adminpanel button
+[33mf9846c4[m max file size 5MB
+[33m93bf516[m all bugs are fixed (statistics)
+[33md5fe608[m enddate deletion function
+[33m59dd62c[m email deasign update & email bug fix (4 emails at ones)
+[33m1ae912a[m bug fix
+[33m638b233[m TOTP pruefen
+[33m626ff00[m Email layout
+[33m4376aef[m TOTP implementation
+[33m03a9df1[m drag and drop
+[33m2772bde[m bug fix
+[33m54dd6d2[m password validation
+[33m2db7d51[m Mobile optimization (not perfect)
+[33mcf4f65e[m login cooldown & alembic implementation
+[33mccd2618[m session end to login page
+[33mb4cc136[m Export to pdf
+[33m3d49e6a[m export to csv
+[33m6cf5b58[m Forgot password implementation
+[33mce4d6c8[m admin login & notes viewer
+[33ma462a77[m translation frontend & backend
+[33ma391003[m bug fix
+[33m125c728[m updated stats & bug fix
+[33m4b85fdf[m Filter, search feature
+[33m55219a4[m new pop up and bad iphone support
+[33mc8832bc[m bug fix
+[33m26ad54b[m New admin features
+[33meb898f2[m Admin panel design update
+[33m838c30c[m Bug fix
+[33m8d44c5e[m New modern design
+[33m8ae24e2[m Country & Currency memory function
+[33m684a29f[m Logs & Bug fix
+[33m92adf05[m English translation
+[33m714322c[m Dokumentation
+[33m4ab749d[m Publish on domain
+[33med71cfb[m[33m ([m[1;32mdemo[m[33m)[m email deactiver & bug fix
+[33mc04bd74[m bug fix
+[33mac5f246[m new design & token memory
+[33ma4e9016[m Add email validation functionality and update version to 2.2.0
+[33m5d4beff[m bug fix
+[33m8762d3f[m email reminder
+[33me9d24ca[m Admin panel & bug fix
+[33madccbbf[m 2FA password
+[33m2d0e487[m bug fixes
+[33m0a9a192[m bug fix & 2FA login
+[33mf4ba075[m bug fix & statistics
+[33m5b83860[m file support & bug fix
+[33me67322e[m bug fixes & new design
+[33mdcf92e3[m feat: Implement logging setup and enhance contract/user management with model_dump
+[33m2dbf8f8[m Unit-tests
+[33m220ed05[m Refactor code structure for improved readability and maintainability
+[33meb7598f[m icon
+[33md7fd25f[m bug fix
+[33m287df06[m feat: Enhance user profile management with country and currency settings, and implement contract management features
+[33m14514a8[m feat: Implement user profile management with update and delete functionality
+[33m2bc032c[m feat: Refactor authentication flow with improved login and registration components
+[33m5f09af5[m feat: Initialize frontend with React, Tailwind CSS, and routing
+[33m6930612[m backend startup
+[33m347cb02[m Removes project documentation and diagrams
+[33m6806acd[m Created diagrams
+[33ma9b604f[m Pflichtenheft vervollstaendigt
+[33m9403709[m Add initial documentation and abstract for PlanPago web application
+[33mad44341[m Initial commit
+[33m36fba90[m Initial commit
