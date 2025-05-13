@@ -14,6 +14,7 @@ from . import models
 from .routes import users, contracts, contract_files, logs          # NEW
 from .utils.email_utils import schedule_all_reminders
 from .logging_config import setup_logging                           # NEW
+from .middleware.security_headers import SecurityHeadersMiddleware
 
 # ────────────── Basics & Logging ─────────────────────────────────
 load_dotenv()                 # lädt .env (+ .env.development bei Bedarf)
@@ -53,6 +54,8 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # ────────────── Static-Files (Uploads) ───────────────────────────
 app.mount("/files", StaticFiles(directory=UPLOAD_DIR), name="files")
