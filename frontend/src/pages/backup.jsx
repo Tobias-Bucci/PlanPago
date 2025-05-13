@@ -11,8 +11,6 @@ import {
   Search,
   FileSpreadsheet,
   FileText,
-  XCircle, // Icon für Cancel
-  Undo2, // Icon für Re-activate
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import { fetchWithAuth } from "../utils/fetchWithAuth";
@@ -153,46 +151,6 @@ export default function Dashboard() {
       onConfirm: () => reallyDeleteFile(cid, fid),
     });
 
-  const reallyCancelContract = async (id) => {
-    try {
-      const r = await fetchWithAuth(`${API}/contracts/${id}`, {
-        method: "PATCH",
-        headers: { ...authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "cancelled" }),
-      }, navigate);
-      if (!r.ok) throw new Error("Cancel failed");
-      setMsg("Contract cancelled");
-      loadPage();
-    } catch (e) { setErr(e.message); }
-  };
-  const cancelContract = (id) =>
-    setDialog({
-      open: true,
-      title: "Cancel contract?",
-      message: "This will mark the contract as cancelled. It will be ignored in statistics.",
-      onConfirm: () => reallyCancelContract(id),
-    });
-
-  const reallyReactivateContract = async (id) => {
-    try {
-      const r = await fetchWithAuth(`${API}/contracts/${id}`, {
-        method: "PATCH",
-        headers: { ...authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "active" }),
-      }, navigate);
-      if (!r.ok) throw new Error("Re-activate failed");
-      setMsg("Contract re-activated");
-      loadPage();
-    } catch (e) { setErr(e.message); }
-  };
-  const reactivateContract = (id) =>
-    setDialog({
-      open: true,
-      title: "Re-activate contract?",
-      message: "This will set the contract back to active.",
-      onConfirm: () => reallyReactivateContract(id),
-    });
-
   /* ───── pagination helpers ─────────────────────────────────── */
   const totalPages  = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageNumbers = useMemo(() => {
@@ -313,14 +271,11 @@ export default function Dashboard() {
             {contracts.slice(0, PAGE_SIZE).map((c, idx) => {
               const end = new Date(c.end_date || "");
               const expired = c.end_date && end < today;
-              const cancelled = c.status === "cancelled";
               return (
-                <div key={c.id} className={`mb-4 p-4 rounded-xl bg-white/5 shadow flex flex-col gap-2 ${(expired || cancelled) ? "opacity-50" : ""}`}>
+                <div key={c.id} className="mb-4 p-4 rounded-xl bg-white/5 shadow flex flex-col gap-2">
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-bold text-lg">{c.name}</span>
-                    <span className={`text-xs px-2 py-1 rounded ${cancelled ? "bg-gray-600/30 text-gray-400" : expired ? "bg-red-600/30 text-red-300" : "bg-emerald-600/20 text-emerald-300"}`}>
-                      {cancelled ? "Cancelled" : expired ? "Expired" : c.status}
-                    </span>
+                    <span className={`text-xs px-2 py-1 rounded ${expired ? "bg-red-600/30 text-red-300" : "bg-emerald-600/20 text-emerald-300"}`}>{expired ? "Expired" : c.status}</span>
                   </div>
                   <div className="flex flex-wrap gap-2 text-sm">
                     <span className="bg-white/10 rounded px-2 py-1">{c.contract_type}</span>
@@ -342,24 +297,6 @@ export default function Dashboard() {
                   <div className="flex gap-2 mt-3">
                     <button className="btn-primary flex-1" onClick={() => navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })}>Edit</button>
                     <button className="btn-accent flex-1 bg-red-600 hover:bg-red-700" onClick={() => deleteContract(c.id)}>Delete</button>
-                    {cancelled ? (
-                      <button
-                        className="btn-accent flex-1 bg-emerald-700 hover:bg-emerald-800"
-                        onClick={() => reactivateContract(c.id)}
-                        title="Reactivate contract"
-                      >
-                        Reactivate
-                      </button>
-                    ) : (
-                      <button
-                        className="btn-accent flex-1 bg-gray-500 hover:bg-gray-600"
-                        onClick={() => cancelContract(c.id)}
-                        disabled={expired}
-                        title="Cancel contract"
-                      >
-                        Cancel
-                      </button>
-                    )}
                   </div>
                   {c.notes && (
                     <div className="mt-2 text-white/80 text-sm bg-white/5 rounded p-2">
@@ -414,13 +351,12 @@ export default function Dashboard() {
               {contracts.map((c, idx) => {
                 const end       = new Date(c.end_date || "");
                 const expired   = c.end_date && end < today;
-                const cancelled = c.status === "cancelled";
                 const expanded  = expandedId === c.id;
 
                 return (
                   <React.Fragment key={c.id}>
                     <tr
-                      className={`${(expired || cancelled) ? "opacity-50" : ""} hover:bg-white/10 transition cursor-pointer`}
+                      className={`${expired ? "opacity-50" : ""} hover:bg-white/10 transition cursor-pointer`}
                       onClick={() => setExpandedId(expanded ? null : c.id)}
                     >
                       <td className="px-6 py-4">{c.name}</td>
@@ -429,8 +365,8 @@ export default function Dashboard() {
                       <td className="px-6 py-4">{c.end_date ? end.toLocaleDateString() : "-"}</td>
                       <td className="px-6 py-4">{c.amount} {currency}</td>
                       <td className="px-6 py-4">
-                        <span className={cancelled ? "text-gray-400" : expired ? "text-red-400" : "text-emerald-300"}>
-                          {cancelled ? "Cancelled" : expired ? "Expired" : c.status}
+                        <span className={expired ? "text-red-400" : "text-emerald-300"}>
+                          {expired ? "Expired" : c.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 flex flex-wrap gap-2">
@@ -456,48 +392,22 @@ export default function Dashboard() {
                           </div>
                         ))}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn-primary flex items-center justify-center w-12 h-12 rounded-lg transition hover:scale-110 hover:brightness-125"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/contracts/${c.id}/edit`, { state: { contract: c } });
-                            }}
-                            title="Edit contract"
-                            style={{ minWidth: 48, minHeight: 48 }}
-                          >
-                            <Edit3 size={24} />
-                          </button>
-                          <button
-                            className="btn-accent flex items-center justify-center w-12 h-12 rounded-lg bg-red-600 hover:bg-red-700 transition hover:scale-110 hover:brightness-125"
-                            onClick={(e) => { e.stopPropagation(); deleteContract(c.id); }}
-                            title="Delete contract"
-                            style={{ minWidth: 48, minHeight: 48 }}
-                          >
-                            <Trash2 size={24} />
-                          </button>
-                          {c.status === "cancelled" ? (
-                            <button
-                              className="flex items-center justify-center w-12 h-12 rounded-lg bg-emerald-700 hover:bg-emerald-600 transition hover:scale-110 hover:brightness-125"
-                              onClick={(e) => { e.stopPropagation(); reactivateContract(c.id); }}
-                              title="Re-activate contract"
-                              style={{ minWidth: 48, minHeight: 48 }}
-                            >
-                              <Undo2 size={24} />
-                            </button>
-                          ) : (
-                            <button
-                              className="flex items-center justify-center w-12 h-12 rounded-lg bg-purple-700 hover:bg-gray-700 transition hover:scale-110 hover:brightness-125"
-                              onClick={(e) => { e.stopPropagation(); cancelContract(c.id); }}
-                              title="Cancel contract"
-                              style={{ minWidth: 48, minHeight: 48 }}
-                              disabled={c.status === "expired"}
-                            >
-                              <XCircle size={24} />
-                            </button>
-                          )}
-                        </div>
+                      <td className="px-6 py-4 text-center space-x-2">
+                        <button
+                          className="btn-primary p-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/contracts/${c.id}/edit`, { state: { contract: c } });
+                          }}
+                        >
+                          <Edit3 size={18} />
+                        </button>
+                        <button
+                          className="btn-accent bg-red-600 hover:bg-red-700 p-2"
+                          onClick={(e) => { e.stopPropagation(); deleteContract(c.id); }}
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </td>
                     </tr>
 

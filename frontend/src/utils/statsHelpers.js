@@ -13,6 +13,7 @@ export function buildMonthSeries(contracts) {
     const start = new Date(now.getFullYear() - 1, now.getMonth() + 1, 1); // 12 months back +1
   
     contracts.forEach((c) => {
+      if (c.status === "cancelled") return; // Cancelled Verträge ignorieren
       const isSalary = c.contract_type === "salary";
       const monthly =
         c.payment_interval === "jährlich" ||
@@ -44,8 +45,8 @@ export function buildMonthSeries(contracts) {
     contracts.forEach((c) => {
       // Skip one-time payments that are already past
       if (c.payment_interval === "one-time" && new Date(c.start_date) < today) return;
-      // Skip expired contracts
-      if (c.status === "expired") return;
+      // Skip expired or cancelled contracts
+      if (c.status === "expired" || c.status === "cancelled") return;
 
       let due = new Date(c.start_date);
   

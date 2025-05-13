@@ -68,7 +68,7 @@ export default function Stats() {
 
   /* KPI calculation */
   const kpi = useMemo(() => {
-    const activeContracts = contracts.filter(c => c.status !== "expired");
+    const activeContracts = contracts.filter(c => c.status !== "expired" && c.status !== "cancelled");
     const income = activeContracts
       .filter((c) => c.contract_type === "salary")
       .reduce((s, c) => {
@@ -92,7 +92,7 @@ export default function Stats() {
       Object.keys(TYPE_COLORS).map((k) => [k, 0])
     );
     contracts
-      .filter((c) => c.contract_type !== "salary" && c.status !== "expired")
+      .filter((c) => c.contract_type !== "salary" && c.status !== "expired" && c.status !== "cancelled")
       .forEach((c) => {
         const yearly = c.payment_interval === "yearly";
         const v = Number(c.amount) / (yearly ? 12 : 1);
@@ -111,7 +111,7 @@ export default function Stats() {
   const incomeData = useMemo(() => {
     const map = {};
     contracts
-      .filter((c) => c.contract_type === "salary" && c.status !== "expired")
+      .filter((c) => c.contract_type === "salary" && c.status !== "expired" && c.status !== "cancelled")
       .forEach((c) => {
         const yearly = c.payment_interval === "yearly";
         const v = Number(c.amount) / (yearly ? 12 : 1);

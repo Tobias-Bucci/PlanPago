@@ -156,7 +156,6 @@ export default function ContractForm() {
       /* optional file upload */
       if (form.files?.length) {
         let filesToUpload = Array.from(form.files);
-        let totalSize = filesToUpload.reduce((acc, file) => acc + file.size, 0);
 
         if (filesToUpload.some(file => file.size > MAX_FILE_SIZE)) {
           setMsg(`One or more files are too large. Max size per file is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
