@@ -91,6 +91,8 @@ export default function Dashboard() {
         })
       );
 
+      // Sort contracts by start_date descending (newest first)
+      withFiles.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
       setContracts(withFiles);
       setTotal(total);
     } catch (e) {
