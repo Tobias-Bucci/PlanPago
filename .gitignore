@@ -15,7 +15,7 @@ venv/
 # Spezifische Backend-Caches
 backend/__pycache__/
 backend/app/**/__pycache__/
-backend/alembic/versions/__pycache__/
+backend/alembic/
 backend/app/middleware/__pycache__/
 backend/app/routes/__pycache__/
 backend/app/utils/__pycache__/
@@ -27,6 +27,7 @@ backend/app/utils/__pycache__/
 backend/.env
 frontend/.env
 backend/env/
+backend/venv/
 
 # ───────────────── Datenbanken ─────────────────
 *.db*
