@@ -21,7 +21,7 @@ import { fetchWithAuth } from "../utils/fetchWithAuth";
 const PAGE_SIZE = 10;                     // ← 0 caused empty pages
 
 const TYPE_OPTIONS = [
-  { label: "All types",  value: "" },
+  { label: "All Types",  value: "" },
   { label: "Rent",       value: "rent" },
   { label: "Insurance",  value: "insurance" },
   { label: "Streaming",  value: "streaming" },
@@ -31,7 +31,7 @@ const TYPE_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
-  { label: "Any status", value: "" },
+  { label: "Any Status", value: "" },
   { label: "Active",     value: "active" },
   { label: "Cancelled",  value: "cancelled" },
   { label: "Expired",    value: "expired" },
@@ -400,13 +400,14 @@ export default function Dashboard() {
           <table className="min-w-full text-white/90 hidden sm:table">
             <thead className="text-white uppercase text-sm bg-white/10">
               <tr>
-                <th className="px-6 py-3 text-left">Name</th>
-                <th className="px-6 py-3 text-left">Type</th>
-                <th className="px-6 py-3 text-left">Start</th>
-                <th className="px-6 py-3 text-left">End</th>
-                <th className="px-6 py-3 text-left">Amount</th>
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Files</th>
+                <th className="px-6 py-3 text-center">Name</th>
+                <th className="px-6 py-3 text-center">Type</th>
+                <th className="px-6 py-3 text-center">Interval</th>
+                <th className="px-6 py-3 text-center">Start</th>
+                <th className="px-6 py-3 text-center">End</th>
+                <th className="px-6 py-3 text-center">Amount</th>
+                <th className="px-6 py-3 text-center">Status</th>
+                <th className="px-6 py-3 text-center">Files</th>
                 <th className="px-6 py-3 text-center">Actions</th>
               </tr>
             </thead>
@@ -416,6 +417,11 @@ export default function Dashboard() {
                 const expired   = c.end_date && end < today;
                 const cancelled = c.status === "cancelled";
                 const expanded  = expandedId === c.id;
+                // Payment interval label
+                let intervalLabel = "-";
+                if (c.payment_interval === "yearly") intervalLabel = "Yearly";
+                else if (c.payment_interval === "monthly") intervalLabel = "Monthly";
+                else if (c.payment_interval === "one-time") intervalLabel = "One-time";
 
                 return (
                   <React.Fragment key={c.id}>
@@ -423,38 +429,41 @@ export default function Dashboard() {
                       className={`${(expired || cancelled) ? "opacity-50" : ""} hover:bg-white/10 transition cursor-pointer`}
                       onClick={() => setExpandedId(expanded ? null : c.id)}
                     >
-                      <td className="px-6 py-4">{c.name}</td>
-                      <td className="px-6 py-4">{c.contract_type}</td>
-                      <td className="px-6 py-4">{new Date(c.start_date).toLocaleDateString()}</td>
-                      <td className="px-6 py-4">{c.end_date ? end.toLocaleDateString() : "-"}</td>
-                      <td className="px-6 py-4">{c.amount} {currency}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-center">{c.name}</td>
+                      <td className="px-6 py-4 text-center">{TYPE_OPTIONS.find(t => t.value === c.contract_type)?.label || c.contract_type}</td>
+                      <td className="px-6 py-4 text-center">{intervalLabel}</td>
+                      <td className="px-6 py-4 text-center">{new Date(c.start_date).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-center">{c.end_date ? end.toLocaleDateString() : "-"}</td>
+                      <td className="px-6 py-4 text-center">{c.amount} {currency}</td>
+                      <td className="px-6 py-4 text-center">
                         <span className={cancelled ? "text-gray-400" : expired ? "text-red-400" : "text-emerald-300"}>
-                          {cancelled ? "Cancelled" : expired ? "Expired" : c.status}
+                          {cancelled ? "Cancelled" : expired ? "Expired" : (STATUS_OPTIONS.find(s => s.value === c.status)?.label || c.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 flex flex-wrap gap-2">
-                        {c.files.map((f) => (
-                          <div key={f.id} className="relative">
-                            <a href={`${API}${f.url}`} target="_blank" rel="noopener noreferrer">
-                              {f.url.endsWith(".pdf") ? (
-                                <span className="text-2xl">📄</span>
-                              ) : (
-                                <img
-                                  src={`${API}${f.url}`}
-                                  alt={f.original_filename}
-                                  className="h-10 w-10 rounded object-cover"
-                                />
-                              )}
-                            </a>
-                            <button
-                              className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
-                              onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {c.files.map((f) => (
+                            <div key={f.id} className="relative inline-block">
+                              <a href={`${API}${f.url}`} target="_blank" rel="noopener noreferrer">
+                                {f.url.endsWith(".pdf") ? (
+                                  <span className="text-2xl">📄</span>
+                                ) : (
+                                  <img
+                                    src={`${API}${f.url}`}
+                                    alt={f.original_filename}
+                                    className="h-10 w-10 rounded object-cover"
+                                  />
+                                )}
+                              </a>
+                              <button
+                                className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
+                                onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-4">
@@ -503,7 +512,7 @@ export default function Dashboard() {
 
                     {/* expandable notes row */}
                     <tr>
-                      <td colSpan="8" style={{ padding: 0, border: 0 }}>
+                      <td colSpan="9" style={{ padding: 0, border: 0 }}>
                         <div
                           className={`transition-[max-height,opacity] duration-300 ${expanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"} overflow-hidden`}
                         >
@@ -520,7 +529,7 @@ export default function Dashboard() {
                     </tr>
 
                     {idx < contracts.length - 1 && (
-                      <tr><td colSpan="8"><div className="border-b border-white/10" /></td></tr>
+                      <tr><td colSpan="9"><div className="border-b border-white/10" /></td></tr>
                     )}
                   </React.Fragment>
                 );

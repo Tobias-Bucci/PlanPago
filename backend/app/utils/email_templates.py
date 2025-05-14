@@ -279,4 +279,44 @@ TEMPLATES = {
             ),
         },
     },
+
+    # ───── System Notifications ────────────────────────────────
+    "system": {
+        "verification_code": {
+            "subject": "PlanPago – Your verification code",
+            "body": (
+                "Hello,\n\n"
+                "Your PlanPago verification code is: {code}\n"
+                "Please enter this code within 10 minutes.\n\n"
+                "Best regards,\nThe PlanPago Team"
+            ),
+            "html": lambda *, code=None: _build_html(
+                "Your Verification Code",
+                [
+                    "Thank you for using PlanPago.<br>Your verification code is:",
+                    f"<div style=\"font-size:2.2rem;font-weight:700;color:#1e63ff;background:#f3f7ff;border-radius:10px;padding:18px 0;text-align:center;letter-spacing:.18em;margin-bottom:18px\">{code}</div>",
+                    "Please enter this code to complete your login.<br>For your security, the code is valid for <b>10&nbsp;minutes</b> only.",
+                    "If you did not request this code, simply ignore this message and consider changing your password."
+                ]
+            ),
+        },
+        "admin_impersonation": {
+            "subject": "PlanPago – Admin login notification",
+            "body": (
+                "Hello,\n\n"
+                "An administrator has just accessed your PlanPago account for support or troubleshooting.\n\n"
+                "If you were not expecting this, please contact our support team immediately.\n\n"
+                "Thank you for using PlanPago.\n\n"
+                "Best regards,\nThe PlanPago Team"
+            ),
+            "html": lambda **_: _build_html(
+                "Admin login notification",
+                [
+                    "An administrator has just accessed your PlanPago account for support or troubleshooting.",
+                    "If you were not expecting this, please contact our support team immediately.",
+                    "Thank you for using PlanPago."
+                ]
+            ),
+        },
+    },
 }
