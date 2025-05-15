@@ -13,6 +13,9 @@ import {
   FileText,
   XCircle, // Icon für Cancel
   Undo2, // Icon für Re-activate
+  ArrowUp, // Icon für Sort Ascending
+  ArrowDown, // Icon für Sort Descending
+  ArrowUpDown, // Icon für Sort Both Ways
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import { fetchWithAuth } from "../utils/fetchWithAuth";
@@ -21,45 +24,60 @@ import { fetchWithAuth } from "../utils/fetchWithAuth";
 const PAGE_SIZE = 10;                     // ← 0 caused empty pages
 
 const TYPE_OPTIONS = [
-  { label: "All Types",  value: "" },
-  { label: "Rent",       value: "rent" },
-  { label: "Insurance",  value: "insurance" },
-  { label: "Streaming",  value: "streaming" },
-  { label: "Salary",     value: "salary" },
-  { label: "Leasing",    value: "leasing" },
-  { label: "Other",      value: "other" },
+  { label: "All Types", value: "" },
+  { label: "Rent", value: "rent" },
+  { label: "Insurance", value: "insurance" },
+  { label: "Streaming", value: "streaming" },
+  { label: "Salary", value: "salary" },
+  { label: "Leasing", value: "leasing" },
+  { label: "Other", value: "other" },
 ];
 
 const STATUS_OPTIONS = [
   { label: "Any Status", value: "" },
-  { label: "Active",     value: "active" },
-  { label: "Cancelled",  value: "cancelled" },
-  { label: "Expired",    value: "expired" },
+  { label: "Active", value: "active" },
+  { label: "Cancelled", value: "cancelled" },
+  { label: "Expired", value: "expired" },
+];
+
+// Sort options with labels and field names
+const SORT_OPTIONS = [
+  { label: "Date (newest first)", field: "start_date", dir: "desc" },
+  { label: "Date (oldest first)", field: "start_date", dir: "asc" },
+  { label: "Price (highest first)", field: "amount", dir: "desc" },
+  { label: "Price (lowest first)", field: "amount", dir: "asc" },
+  { label: "End date (soonest first)", field: "end_date", dir: "asc" },
+  { label: "End date (latest first)", field: "end_date", dir: "desc" },
 ];
 
 /* ───────── component ────────────────────────────────────────── */
 export default function Dashboard() {
   /* main data & ui state */
   const [contracts, setContracts] = useState([]);
-  const [total, setTotal]         = useState(0);
-  const [page, setPage]           = useState(0);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
 
-  const [query, setQuery]         = useState("");
-  const [filterType, setFType]    = useState("");
-  const [filterStat, setFStat]    = useState("");
+  const [query, setQuery] = useState("");
+  const [filterType, setFType] = useState("");
+  const [filterStat, setFStat] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
-  const [msg, setMsg]     = useState("");
-  const [err, setErr]     = useState("");
-  const [loading, setLd]  = useState(true);
+  // Sorting state
+  const [sortField, setSortField] = useState("start_date");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLd] = useState(true);
   const [dialog, setDialog] = useState({ open: false });
   const [expandedId, setExpandedId] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef();
+  const sortRef = useRef();
 
-  const navigate    = useNavigate();
-  const API         = API_BASE;
-  const authHeader  = useMemo(
+  const navigate = useNavigate();
+  const API = API_BASE;
+  const authHeader = useMemo(
     () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` }),
     []
   );
@@ -73,12 +91,15 @@ export default function Dashboard() {
     setErr("");
     try {
       const p = new URLSearchParams({
-        skip : page * PAGE_SIZE,
+        skip: page * PAGE_SIZE,
         limit: PAGE_SIZE,
       });
-      if (query.trim())   p.append("q", query.trim());
-      if (filterType)     p.append("type", filterType);
-      if (filterStat)     p.append("status", filterStat);
+      if (query.trim()) p.append("q", query.trim());
+      if (filterType) p.append("type", filterType);
+      if (filterStat) p.append("status", filterStat);
+      // Add sorting parameters - this affects ALL contracts, not just current page
+      if (sortField) p.append("sort_by", sortField);
+      if (sortDir) p.append("sort_dir", sortDir);
 
       const r = await fetchWithAuth(`${API}/contracts/?${p.toString()}`, { headers: authHeader }, navigate);
       if (!r.ok) throw new Error(await r.text());
@@ -87,14 +108,12 @@ export default function Dashboard() {
       /* enrich with attachments of visible rows */
       const withFiles = await Promise.all(
         items.map(async (c) => {
-          const fr   = await fetchWithAuth(`${API}/contracts/${c.id}/files`, { headers: authHeader }, navigate);
+          const fr = await fetchWithAuth(`${API}/contracts/${c.id}/files`, { headers: authHeader }, navigate);
           const files = fr.ok ? await fr.json() : [];
           return { ...c, files };
         })
       );
 
-      // Sort contracts by start_date descending (newest first)
-      withFiles.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
       setContracts(withFiles);
       setTotal(total);
     } catch (e) {
@@ -102,7 +121,7 @@ export default function Dashboard() {
     } finally {
       setLd(false);
     }
-  }, [API, authHeader, page, query, filterType, filterStat, navigate]);
+  }, [API, authHeader, page, query, filterType, filterStat, navigate, sortField, sortDir]);
 
   /* initial + dependents */
   useEffect(() => { loadPage(); }, [loadPage]);
@@ -112,7 +131,7 @@ export default function Dashboard() {
     setPage(0);
     loadPage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, filterType, filterStat]);
+  }, [query, filterType, filterStat, sortField, sortDir]);
 
   /* ───── deletion helpers ───────────────────────────────────── */
   const reallyDeleteContract = async (id) => {
@@ -194,7 +213,7 @@ export default function Dashboard() {
     });
 
   /* ───── pagination helpers ─────────────────────────────────── */
-  const totalPages  = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageNumbers = useMemo(() => {
     if (totalPages <= 5) return [...Array(totalPages).keys()];
     const start = Math.max(0, Math.min(page - 2, totalPages - 5));
@@ -235,8 +254,8 @@ export default function Dashboard() {
                   const res = await fetchWithAuth(`${API}/contracts/export/csv`, { headers: authHeader }, navigate);
                   if (!res.ok) return setErr("Export failed");
                   const blob = await res.blob();
-                  const url  = window.URL.createObjectURL(blob);
-                  const a    = Object.assign(document.createElement("a"), {
+                  const url = window.URL.createObjectURL(blob);
+                  const a = Object.assign(document.createElement("a"), {
                     href: url,
                     download: "contracts.csv",
                   });
@@ -252,8 +271,8 @@ export default function Dashboard() {
                   const res = await fetchWithAuth(`${API}/contracts/export/pdf`, { headers: authHeader }, navigate);
                   if (!res.ok) return setErr("Export failed");
                   const blob = await res.blob();
-                  const url  = window.URL.createObjectURL(blob);
-                  const a    = Object.assign(document.createElement("a"), {
+                  const url = window.URL.createObjectURL(blob);
+                  const a = Object.assign(document.createElement("a"), {
                     href: url,
                     download: "contracts.pdf",
                   });
@@ -295,6 +314,27 @@ export default function Dashboard() {
             <option key={value} value={value}>{label}</option>
           ))}
         </select>
+
+        <div className="relative" ref={sortRef}>
+          <select
+            className="frosted-input sm:w-56 pr-10"
+            value={`${sortField}_${sortDir}`}
+            onChange={(e) => {
+              const [field, direction] = e.target.value.split('_');
+              setSortField(field);
+              setSortDir(direction);
+            }}
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={`${option.field}_${option.dir}`} value={`${option.field}_${option.dir}`}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#aaa' }}>
+            <ArrowUpDown size={20} />
+          </span>
+        </div>
       </div>
 
       {/* Flash messages */}
@@ -310,6 +350,28 @@ export default function Dashboard() {
         <div className="glass-card overflow-x-auto">
           {/* Mobile: Cards, Desktop: Table */}
           <div className="block sm:hidden">
+            {/* Mobile Sorting Options */}
+            <div className="flex items-center mb-4 p-4 bg-white/5 rounded-lg">
+              <div className="w-full">
+                <label className="block text-white/70 mb-2">Sort by:</label>
+                <select
+                  className="frosted-input w-full"
+                  value={`${sortField}_${sortDir}`}
+                  onChange={(e) => {
+                    const [field, direction] = e.target.value.split('_');
+                    setSortField(field);
+                    setSortDir(direction);
+                  }}
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={`${option.field}_${option.dir}`} value={`${option.field}_${option.dir}`}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {contracts.slice(0, PAGE_SIZE).map((c, idx) => {
               const end = new Date(c.end_date || "");
               const expired = c.end_date && end < today;
@@ -403,9 +465,48 @@ export default function Dashboard() {
                 <th className="px-6 py-3 text-center">Name</th>
                 <th className="px-6 py-3 text-center">Type</th>
                 <th className="px-6 py-3 text-center">Interval</th>
-                <th className="px-6 py-3 text-center">Start</th>
-                <th className="px-6 py-3 text-center">End</th>
-                <th className="px-6 py-3 text-center">Amount</th>
+                <th className="px-6 py-3 text-center">
+                  <button
+                    className="inline-flex items-center gap-1"
+                    onClick={() => setSortDir(sortField === "start_date" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("start_date")}
+                    title={sortField === "start_date" ? (sortDir === "asc" ? "Sort start date descending" : "Sort start date ascending") : "Sort by start date"}
+                  >
+                    Start
+                    {sortField === "start_date" ? (
+                      sortDir === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                    ) : (
+                      <ArrowUpDown size={14} className="opacity-50" />
+                    )}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-center">
+                  <button
+                    className="inline-flex items-center gap-1"
+                    onClick={() => setSortDir(sortField === "end_date" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("end_date")}
+                    title={sortField === "end_date" ? (sortDir === "asc" ? "Sort end date descending" : "Sort end date ascending") : "Sort by end date"}
+                  >
+                    End
+                    {sortField === "end_date" ? (
+                      sortDir === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                    ) : (
+                      <ArrowUpDown size={14} className="opacity-50" />
+                    )}
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-center">
+                  <button
+                    className="inline-flex items-center gap-1"
+                    onClick={() => setSortDir(sortField === "amount" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("amount")}
+                    title={sortField === "amount" ? (sortDir === "asc" ? "Sort amount descending" : "Sort amount ascending") : "Sort by amount"}
+                  >
+                    Amount
+                    {sortField === "amount" ? (
+                      sortDir === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+                    ) : (
+                      <ArrowUpDown size={14} className="opacity-50" />
+                    )}
+                  </button>
+                </th>
                 <th className="px-6 py-3 text-center">Status</th>
                 <th className="px-6 py-3 text-center">Files</th>
                 <th className="px-6 py-3 text-center">Actions</th>
@@ -413,10 +514,10 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {contracts.map((c, idx) => {
-                const end       = new Date(c.end_date || "");
-                const expired   = c.end_date && end < today;
+                const end = new Date(c.end_date || "");
+                const expired = c.end_date && end < today;
                 const cancelled = c.status === "cancelled";
-                const expanded  = expandedId === c.id;
+                const expanded = expandedId === c.id;
                 // Payment interval label
                 let intervalLabel = "-";
                 if (c.payment_interval === "yearly") intervalLabel = "Yearly";

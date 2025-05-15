@@ -50,6 +50,8 @@ def read_contracts(
     q    : Optional[str] = Query(None, description="Free-text search"),
     type : Optional[str] = Query(None, alias="type", description="Contract type filter (rent, insurance, streaming, salary, leasing, other)"),
     status: Optional[str] = Query(None, description="Status filter (active, cancelled, expired)"),
+    sort_by: Optional[str] = Query("start_date", description="Field to sort by (e.g., start_date, end_date, amount)"),
+    sort_dir: Optional[str] = Query("desc", description="Sort direction: 'asc' or 'desc'"),
     db  : Session         = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -64,9 +66,19 @@ def read_contracts(
     if status:
         query = query.filter(models.Contract.status == status)
 
+    # Sorting
+    if sort_by and hasattr(models.Contract, sort_by):
+        order_column = getattr(models.Contract, sort_by)
+        if sort_dir and sort_dir.lower() == "asc":
+            query = query.order_by(order_column.asc())
+        else:
+            query = query.order_by(order_column.desc())
+    else:
+        # Default sort
+        query = query.order_by(models.Contract.start_date.desc())
+
     total  = query.count()
-    items  = query.order_by(models.Contract.start_date.desc()) \
-                  .offset(skip).limit(limit).all()
+    items  = query.offset(skip).limit(limit).all()
 
     return {"items": items, "total": total}
 
