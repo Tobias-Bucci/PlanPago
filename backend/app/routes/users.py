@@ -421,7 +421,7 @@ def request_password_reset(
 
     if user.twofa_method == "totp":
         temp_token = _create_token({"sub": user.email}, ttl=timedelta(minutes=10))
-        return {"temp_token": temp_token, "twofa_method": "totp"}
+        return {"temp_token": temp_token, "twofa_method": "totp", "message": "Enter the 6-digit code from your Authenticator-App."}
 
     # Standard: E-Mail-Code
     code = f"{secrets.randbelow(10**6):06d}"
@@ -429,7 +429,7 @@ def request_password_reset(
     db.add(models.VerificationCode(user_id=user.id, code=code, expires_at=expires))
     db.commit()
     background_tasks.add_task(email_utils.send_code_via_email, user.email, code)
-    return {"email": user.email, "twofa_method": "email"}
+    return {"message": "Password reset email sent.", "email": user.email, "twofa_method": "email"}
 
 @router.post("/password-reset/confirm")
 def confirm_password_reset(

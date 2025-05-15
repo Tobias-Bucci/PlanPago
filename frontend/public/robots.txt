@@ -1,3 +1,19 @@
-# https://www.robotstxt.org/robotstxt.html
+# robots.txt for PlanPago
+# More info: https://www.robotstxt.org/robotstxt.html
+
 User-agent: *
-Disallow:
+
+# Block sensitive backend and admin endpoints
+Disallow: /admin/
+Disallow: /backend/
+Disallow: /logs/
+Disallow: /uploaded_files/
+Disallow: /api/
+Disallow: /private/
+Disallow: /adminpanel/
+
+# Allow crawling of all public content
+Allow: /
+
+# Sitemap location (update if you have a sitemap)
+# Sitemap: https://planpago.buccilab.com/sitemap.xml

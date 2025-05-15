@@ -11,7 +11,6 @@ from reportlab.lib import colors
 from reportlab.lib.units import cm
 from reportlab.platypus import Table, TableStyle, Image as RLImage
 import os
-from datetime import datetime  # Add datetime import
 
 from .. import models, schemas, database
 from .users import get_current_user
@@ -40,7 +39,7 @@ def create_contract(
     db.add(db_contract); db.commit(); db.refresh(db_contract)
 
     scheduler = request.app.state.scheduler
-    schedule_all_reminders(db_contract, scheduler, replace=True)  # Fix: replace=True, damit Reminder-Jobs nicht dupliziert werden
+    schedule_all_reminders(db_contract, scheduler)
     return db_contract
 
 # ───────── Read (paginated, filterable) ───────────────────────────
@@ -54,17 +53,6 @@ def read_contracts(
     db  : Session         = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    # Update status of expired contracts
-    now = datetime.utcnow()
-    expired_contracts = db.query(models.Contract).filter(
-        models.Contract.user_id == current_user.id,
-        models.Contract.end_date < now,
-        models.Contract.status == "active"
-    ).all()
-    for contract in expired_contracts:
-        contract.status = "expired"
-    db.commit()
-
     query = db.query(models.Contract).filter(models.Contract.user_id == current_user.id)
 
     if q:
@@ -117,7 +105,7 @@ def update_contract(
     if not contract:
         raise HTTPException(404, "Contract not found")
 
-    for field, value in upd.model_dump(exclude_unset=True).items():
+    for field, value in upd.model_dump(exclude_none=True).items():
         setattr(contract, field, value)
 
     db.commit(); db.refresh(contract)
