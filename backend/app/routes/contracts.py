@@ -189,9 +189,9 @@ def export_contracts_pdf(
     c.setFillColorRGB(0,0,0)
     c.drawCentredString(width/2, height-6.8*cm, f"Exported: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
-    # Table data (English, no notes)
+    # Table data (ohne Status)
     data = [[
-        "ID", "Name", "Type", "Start Date", "End Date", "Amount", "Payment Interval", "Status"
+        "ID", "Name", "Type", "Start Date", "End Date", "Amount", "Interval"
     ]]
     for cobj in contracts:
         data.append([
@@ -201,32 +201,48 @@ def export_contracts_pdf(
             cobj.start_date.strftime("%Y-%m-%d"),
             cobj.end_date.strftime("%Y-%m-%d") if cobj.end_date else "",
             f"{cobj.amount:.2f}",
-            cobj.payment_interval,
-            cobj.status
+            cobj.payment_interval
         ])
-    col_widths = [table_width * w for w in [0.07, 0.18, 0.13, 0.13, 0.13, 0.12, 0.12, 0.12]]
-    table = Table(data, repeatRows=1, hAlign='CENTER', colWidths=col_widths)
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1E40AF")),
-        ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-        ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,0), 12),
-        ("ALIGN", (0,0), (-1,0), "CENTER"),
-        ("GRID", (0,0), (-1,-1), 0.5, colors.grey),
-        ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.whitesmoke, colors.lightgrey]),
-        ("FONTSIZE", (0,1), (-1,-1), 10),
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-        ("ALIGN", (0,1), (-1,-1), "CENTER"),
-        ("LEFTPADDING", (0,0), (-1,-1), 6),
-        ("RIGHTPADDING", (0,0), (-1,-1), 6),
-        ("TOPPADDING", (0,0), (-1,-1), 4),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-    ]))
-    table_height = table.wrapOn(c, table_width, height)[1]
-    table_x = margin
-    table_y = height-8*cm-table_height
-    table.drawOn(c, table_x, table_y)
-    c.showPage()
+    # Spaltenbreiten neu aufteilen (mehr Platz pro Spalte)
+    col_widths = [table_width * w for w in [0.09, 0.25, 0.16, 0.13, 0.13, 0.12, 0.12]]
+
+    max_rows_per_page = 35  # 1 Header + 27 Datenzeilen
+    total_data_rows = len(data) - 1
+    num_pages = (total_data_rows + max_rows_per_page - 2) // (max_rows_per_page - 1) if total_data_rows > 0 else 1
+
+    for page in range(num_pages):
+        start = page * (max_rows_per_page - 1)
+        end = start + (max_rows_per_page - 1)
+        page_data = [data[0]] + data[start + 1:end + 1]
+        table = Table(page_data, repeatRows=1, hAlign='CENTER', colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1E40AF")),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,0), 10),
+            ("ALIGN", (0,0), (-1,0), "CENTER"),
+            ("GRID", (0,0), (-1,-1), 0.4, colors.grey),
+            ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.whitesmoke, colors.lightgrey]),
+            ("FONTSIZE", (0,1), (-1,-1), 8),
+            ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("ALIGN", (0,1), (-1,-1), "CENTER"),
+            ("LEFTPADDING", (0,0), (-1,-1), 2),
+            ("RIGHTPADDING", (0,0), (-1,-1), 2),
+            ("TOPPADDING", (0,0), (-1,-1), 2),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 2)
+        ]))
+        table_height = table.wrapOn(c, table_width, height)[1]
+        table_x = margin
+        if page == 0:
+            table_y = height-8*cm-table_height
+        else:
+            table_y = height-2*cm-table_height
+        table.drawOn(c, table_x, table_y)
+        c.setFont("Helvetica", 8)
+        c.setFillColorRGB(0.2,0.2,0.2)
+        c.drawCentredString(width/2, 1.1*cm, f"Page {page+1} / {num_pages}")
+        if page < num_pages - 1:
+            c.showPage()
     c.save()
     buffer.seek(0)
     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=contracts.pdf"})
