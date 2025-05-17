@@ -11,6 +11,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Stats from "./pages/Stats";
 import AdminPanel from "./pages/AdminPanel";
 import Terms from "./pages/Terms";
+import Landing from "./pages/Landing";
 
 function App() {
   return (
@@ -72,14 +73,9 @@ function App() {
 
         <Route path="/terms" element={<Terms />} />
 
-        {/* Fallback auf Dashboard */}
         <Route
           path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
+          element={<Landing />}
         />
       </Routes>
     </BrowserRouter>

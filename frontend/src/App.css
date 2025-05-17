@@ -36,3 +36,46 @@
     transform: rotate(360deg);
   }
 }
+
+/* Landing Page Styles (pink-blue theme, clean & modern) */
+:root {
+  --landing-bg-dark: #181c2f;
+  --landing-primary: #61dafb;
+  --landing-accent: #ff61d9;
+  --landing-white: #fff;
+  --landing-text: #e1e6f9;
+  --landing-shadow-blue: rgba(97,218,251,0.15);
+  --landing-shadow-pink: rgba(255,97,217,0.15);
+}
+
+.landing-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: var(--landing-bg-dark);
+  color: var(--landing-text);
+}
+
+.landing-content img {
+  box-shadow: 0 2px 16px 0 var(--landing-shadow-blue);
+  border-radius: 16px;
+}
+
+.landing-btn {
+  background: linear-gradient(90deg, var(--landing-accent) 0%, var(--landing-primary) 100%);
+  color: var(--landing-white);
+  border: none;
+  border-radius: 8px;
+  padding: 0.9rem 2.2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 16px 0 var(--landing-shadow-blue);
+  transition: background 0.2s, color 0.2s;
+}
+.landing-btn:hover {
+  background: linear-gradient(90deg, var(--landing-primary) 0%, var(--landing-accent) 100%);
+  color: var(--landing-white);
+}
