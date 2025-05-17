@@ -32,6 +32,7 @@ export default function Register(){
   const [showPw, setShowPw] = useState(false);
   const [twofa, setTwofa] = useState("email");
   const [qrUrl, setQrUrl] = useState("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   const navigate = useNavigate();
   const API      = API_BASE;
@@ -146,8 +147,25 @@ export default function Register(){
                 <option value="totp">Authenticator-App (TOTP)</option>
               </select>
             </div>
+            {/* Terms and Conditions checkbox */}
+            <div className="flex items-center">
+              <input
+                id="acceptTerms"
+                type="checkbox"
+                className="mr-2"
+                checked={acceptTerms}
+                onChange={e => setAcceptTerms(e.target.checked)}
+                required
+              />
+              <label htmlFor="acceptTerms" className="text-white/80 text-sm">
+                I accept the{' '}
+                <NavLink to="/terms" className="underline text-white" target="_blank" rel="noopener noreferrer">
+                  Terms and Conditions
+                </NavLink>
+              </label>
+            </div>
             {pwError && <div className="text-red-400 text-sm">{pwError}</div>}
-            <button className="btn-primary w-full" disabled={ld || !!pwError || !passwordValid(pw)}>
+            <button className="btn-primary w-full" disabled={ld || !!pwError || !passwordValid(pw) || !acceptTerms}>
               {ld?"Please wait…":"Register"}
             </button>
             <p className="text-center text-sm text-white/80">

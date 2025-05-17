@@ -10,6 +10,7 @@ import ContractForm from "./pages/ContractForm";
 import ProtectedRoute from "./ProtectedRoute";
 import Stats from "./pages/Stats";
 import AdminPanel from "./pages/AdminPanel";
+import Terms from "./pages/Terms";
 
 function App() {
   return (
@@ -68,6 +69,8 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/terms" element={<Terms />} />
 
         {/* Fallback auf Dashboard */}
         <Route
