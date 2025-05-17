@@ -77,3 +77,17 @@ class ContractFile(Base):
     uploaded_at       = Column(DateTime, default=datetime.utcnow)
 
     contract = relationship("Contract", back_populates="files")
+
+
+class ImpersonationRequest(Base):
+    __tablename__ = "impersonation_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    confirmed = Column(Boolean, default=False)
+    confirmed_at = Column(DateTime, nullable=True)
+    token = Column(String, unique=True, nullable=False)
+
+    admin = relationship("User", foreign_keys=[admin_id])
+    user = relationship("User", foreign_keys=[user_id])

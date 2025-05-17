@@ -257,6 +257,32 @@ def send_admin_impersonation_email(to_address: str, admin_email: str) -> None:
 
         Best regards,  
         The PlanPago Team"""
-)
+    )
 
+    _smtp_send(msg, to_address)
+
+
+def send_admin_impersonation_request_email(to_address: str, admin_email: str, confirm_url: str) -> None:
+    display_admin = "Administrator" if admin_email == "admin@admin" else admin_email
+    msg = EmailMessage()
+    msg["Subject"] = "PlanPago – Admin login request"
+    msg["From"] = EMAIL_USER or "planpago@example.com"
+    msg["To"] = to_address
+    html = f'''
+    <div style="font-family: 'Inter', Arial, sans-serif; background: #f6f8fa; padding: 32px 0;">
+      <div style="max-width: 420px; margin: auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(30,99,255,0.08); padding: 32px 32px 24px 32px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <img src="https://planpago.buccilab.com/PlanPago-trans.png" alt="PlanPago Logo" style="height: 48px; margin-bottom: 8px;"/>
+        </div>
+        <h2 style="color: #1e63ff; font-size: 1.5rem; margin-bottom: 12px; text-align: center; font-weight: 700; letter-spacing: 0.01em;">Admin login request</h2>
+        <p style="font-size: 1.08rem; color: #222; margin-bottom: 18px; text-align: center;">{display_admin} wants to access your account for support purposes.<br><br>Please confirm to allow access:</p>
+        <div style="text-align: center; margin-bottom: 18px;">
+          <a href="{confirm_url}" style="display: inline-block; background: #1e63ff; color: #fff; font-weight: 600; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-size: 1.1rem;">Allow admin access</a>
+        </div>
+        <p style="font-size: 0.98rem; color: #555; text-align: center;">If you did not expect this, you can ignore this email.</p>
+      </div>
+    </div>
+    '''
+    msg.set_content(f"{display_admin} wants to access your account. Confirm here: {confirm_url}")
+    msg.add_alternative(html, subtype="html")
     _smtp_send(msg, to_address)

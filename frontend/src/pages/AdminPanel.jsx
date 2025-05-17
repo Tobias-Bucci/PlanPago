@@ -23,6 +23,9 @@ export default function AdminPanel() {
   /* Dialog state for ConfirmModal */
   const [dialog, setDialog] = useState({ open: false });
 
+  /* Impersonation waiting modal state */
+  const [impersonateWait, setImpersonateWait] = useState({ open: false, user: null, requestId: null });
+
   /* broadcast form */
   const [subj, setSubj] = useState("");
   const [body, setBody] = useState("");
@@ -263,19 +266,40 @@ export default function AdminPanel() {
                                   setBusy(true);
                                   setMsg("");
                                   setErr("");
+                                  setImpersonateWait({ open: true, user: u, requestId: null });
                                   try {
-                                    const r = await fetch(`${API}/users/admin/impersonate/${u.id}`, {
+                                    // Step 1: Create impersonation request
+                                    const r = await fetch(`${API}/users/admin/impersonate-request/${u.id}`, {
                                       method: "POST",
                                       headers: authHeader,
                                     });
                                     if (!r.ok) throw new Error(await r.text());
                                     const data = await r.json();
-                                    localStorage.setItem("token", data.access_token);
+                                    setImpersonateWait({ open: true, user: u, requestId: data.request_id });
+                                    // Step 2: Poll for confirmation
+                                    let confirmed = false;
+                                    for (let i = 0; i < 60; ++i) { // up to 60s
+                                      await new Promise(res => setTimeout(res, 2000));
+                                      const poll = await fetch(`${API}/users/admin/impersonate-status/${data.request_id}`, { headers: authHeader });
+                                      if (!poll.ok) throw new Error(await poll.text());
+                                      const pollData = await poll.json();
+                                      if (pollData.confirmed) { confirmed = true; break; }
+                                    }
+                                    if (!confirmed) throw new Error("User did not confirm in time.");
+                                    // Step 3: Do the actual impersonation
+                                    const r2 = await fetch(`${API}/users/admin/impersonate/${u.id}`, {
+                                      method: "POST",
+                                      headers: authHeader,
+                                    });
+                                    if (!r2.ok) throw new Error(await r2.text());
+                                    const data2 = await r2.json();
+                                    localStorage.setItem("token", data2.access_token);
                                     localStorage.setItem("currentEmail", u.email);
-                                    // Optionally: fetch and cache profile/currency/country here
+                                    setImpersonateWait({ open: false, user: null, requestId: null });
                                     navigate("/dashboard", { replace: true });
                                   } catch (e) {
                                     setErr(e.message);
+                                    setImpersonateWait({ open: false, user: null, requestId: null });
                                   } finally {
                                     setBusy(false);
                                   }
@@ -371,8 +395,18 @@ export default function AdminPanel() {
         title={dialog.title}
         message={dialog.message}
         onConfirm={dialog.onConfirm}
-        onClose={() => setDialog({ open: false })}
       />
+
+      {/* ───────── Impersonation-Wait Modal ───────── */}
+      {impersonateWait.open && (
+        <ConfirmModal
+          open={true}
+          title="Waiting for user confirmation"
+          message={`Waiting for ${impersonateWait.user?.email} to approve admin access. Please ask the user to check their email and click the confirmation button.`}
+          confirmLabel="Cancel"
+          onConfirm={() => setImpersonateWait({ open: false, user: null, requestId: null })}
+        />
+      )}
     </main>
   );
 }

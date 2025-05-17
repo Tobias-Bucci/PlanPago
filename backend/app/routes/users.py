@@ -4,9 +4,10 @@ import os, secrets, smtplib, pathlib
 import time
 from datetime import datetime, timedelta
 from typing import List
+from urllib.parse import urlencode
 
 from fastapi import (
-    APIRouter, Depends, HTTPException, BackgroundTasks, Request
+    APIRouter, Depends, HTTPException, BackgroundTasks, Request, status
 )
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -14,6 +15,7 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
 
 from .. import models, schemas, database
@@ -339,17 +341,66 @@ def admin_del(uid: int,
     db.delete(tgt); db.commit()
 
 # ───────── 10) Admin – Impersonate / Health / Broadcast ────────
-@router.post("/admin/impersonate/{uid}", response_model=schemas.Token)
-def admin_impersonate(uid: int,
-                      background_tasks: BackgroundTasks,
-                      cur: models.User = Depends(get_current_user),
-                      db:  Session     = Depends(get_db)):
+@router.post("/admin/impersonate-request/{uid}", status_code=201)
+def admin_impersonate_request(uid: int,
+                             background_tasks: BackgroundTasks,
+                             cur: models.User = Depends(get_current_user),
+                             db: Session = Depends(get_db),
+                             request: Request = None):
     _ensure_admin(cur)
     tgt = db.get(models.User, uid)
     if not tgt:
         raise HTTPException(404, "User not found")
-    # Send notification email to the user
-    background_tasks.add_task(email_utils.send_admin_impersonation_email, tgt.email, cur.email)
+    # Create unique token
+    token = secrets.token_urlsafe(32)
+    # Remove any previous pending requests for this admin/user
+    db.query(models.ImpersonationRequest).filter_by(admin_id=cur.id, user_id=uid, confirmed=False).delete()
+    imp_req = models.ImpersonationRequest(
+        admin_id=cur.id, user_id=uid, token=token
+    )
+    db.add(imp_req)
+    db.commit()
+    # Build confirmation URL
+    base_url = str(request.base_url).rstrip("/")
+    confirm_url = f"{base_url}/users/admin/impersonate-confirm/{token}"
+    background_tasks.add_task(
+        email_utils.send_admin_impersonation_request_email,
+        tgt.email, cur.email, confirm_url
+    )
+    return {"request_id": imp_req.id}
+
+@router.get("/admin/impersonate-status/{request_id}", response_model=schemas.ImpersonationRequestStatus)
+def admin_impersonate_status(request_id: int,
+                            cur: models.User = Depends(get_current_user),
+                            db: Session = Depends(get_db)):
+    _ensure_admin(cur)
+    req = db.get(models.ImpersonationRequest, request_id)
+    if not req or req.admin_id != cur.id:
+        raise HTTPException(404, "Request not found")
+    return {"confirmed": req.confirmed}
+
+@router.get("/admin/impersonate-confirm/{token}")
+def admin_impersonate_confirm(token: str, db: Session = Depends(get_db)):
+    req = db.query(models.ImpersonationRequest).filter_by(token=token, confirmed=False).first()
+    if not req:
+        return "Invalid or expired request."
+    req.confirmed = True
+    req.confirmed_at = datetime.utcnow()
+    db.commit()
+    return "Admin access has been approved. You may close this window."
+
+@router.post("/admin/impersonate/{uid}", response_model=schemas.Token)
+def admin_impersonate(uid: int,
+                      cur: models.User = Depends(get_current_user),
+                      db: Session = Depends(get_db)):
+    _ensure_admin(cur)
+    tgt = db.get(models.User, uid)
+    if not tgt:
+        raise HTTPException(404, "User not found")
+    # Check for confirmed impersonation request
+    req = db.query(models.ImpersonationRequest).filter_by(admin_id=cur.id, user_id=uid, confirmed=True).order_by(models.ImpersonationRequest.confirmed_at.desc()).first()
+    if not req or (datetime.utcnow() - req.confirmed_at).total_seconds() > 600:
+        raise HTTPException(403, "User has not confirmed or confirmation expired.")
     return {"access_token": _create_token({"sub": tgt.email}),
             "token_type":   "bearer"}
 

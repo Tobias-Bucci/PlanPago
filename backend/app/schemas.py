@@ -90,3 +90,22 @@ class TokenData(BaseModel):
 class PaginatedContracts(BaseModel):
     items: List[Contract]
     total: int
+
+
+# ───────── ImpersonationRequest schemas ───────────────────────────
+class ImpersonationRequest(BaseModel):
+    id: int
+    admin_id: int
+    user_id: int
+    created_at: datetime
+    confirmed: bool
+    confirmed_at: datetime | None = None
+    token: str
+
+
+class ImpersonationRequestCreate(BaseModel):
+    user_id: int
+
+
+class ImpersonationRequestStatus(BaseModel):
+    confirmed: bool

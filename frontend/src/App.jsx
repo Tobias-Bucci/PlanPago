@@ -12,6 +12,7 @@ import Stats from "./pages/Stats";
 import AdminPanel from "./pages/AdminPanel";
 import Terms from "./pages/Terms";
 import Landing from "./pages/Landing";
+import ImpersonateConfirm from "./pages/ImpersonateConfirm";
 
 function App() {
   return (
@@ -72,6 +73,11 @@ function App() {
         />
 
         <Route path="/terms" element={<Terms />} />
+
+        <Route
+          path="/users/admin/impersonate-confirm/:token"
+          element={<ImpersonateConfirm />}
+        />
 
         <Route
           path="/"

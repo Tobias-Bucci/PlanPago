@@ -139,5 +139,16 @@ TEMPLATES = {
                 "Your PlanPago Team"
             )
         }
+    },
+    "admin_impersonation_request": {
+        "subject": "PlanPago: Admin login request",
+        "body": (
+            "Hello,\n\n"
+            "An administrator wants to access your PlanPago account for support purposes.\n"
+            "Please confirm this request by clicking the button below.\n\n"
+            "If you did not expect this, you can ignore this email.\n\n"
+            "Best regards,\n"
+            "Your PlanPago Team"
+        )
     }
 }
