@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
@@ -53,9 +52,6 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
-
-# ────────────── Static-Files (Uploads) ───────────────────────────
-app.mount("/files", StaticFiles(directory=UPLOAD_DIR), name="files")
 
 # ────────────── Scheduler (Reminder-Jobs) ────────────────────────
 jobstores = {"default": MemoryJobStore()}

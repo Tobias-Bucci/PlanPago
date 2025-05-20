@@ -1,11 +1,12 @@
 # backend/app/routes/contract_files.py
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from ..config import UPLOAD_DIR
 from ..models import Contract, ContractFile
 from ..database import SessionLocal
 from ..routes.users import get_current_user
 import uuid, shutil, mimetypes
+from ..utils import crypto_utils
 
 router = APIRouter(
     prefix="/contracts/{contract_id}/files",
@@ -42,9 +43,9 @@ async def upload_files(
         # Eindeutigen Dateinamen generieren
         uid = f"{uuid.uuid4()}{ext}"
         dest = UPLOAD_DIR / uid
-        # Datei speichern
+        # Datei verschlüsselt speichern
         with dest.open("wb") as buffer:
-            shutil.copyfileobj(up.file, buffer)
+            crypto_utils.encrypt_file(up.file, buffer)
 
         # Im DB‑Objekt nur den Pfad und Originalnamen speichern
         db_file = ContractFile(
@@ -113,3 +114,43 @@ def delete_file(
     db.commit()
 
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+
+@router.get("/preview/{file_id}")
+def preview_file(
+    contract_id: int,
+    file_id: int,
+    db=Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    f = (
+        db.query(ContractFile)
+        .join(Contract)
+        .filter(
+            ContractFile.id == file_id,
+            Contract.id == contract_id,
+            Contract.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not f:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    import io, os
+    file_path = UPLOAD_DIR / f.file_path.split("/files/")[-1]
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    # Entschlüsseln und als StreamingResponse zurückgeben
+    def file_stream():
+        with file_path.open("rb") as enc_file:
+            buf = io.BytesIO()
+            crypto_utils.decrypt_file(enc_file, buf)
+            buf.seek(0)
+            yield from buf
+
+    # Content-Type anhand des Original-Dateinamens bestimmen
+    import mimetypes
+    mime, _ = mimetypes.guess_type(f.original_filename)
+    return StreamingResponse(file_stream(), media_type=mime or "application/octet-stream", headers={
+        "Content-Disposition": f'inline; filename="{f.original_filename}"'
+    })

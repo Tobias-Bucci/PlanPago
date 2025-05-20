@@ -392,13 +392,50 @@ export default function Dashboard() {
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {c.files.map((f) => (
-                      <a key={f.id} href={`${API}${f.url}`} target="_blank" rel="noopener noreferrer" className="inline-block">
-                        {f.url.endsWith(".pdf") ? (
-                          <span className="text-2xl">📄</span>
-                        ) : (
-                          <img src={`${API}${f.url}`} alt={f.original_filename} className="h-10 w-10 rounded object-cover" />
-                        )}
-                      </a>
+                      <div key={f.id} className="relative inline-block">
+                        <button
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Authentifizierte Vorschau/Download per fetch
+                            const token = localStorage.getItem("token");
+                            const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
+                            const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+                            if (!res.ok) {
+                              alert("Fehler beim Laden der Datei: " + (await res.text()));
+                              return;
+                            }
+                            const blob = await res.blob();
+                            const fileUrl = window.URL.createObjectURL(blob);
+                            if (f.url.endsWith(".pdf")) {
+                              window.open(fileUrl, "_blank");
+                            } else {
+                              const img = new window.Image();
+                              img.src = fileUrl;
+                              const w = window.open();
+                              w.document.write(img.outerHTML);
+                            }
+                          }}
+                          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                          title="Preview/download"
+                        >
+                          {f.url.endsWith(".pdf") ? (
+                            <span className="text-2xl">📄</span>
+                          ) : (
+                            <img
+                              src="/static/placeholder.png"
+                              alt={f.original_filename}
+                              className="h-10 w-10 rounded object-cover"
+                            />
+                          )}
+                        </button>
+                        <button
+                          className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
+                          onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
+                        >
+                          ×
+                        </button>
+                      </div>
                     ))}
                   </div>
                   <div className="flex gap-2 mt-3">
@@ -545,17 +582,42 @@ export default function Dashboard() {
                         <div className="flex flex-wrap gap-2 justify-center">
                           {c.files.map((f) => (
                             <div key={f.id} className="relative inline-block">
-                              <a href={`${API}${f.url}`} target="_blank" rel="noopener noreferrer">
+                              <button
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Authentifizierte Vorschau/Download per fetch
+                                  const token = localStorage.getItem("token");
+                                  const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
+                                  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+                                  if (!res.ok) {
+                                    alert("Fehler beim Laden der Datei: " + (await res.text()));
+                                    return;
+                                  }
+                                  const blob = await res.blob();
+                                  const fileUrl = window.URL.createObjectURL(blob);
+                                  if (f.url.endsWith(".pdf")) {
+                                    window.open(fileUrl, "_blank");
+                                  } else {
+                                    const img = new window.Image();
+                                    img.src = fileUrl;
+                                    const w = window.open();
+                                    w.document.write(img.outerHTML);
+                                  }
+                                }}
+                                style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                                title="Preview/download"
+                              >
                                 {f.url.endsWith(".pdf") ? (
                                   <span className="text-2xl">📄</span>
                                 ) : (
                                   <img
-                                    src={`${API}${f.url}`}
+                                    src="/static/placeholder.png"
                                     alt={f.original_filename}
                                     className="h-10 w-10 rounded object-cover"
                                   />
                                 )}
-                              </a>
+                              </button>
                               <button
                                 className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
                                 onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}

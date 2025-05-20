@@ -456,8 +456,9 @@ async def admin_broadcast(
                 ext = os.path.splitext(up.filename)[1]
                 fname = f"broadcast_{uuid.uuid4().hex}{ext}"
                 dest = UPLOAD_DIR / fname
+                from ..utils import crypto_utils
                 with dest.open("wb") as buffer:
-                    shutil.copyfileobj(up.file, buffer)
+                    crypto_utils.encrypt_file(up.file, buffer)
                 saved_files.append(dest)
         background_tasks.add_task(
             email_utils.send_broadcast,
