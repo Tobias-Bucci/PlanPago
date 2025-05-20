@@ -3,33 +3,53 @@
   <url>
     <loc>https://planpago.buccilab.com/</loc>
     <priority>1.0</priority>
+    <changefreq>daily</changefreq>
+    <lastmod>2025-05-20</lastmod>
   </url>
   <url>
     <loc>https://planpago.buccilab.com/login</loc>
     <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://planpago.buccilab.com/register</loc>
     <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://planpago.buccilab.com/dashboard</loc>
     <priority>0.9</priority>
+    <changefreq>daily</changefreq>
   </url>
   <url>
     <loc>https://planpago.buccilab.com/stats</loc>
     <priority>0.7</priority>
+    <changefreq>weekly</changefreq>
   </url>
   <url>
     <loc>https://planpago.buccilab.com/profile</loc>
     <priority>0.7</priority>
+    <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://planpago.buccilab.com/contracts/new</loc>
     <priority>0.6</priority>
+    <changefreq>monthly</changefreq>
   </url>
   <url>
     <loc>https://planpago.buccilab.com/adminpanel</loc>
     <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
   </url>
+  <url>
+    <loc>https://planpago.buccilab.com/terms</loc>
+    <priority>0.4</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+  <url>
+    <loc>https://planpago.buccilab.com/users/admin/impersonate-confirm/</loc>
+    <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+  <lastmod>2025-05-20</lastmod>
 </urlset>

@@ -15,5 +15,10 @@ Disallow: /adminpanel/
 # Allow crawling of all public content
 Allow: /
 
-# Sitemap location (update if you have a sitemap)
-# Sitemap: https://planpago.buccilab.com/sitemap.xml
+# Sitemap location
+Sitemap: https://planpago.buccilab.com/sitemap.xml
+
+# Additional info
+# Contact: planpago.contact@gmail.com
+# Host: planpago.buccilab.com
+# Last update: 2025-05-20
