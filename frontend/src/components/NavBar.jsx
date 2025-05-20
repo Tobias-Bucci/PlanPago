@@ -7,18 +7,25 @@ export default function NavBar() {
   const isAuth   = Boolean(localStorage.getItem("token"));
   const isAdmin  = isAuth && localStorage.getItem("currentEmail") === "admin@admin";
   const [open, setOpen] = useState(false);
+  const path = window.location.pathname;
 
-  const links = isAuth
+  // Show only login/register if on landing page ("/")
+  const links = path === "/"
     ? [
-        { to: "/dashboard", label: "Dashboard" },
-        { to: "/stats",     label: "Statistics" },
-        { to: "/profile",   label: "Settings" },
-        ...(isAdmin ? [{ to: "/adminpanel", label: "Adminpanel" }] : [])
-      ]
-    : [
         { to: "/login",    label: "Login" },
         { to: "/register", label: "Register" }
-      ];
+      ]
+    : isAuth
+      ? [
+          { to: "/dashboard", label: "Dashboard" },
+          { to: "/stats",     label: "Statistics" },
+          { to: "/profile",   label: "Settings" },
+          ...(isAdmin ? [{ to: "/adminpanel", label: "Adminpanel" }] : [])
+        ]
+      : [
+          { to: "/login",    label: "Login" },
+          { to: "/register", label: "Register" }
+        ];
 
   const logout = () => {
     localStorage.clear();
@@ -30,7 +37,7 @@ export default function NavBar() {
       <nav className="backdrop-blur-lg bg-white/5 border-b border-white/10">
         <div className="container mx-auto flex items-center justify-between p-4">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
             <img src="/PlanPago-trans.png" alt="PlanPago" className="h-8 w-8" />
             <span className="text-2xl font-bold tracking-wide">PlanPago</span>
           </div>
