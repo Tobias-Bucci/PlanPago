@@ -17,7 +17,7 @@ export default function Landing() {
         position: "relative",
         overflow: "hidden",
         background: "#181c2f",
-        paddingTop: "4.5rem" // minimal nach unten versetzt für Abstand zur Navbar
+        paddingTop: "4.5rem" 
       }}
     >
       {/* Modern animated background with blurred gradients (now: top left blue, bottom right pink) */}

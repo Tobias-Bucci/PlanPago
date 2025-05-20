@@ -29,16 +29,18 @@ export default function Terms() {
                 <li>PlanPago allows you to manage contracts, recurring payments, and receive reminders.</li>
                 <li>All contract data is visible only to the account owner and the operator.</li>
                 <li>Automated email reminders are sent based on your settings.</li>
-                <li>Uploaded documents (PDFs, images) are stored on the server and may be accessed by the operator for support purposes.</li>
+                <li>Uploaded documents (PDFs, images) are stored on the server and may be accessed by the operator for support purposes. <b>The physical storage location of all uploaded files is in Italy/South Tyrol.</b></li>
+                <li>All data transfers, including file uploads and downloads, are strictly enforced via HTTPS connections only.</li>
                 <li>It is your responsibility to keep your profile data (email, country, currency) up to date.</li>
               </ul>
             </li>
             <li>
               <h2 className="text-xl font-semibold mb-2">Data Protection & Security</h2>
               <ul className="list-disc pl-6 space-y-1">
-                <li>Your data is stored securely</li>
+                <li>Your data is stored securely <b>on servers located in Italy/South Tyrol</b>.</li>
                 <li>Passwords are stored using strong encryption.</li>
                 <li>Access to your data is protected by JWT-based authentication and 2-Factor Authentication (2FA).</li>
+                <li>All connections to the Service are encrypted and enforced via HTTPS.</li>
                 <li>We do not share your data with third parties except as required by law.</li>
               </ul>
             </li>
