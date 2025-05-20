@@ -24,7 +24,7 @@ export default function NavBar() {
       <nav className="backdrop-blur-lg bg-white/5 border-b border-white/10">
         <div className="container mx-auto flex items-center justify-between p-4">
           {/* logo / brand */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}> 
             <img src="/PlanPago-trans.png" alt="PlanPago" className="h-8 w-8" />
             <span className="text-2xl font-bold tracking-wide">PlanPago</span>
           </div>
