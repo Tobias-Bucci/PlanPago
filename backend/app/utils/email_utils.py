@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import smtplib
+import mimetypes
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from pathlib import Path
@@ -172,8 +173,8 @@ def send_reminder_email(
 # ────────────────────────────────────────────────────────────────
 #  (3)  BROADCAST / BULK MAIL
 # ────────────────────────────────────────────────────────────────
-def send_broadcast(to_addresses: list[str], subject: str, body: str) -> None:
-    """Send a styled bulk e-mail (admin panel feature) with HTML layout."""
+def send_broadcast(to_addresses: list[str], subject: str, body: str, attachments: list[str] = None) -> None:
+    """Send a styled bulk e-mail (admin panel feature) with HTML layout and optional attachments."""
     if not to_addresses:
         return
 
@@ -192,6 +193,8 @@ def send_broadcast(to_addresses: list[str], subject: str, body: str) -> None:
       <div style="text-align: center; color: #bbb; font-size: 0.9rem; margin-top: 18px;">&copy; {year} PlanPago</div>
     </div>
     '''
+    # Betreff für Log und Frontend markieren
+    log_subject = f"[Broadcast] {subject}"
     for to_address in to_addresses:
         msg = EmailMessage()
         msg["Subject"] = subject
@@ -199,7 +202,20 @@ def send_broadcast(to_addresses: list[str], subject: str, body: str) -> None:
         msg["To"] = to_address
         msg.set_content(body)
         msg.add_alternative(html, subtype="html")
+        # Anhänge hinzufügen
+        if attachments:
+            for fpath in attachments:
+                try:
+                    fname = os.path.basename(fpath)
+                    ctype, encoding = mimetypes.guess_type(fname)
+                    maintype, subtype = (ctype.split("/", 1) if ctype else ("application", "octet-stream"))
+                    with open(fpath, "rb") as f:
+                        msg.add_attachment(f.read(), maintype=maintype, subtype=subtype, filename=fname)
+                except Exception as e:
+                    print(f"[Broadcast] Attachment-Fehler: {fpath} – {e}")
         _smtp_send(msg, to_address)
+        # Logge explizit als Broadcast
+        _log_mail(to_address, log_subject)
 
 
 # ────────────────────────────────────────────────────────────────

@@ -29,6 +29,8 @@ export default function AdminPanel() {
   /* broadcast form */
   const [subj, setSubj] = useState("");
   const [body, setBody] = useState("");
+  // Neu: Dateien für Broadcast
+  const [broadcastFiles, setBroadcastFiles] = useState([]);
 
   const navigate = useNavigate();
   const authHeader = useMemo(
@@ -124,13 +126,28 @@ export default function AdminPanel() {
     }
     setBusy(true);
     try {
-      const r = await fetch(`${API}/users/admin/broadcast`, {
-        method: "POST",
-        headers: { ...authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: subj.trim(), body }),
-      });
-      if (!r.ok) throw new Error(await r.text());
-      setMsg("Broadcast sent."); setSubj(""); setBody(""); setErr("");
+      let response;
+      if (broadcastFiles.length > 0) {
+        // Mit Dateianhängen: multipart/form-data
+        const formData = new FormData();
+        formData.append("subject", subj.trim());
+        formData.append("body", body);
+        broadcastFiles.forEach((file) => formData.append("files", file));
+        response = await fetch(`${API}/users/admin/broadcast`, {
+          method: "POST",
+          headers: { ...authHeader }, // Content-Type NICHT setzen, Browser macht das
+          body: formData,
+        });
+      } else {
+        // Ohne Dateianhängen: JSON
+        response = await fetch(`${API}/users/admin/broadcast`, {
+          method: "POST",
+          headers: { ...authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify({ subject: subj.trim(), body }),
+        });
+      }
+      if (!response.ok) throw new Error(await response.text());
+      setMsg("Broadcast sent."); setSubj(""); setBody(""); setBroadcastFiles([]); setErr("");
     } catch (e) {
       setErr(e.message);
     } finally {
@@ -144,13 +161,33 @@ export default function AdminPanel() {
     const map = new Map();
     mailRaw.split("\n").forEach((ln) => {
       if (!ln.trim()) return;
+      // Erkennung: Broadcast-Mails werden mit [Broadcast] im Betreff geloggt
+      // (Backend muss das so loggen!)
       const [ts, recipient, ...rest] = ln.split("  ");
       const subject = rest.join("  ").trim();
-      const key     = `${ts}|${subject}`;
-      if (!map.has(key)) map.set(key, { ts, subject, recipients: [] });
-      map.get(key).recipients.push(recipient);
+      // Gruppierung: Broadcasts werden nach Betreff (mit [Broadcast]) gruppiert
+      let groupKey;
+      if (subject.startsWith("[Broadcast] ")) {
+        groupKey = `[Broadcast]|${subject}`;
+      } else {
+        groupKey = `${ts}|${subject}`;
+      }
+      if (!map.has(groupKey)) {
+        map.set(groupKey, {
+          ts,
+          subject,
+          recipients: [],
+          isBroadcast: subject.startsWith("[Broadcast] "),
+        });
+      }
+      map.get(groupKey).recipients.push(recipient);
     });
-    return Array.from(map.values()).sort((a, b) => (a.ts < b.ts ? 1 : -1));
+    // Sortierung: Broadcasts zuerst, dann nach Zeit
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.isBroadcast && !b.isBroadcast) return -1;
+      if (!a.isBroadcast && b.isBroadcast) return 1;
+      return a.ts < b.ts ? 1 : -1;
+    });
   }, [mailRaw]);
 
   const MailRow = ({ mail, idx }) => {
@@ -164,7 +201,17 @@ export default function AdminPanel() {
           <span className="flex items-center gap-3">
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             <span className="font-mono text-xs opacity-70">{mail.ts}</span>
-            <span>{mail.subject}</span>
+            <span>
+              {mail.isBroadcast ? (
+                <span className="inline-flex items-center gap-2 text-pink-300 font-semibold">
+                  [Broadcast]
+                  <Mail size={14} className="inline" />
+                  {mail.subject.replace(/^\[Broadcast\] /, "")}
+                </span>
+              ) : (
+                mail.subject
+              )}
+            </span>
           </span>
           <span className="text-sm opacity-70">{mail.recipients.length}</span>
         </button>
@@ -204,19 +251,19 @@ export default function AdminPanel() {
   /* ─────────────── JSX ───────────────────────────────── */
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] p-0">
-      <div className="w-[1100px] h-[800px] max-w-full mx-auto rounded-3xl bg-white/10 shadow-2xl border border-white/10 backdrop-blur-2xl px-8 py-10 relative overflow-hidden animate-pop flex flex-col">
+      <div className="w-full max-w-5xl mx-auto rounded-3xl bg-white/10 shadow-2xl border border-white/10 backdrop-blur-2xl px-2 sm:px-6 md:px-8 py-6 md:py-10 relative overflow-hidden animate-pop flex flex-col min-h-[80vh]">
         {/* Header */}
-        <div className="flex items-center gap-6 mb-10 border-b border-white/10 pb-6 pl-2">
-          <div className="bg-[var(--brand)] rounded-full p-4 shadow-lg flex items-center justify-center">
-            <Users className="text-white" size={36} />
+        <div className="flex items-center gap-4 sm:gap-6 mb-8 sm:mb-10 border-b border-white/10 pb-4 sm:pb-6 pl-1 sm:pl-2">
+          <div className="bg-[var(--brand)] rounded-full p-3 sm:p-4 shadow-lg flex items-center justify-center">
+            <Users className="text-white" size={32} />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-wide">Admin Panel</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-wide">Admin Panel</h1>
             <p className="text-white/60 text-base mt-1">Manage users, system health, logs & more</p>
           </div>
         </div>
         {/* Tabs */}
-        <div className="flex border-b border-white/20 mb-10 gap-2 px-2">
+        <div className="flex border-b border-white/20 mb-6 sm:mb-10 gap-1 sm:gap-2 px-1 sm:px-2 overflow-x-auto">
           <TabBtn id="users" label={<><Users size={20} className="inline mr-2"/>Users</>} onClick={() => setTab("users")} />
           <TabBtn id="logs"  label={<><Server size={20} className="inline mr-2"/>Server logs</>} onClick={loadLogs} />
           <TabBtn id="email" label={<><Mail size={20} className="inline mr-2"/>E-mail logs</>} onClick={loadMailLogs} />
@@ -224,10 +271,10 @@ export default function AdminPanel() {
           <TabBtn id="health" label={<><HeartPulse size={20} className="inline mr-2"/>Health</>} onClick={loadHealth} />
         </div>
         {/* flash msgs */}
-        {msg && <p className="mb-6 p-3 bg-emerald-600/20 text-emerald-300 rounded-lg shadow text-center text-lg font-medium max-w-lg mx-auto">{msg}</p>}
-        {err && <p className="mb-6 p-3 bg-red-600/20 text-red-300 rounded-lg shadow text-center text-lg font-medium max-w-lg mx-auto">{err}</p>}
+        {msg && <p className="mb-4 sm:mb-6 p-3 bg-emerald-600/20 text-emerald-300 rounded-lg shadow text-center text-base sm:text-lg font-medium max-w-lg mx-auto">{msg}</p>}
+        {err && <p className="mb-4 sm:mb-6 p-3 bg-red-600/20 text-red-300 rounded-lg shadow text-center text-base sm:text-lg font-medium max-w-lg mx-auto">{err}</p>}
         {/* main area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-[400px]">
         {busy ? (
           <p className="flex items-center justify-center py-32 text-white/60 gap-3 text-xl">
             <Loader2 className="animate-spin" size={28} /> Please wait…
@@ -338,15 +385,17 @@ export default function AdminPanel() {
             )}
             {/* SERVER LOGS -------------------------------------------- */}
             {tab === "logs" && (
-              <pre className="h-full min-h-[400px] max-h-full overflow-auto bg-black/40 text-green-300 p-8 rounded-2xl whitespace-pre-wrap shadow-inner border border-white/10 mt-2 text-base leading-relaxed">
-                {logs || "No server logs."}
-              </pre>
+              <div className="w-full max-w-3xl mx-auto h-80 bg-black/60 rounded-xl shadow-inner border border-white/10 mt-2 p-2 overflow-auto custom-scrollbar">
+                <pre className="text-green-300 text-xs leading-snug whitespace-pre-wrap font-mono">
+                  {logs || "No server logs."}
+                </pre>
+              </div>
             )}
             {/* MAIL LOGS --------------------------------------------- */}
             {tab === "email" && (
-              <div className="h-full min-h-[400px] max-h-full overflow-auto bg-black/40 rounded-2xl shadow-inner border border-white/10 mt-2 p-6">
+              <div className="w-full max-w-3xl mx-auto h-80 bg-black/60 rounded-xl shadow-inner border border-white/10 mt-2 p-2 overflow-auto custom-scrollbar">
                 {groupedMails.length === 0 ? (
-                  <p className="p-4 text-amber-200">No e-mail logs.</p>
+                  <p className="p-2 text-amber-200 text-xs">No e-mail logs.</p>
                 ) : (
                   groupedMails.map((m, i) => <MailRow key={i} mail={m} idx={i} />)
                 )}
@@ -374,6 +423,32 @@ export default function AdminPanel() {
                     onChange={(e) => setBody(e.target.value)}
                     required
                   />
+                  {/* Datei-Upload */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-white/80 font-medium">Dateien anhängen</label>
+                    <input
+                      type="file"
+                      multiple
+                      className="block w-full text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--brand)]/80 file:text-white hover:file:bg-[var(--brand)]/100 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
+                      onChange={e => setBroadcastFiles(Array.from(e.target.files))}
+                    />
+                    {broadcastFiles.length > 0 && (
+                      <ul className="mt-2 space-y-1 bg-black/20 rounded-lg p-3 text-white/80 text-sm">
+                        {broadcastFiles.map((file, idx) => (
+                          <li key={idx} className="flex items-center gap-2">
+                            <span className="inline-block w-4 h-4 bg-[var(--brand)]/80 rounded-full mr-2"></span>
+                            {file.name}
+                            <button
+                              type="button"
+                              className="ml-auto text-red-400 hover:text-red-600 text-xs font-bold px-2"
+                              onClick={() => setBroadcastFiles(files => files.filter((_, i) => i !== idx))}
+                              title="Entfernen"
+                            >✕</button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                   <button className="btn-accent w-full py-3 text-lg font-bold rounded-lg shadow-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-pink-500 hover:to-purple-500 transition-all duration-200 text-white" disabled={busy}>
                     {busy ? "Sending…" : "Send broadcast"}
                   </button>

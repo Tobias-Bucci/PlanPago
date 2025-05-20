@@ -3,13 +3,14 @@
 import os, secrets, smtplib, pathlib
 import time
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional
 from urllib.parse import urlencode
 
 from fastapi import (
-    APIRouter, Depends, HTTPException, BackgroundTasks, Request, status
+    APIRouter, Depends, HTTPException, BackgroundTasks, Request, status, UploadFile, File, Form
 )
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -434,20 +435,50 @@ class _Broadcast(BaseModel):
     body: str
 
 @router.post("/admin/broadcast")
-def admin_broadcast(
-    mail: _Broadcast,
+async def admin_broadcast(
+    request: Request,
     background_tasks: BackgroundTasks,
+    subject: Optional[str] = Form(None),
+    body: Optional[str] = Form(None),
+    files: Optional[list[UploadFile]] = File(None),
     cur:  models.User = Depends(get_current_user),
     db:   Session     = Depends(get_db),
 ):
     _ensure_admin(cur)
     recipients = [u.email for u in db.query(models.User).all()]
-    # ein Task reicht, send_broadcast verschickt an alle in einer Mail
+    # multipart/form-data: subject/body als Form, Dateien als UploadFile
+    if subject and body:
+        saved_files = []
+        from ..config import UPLOAD_DIR
+        import shutil, uuid
+        if files:
+            for up in files:
+                ext = os.path.splitext(up.filename)[1]
+                fname = f"broadcast_{uuid.uuid4().hex}{ext}"
+                dest = UPLOAD_DIR / fname
+                with dest.open("wb") as buffer:
+                    shutil.copyfileobj(up.file, buffer)
+                saved_files.append(dest)
+        background_tasks.add_task(
+            email_utils.send_broadcast,
+            recipients,
+            subject.strip(),
+            body.strip(),
+            [str(f) for f in saved_files] if saved_files else None
+        )
+        return {"sent": len(recipients)}
+    # JSON: subject/body im Body, keine Dateien
+    data = await request.json()
+    subject = data.get("subject")
+    body = data.get("body")
+    if not subject or not body:
+        return JSONResponse({"detail": "Subject and body required."}, status_code=400)
     background_tasks.add_task(
         email_utils.send_broadcast,
         recipients,
-        mail.subject.strip(),
-        mail.body.strip()
+        subject.strip(),
+        body.strip(),
+        None
     )
     return {"sent": len(recipients)}
 
