@@ -2,6 +2,7 @@
 import { API_BASE } from "../config";
 import React, { useState } from "react";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
+import Notification from "../components/Notification";
 
 /* Cache country / currency locally after login ---------------- */
 const cacheProfile = async (token) => {
@@ -266,7 +267,7 @@ export default function Login() {
               {loading ? "Sending..." : "Send Reset Email"}
             </button>
             {resetMsg && (
-              <div className="mb-4 p-3 bg-emerald-700/20 text-emerald-300 rounded-lg">{resetMsg}</div>
+              <Notification message={resetMsg} type="success" onDone={() => setResetMsg("")} />
             )}
           </form>
         )}
@@ -303,7 +304,7 @@ export default function Login() {
               {loading ? "Resetting..." : resetSuccess ? "Done" : "Set new password"}
             </button>
             {resetMsg && (
-              <div className="mb-4 p-3 bg-emerald-700/20 text-emerald-300 rounded-lg">{resetMsg}</div>
+              <Notification message={resetMsg} type="success" onDone={() => setResetMsg("")} />
             )}
           </form>
         )}
@@ -385,7 +386,7 @@ export default function Login() {
               {loading ? "Resetting..." : resetSuccess ? "Done" : "Set new password"}
             </button>
             {resetMsg && (
-              <div className="mb-4 p-3 bg-emerald-700/20 text-emerald-300 rounded-lg">{resetMsg}</div>
+              <Notification message={resetMsg} type="success" onDone={() => setResetMsg("")} />
             )}
           </form>
         )}

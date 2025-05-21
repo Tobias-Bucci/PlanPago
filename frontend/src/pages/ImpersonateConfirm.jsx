@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import Notification from "../components/Notification";
 
 export default function ImpersonateConfirm() {
   const { token } = useParams();
@@ -30,11 +31,8 @@ export default function ImpersonateConfirm() {
     <main className="container mx-auto pt-24 p-6 flex flex-col items-center">
       <div className="glass-card max-w-lg w-full p-8 animate-pop text-center">
         <h1 className="text-2xl font-semibold mb-4 text-white">Admin Access Confirmation</h1>
-        {err ? (
-          <div className="p-4 bg-red-600/20 text-red-300 rounded-lg">{err}</div>
-        ) : (
-          <div className="p-4 text-emerald-200">{msg}</div>
-        )}
+        {err && <Notification message={err} type="error" onDone={() => setErr("")} />}
+        {!err && msg && <Notification message={msg} type="success" onDone={() => setMsg("")} />}
         {success && (
           <div className="mt-6 text-white/80 text-sm">You can now inform the admin to proceed.<br/>This window can be closed.</div>
         )}

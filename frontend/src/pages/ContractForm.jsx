@@ -2,6 +2,7 @@ import { API_BASE } from "../config";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { computeNet } from "../utils/taxUtils";
+import Notification from "../components/Notification";
 
 const API = `${API_BASE}/contracts/`;
 const TYPE_OPTIONS = [
@@ -32,10 +33,12 @@ export default function ContractForm() {
     name: "", contract_type: "", start_date: "", end_date: "",
     payment_interval: "", notes: "", amount: "", brutto: "", netto: "",
     files: null,
+    backendFiles: [], // <-- Add this to track files from backend
   });
   const [country,  setCountry] = useState("");
   const [currency, setCur]     = useState("€");
   const [msg,      setMsg]     = useState("");
+  const [msgType,  setMsgType] = useState("info");
   const [busy,     setBusy]    = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
@@ -60,6 +63,7 @@ export default function ContractForm() {
       end_date  : c.end_date?.slice(0, 10)   || "",
       netto     : c.contract_type === "salary" ? c.amount : "",
       brutto    : "",
+      backendFiles: c.files || [], // <-- Store backend files
     }));
 
   const fetchContract = async () => {
@@ -67,7 +71,10 @@ export default function ContractForm() {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
     if (r.ok) prefill(await r.json());
-    else      setMsg("Error loading contract.");
+    else {
+      setMsg("Error loading contract.");
+      setMsgType("error");
+    }
   };
 
   /* ───── live net-salary calculation ─────────────── */
@@ -86,10 +93,12 @@ export default function ContractForm() {
   const buildPayload = () => {
     if (!form.name || !form.contract_type || !form.start_date) {
       setMsg("Please fill out all required fields.");
+      setMsgType("error");
       return null;
     }
     if (!country) {
       setMsg("Please select a country first.");
+      setMsgType("error");
       return null;
     }
     if (
@@ -97,6 +106,7 @@ export default function ContractForm() {
       (!form.amount || Number(form.amount) <= 0)
     ) {
       setMsg("Please enter an amount.");
+      setMsgType("error");
       return null;
     }
 
@@ -134,8 +144,11 @@ export default function ContractForm() {
 
       const r = await fetch(url, {
         method,
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body   : JSON.stringify(payload),
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload),
       });
 
       if (!r.ok) {
@@ -143,9 +156,10 @@ export default function ContractForm() {
         try {
           const j = JSON.parse(text);
           setMsg("Error: " + (j.detail || text));
-        } catch {
+        } catch (err) {
           setMsg("Error: " + text);
         }
+        setMsgType("error");
         setBusy(false);
         return;
       }
@@ -158,11 +172,11 @@ export default function ContractForm() {
         let filesToUpload = Array.from(form.files);
 
         if (filesToUpload.some(file => file.size > MAX_FILE_SIZE)) {
-          setMsg(`One or more files are too large. Max size per file is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
+          setMsg("One or more files are too large. Max size per file is " + (MAX_FILE_SIZE / 1024 / 1024) + "MB.");
+          setMsgType("error");
           setBusy(false);
           return;
         }
-        
         const fd = new FormData();
         filesToUpload.forEach(f => fd.append("files", f));
         await fetch(`${API}${cid}/files`, {
@@ -170,10 +184,16 @@ export default function ContractForm() {
           headers: { Authorization: `Bearer ${token}` },
           body   : fd,
         });
+        setField("files", null); // Clear local files after upload
+        if (fileInputRef.current) fileInputRef.current.value = null; // Clear file input
+        if (isEdit) await fetchContract(); // Refresh backend files
       }
-      navigate("/dashboard");
-    } catch {
+      setMsg(isEdit ? "Contract updated." : "Contract created.");
+      setMsgType("success");
+      setTimeout(() => navigate("/dashboard"), 1200);
+    } catch (err) {
       setMsg("Network error – please try again.");
+      setMsgType("error");
       setBusy(false);
     }
   };
@@ -181,12 +201,11 @@ export default function ContractForm() {
   /* ───── UI ───────────────────────────────────────── */
   return (
     <div className="max-w-2xl mx-auto pt-24 p-4">
+      <Notification message={msg} type={msgType} onDone={() => setMsg("")} />
       <div className="glass-card p-6 animate-pop">
         <h2 className="text-2xl font-bold mb-4 text-white">
           {isEdit ? "Edit contract" : "Create new contract"}
         </h2>
-
-        {msg && <p className="mb-4 text-red-300">{msg}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -337,7 +356,8 @@ export default function ContractForm() {
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                   const files = Array.from(e.dataTransfer.files);
                   if (files.some(file => file.size > MAX_FILE_SIZE)) {
-                    setMsg(`One or more files are too large. Max size per file is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
+                    setMsg("One or more files are too large. Max size per file is " + (MAX_FILE_SIZE / 1024 / 1024) + "MB.");
+                    setMsgType("error");
                     setField("files", null); // Clear previous selection if any
                     return;
                   }
@@ -355,7 +375,8 @@ export default function ContractForm() {
                   if (e.target.files && e.target.files.length > 0) {
                     const files = Array.from(e.target.files);
                     if (files.some(file => file.size > MAX_FILE_SIZE)) {
-                      setMsg(`One or more files are too large. Max size per file is ${MAX_FILE_SIZE / 1024 / 1024}MB.`);
+                      setMsg("One or more files are too large. Max size per file is " + (MAX_FILE_SIZE / 1024 / 1024) + "MB.");
+                      setMsgType("error");
                       setField("files", null); // Clear previous selection
                       e.target.value = null; // Reset file input
                       return;
@@ -375,6 +396,24 @@ export default function ContractForm() {
                   : "Click or drag files here (PDF, images)"}
               </span>
             </div>
+            {/* Show backend files only (no local FileList) */}
+            {form.backendFiles && form.backendFiles.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {form.backendFiles.map((file, idx) => (
+                  <a
+                    key={file.id || file.name || idx}
+                    href={file.url || file.download_url || file.path || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-900/30 rounded text-emerald-200 hover:bg-emerald-800/60 text-xs transition"
+                    title={file.name || file.filename || 'Attachment'}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a4 4 0 10-5.656-5.656l-6.586 6.586"/></svg>
+                    <span>{file.name || file.filename || 'Attachment'}</span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

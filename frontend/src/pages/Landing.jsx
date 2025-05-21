@@ -242,14 +242,6 @@ export default function Landing() {
             </span>
           </motion.div>
         </motion.div>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.7 }}
-          style={{ marginTop: 48, fontSize: "1.1rem", color: "#e1b7e9" }}
-        >
-          <span>100% GDPR-compliant · Secure · Free trial</span>
-        </motion.div>
         {/* Decorative animated divider */}
         <motion.div
           initial={{ scaleX: 0 }}
@@ -264,6 +256,14 @@ export default function Landing() {
             transformOrigin: "left"
           }}
         />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2.0, duration: 0.7 }}
+          style={{ marginTop: 16, fontSize: "0.95rem", color: "#e1b7e9" }}
+        >
+          <span>100% GDPR-compliant · Secure</span>
+        </motion.div>
       </div>
     </motion.div>
   );

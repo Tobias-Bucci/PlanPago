@@ -18,6 +18,7 @@ import {
   ArrowUpDown, // Icon für Sort Both Ways
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
+import Notification from "../components/Notification";
 import { fetchWithAuth } from "../utils/fetchWithAuth";
 
 /* ───────── constants ─────────────────────────────────────────── */
@@ -67,6 +68,7 @@ export default function Dashboard() {
   const [sortDir, setSortDir] = useState("desc");
 
   const [msg, setMsg] = useState("");
+  const [msgType, setMsgType] = useState("success");
   const [err, setErr] = useState("");
   const [loading, setLd] = useState(true);
   const [dialog, setDialog] = useState({ open: false });
@@ -142,6 +144,7 @@ export default function Dashboard() {
       }, navigate);
       if (!r.ok) throw new Error("Deletion failed");
       setMsg("Contract deleted");
+      setMsgType("success");
       loadPage();
     } catch (e) { setErr(e.message); }
   };
@@ -161,6 +164,7 @@ export default function Dashboard() {
       }, navigate);
       if (!r.ok) throw new Error("Attachment could not be deleted");
       setMsg("Attachment deleted");
+      setMsgType("success");
       loadPage();
     } catch (e) { setErr(e.message); }
   };
@@ -181,6 +185,7 @@ export default function Dashboard() {
       }, navigate);
       if (!r.ok) throw new Error("Cancel failed");
       setMsg("Contract cancelled");
+      setMsgType("success");
       loadPage();
     } catch (e) { setErr(e.message); }
   };
@@ -201,6 +206,7 @@ export default function Dashboard() {
       }, navigate);
       if (!r.ok) throw new Error("Re-activate failed");
       setMsg("Contract re-activated");
+      setMsgType("success");
       loadPage();
     } catch (e) { setErr(e.message); }
   };
@@ -338,8 +344,8 @@ export default function Dashboard() {
       </div>
 
       {/* Flash messages */}
-      {msg && <div className="glass-card mb-4 p-3 text-emerald-200">{msg}</div>}
-      {err && <div className="glass-card mb-4 p-3 text-red-300">{err}</div>}
+      {msg && <Notification message={msg} type={msgType} onDone={() => setMsg("")} />}
+      {err && <Notification message={err} type="error" onDone={() => setErr("")} />}
 
       {/* Table/Card-List */}
       {loading ? (

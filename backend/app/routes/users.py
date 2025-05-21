@@ -320,6 +320,24 @@ def change_settings(
 @router.delete("/me", response_model=schemas.User)
 def delete_me(cur: models.User = Depends(get_current_user),
               db:  Session     = Depends(get_db)):
+    # Alle Contracts des Users abfragen
+    contracts = db.query(models.Contract).filter(models.Contract.user_id == cur.id).all()
+    from ..config import UPLOAD_DIR
+    import os
+    # Für alle Contracts alle zugehörigen ContractFiles abfragen und löschen
+    for contract in contracts:
+        files = db.query(models.ContractFile).filter(models.ContractFile.contract_id == contract.id).all()
+        for f in files:
+            # Datei vom Filesystem löschen
+            if f.file_path:
+                file_name = f.file_path.split("/files/")[-1]
+                file_path = UPLOAD_DIR / file_name
+                if file_path.exists():
+                    try:
+                        file_path.unlink()
+                    except Exception:
+                        pass  # Fehler beim Löschen ignorieren
+    # Contracts und User löschen wie bisher
     db.query(models.Contract).filter(models.Contract.user_id == cur.id).delete()
     db.delete(cur); db.commit()
     return cur

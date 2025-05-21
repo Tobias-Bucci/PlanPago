@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CountryAutoComplete from "../utils/CountryAutoComplete";
 import ConfirmModal from "../components/ConfirmModal";
+import Notification from "../components/Notification";
 
 const passwordValid = pw =>
   !pw || /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/.test(pw);
@@ -115,7 +116,7 @@ export default function Profile() {
     <main className="container mx-auto pt-24 p-6 space-y-8">
       <h1 className="text-3xl font-semibold text-white">Settings</h1>
 
-      {msg && <div className="glass-card p-4 text-emerald-200">{msg}</div>}
+      {msg && <Notification message={msg} type="success" onDone={() => setMsg("")} />}
 
       {/* change email / pw */}
       {tmp ? (
