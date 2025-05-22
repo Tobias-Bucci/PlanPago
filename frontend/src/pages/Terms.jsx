@@ -5,7 +5,7 @@ export default function Terms() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 pt-24">
       <div className="glass-card w-full max-w-2xl p-8 animate-pop">
-        <h1 className="text-3xl font-bold mb-8 text-center text-white drop-shadow">Terms and Conditions (AGB)</h1>
+        <h1 className="text-3xl font-bold mb-8 text-center text-white drop-shadow">Terms and Conditions</h1>
         <div className="prose prose-invert max-w-none text-white/90">
           <ol className="list-decimal pl-6 space-y-6">
             <li>
