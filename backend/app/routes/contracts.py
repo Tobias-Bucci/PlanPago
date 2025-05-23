@@ -142,7 +142,21 @@ def delete_contract(
     if not contract:
         raise HTTPException(404, "Contract not found")
 
-    db.delete(contract); db.commit()
+    # Alle zugehörigen Dateien im Dateisystem löschen
+    from ..config import UPLOAD_DIR
+    files = db.query(models.ContractFile).filter(models.ContractFile.contract_id == contract.id).all()
+    for f in files:
+        if f.file_path:
+            file_name = f.file_path.split("/files/")[-1]
+            file_path = UPLOAD_DIR / file_name
+            if file_path.exists():
+                try:
+                    file_path.unlink()
+                except Exception:
+                    pass  # Fehler beim Löschen ignorieren
+        db.delete(f)
+    db.delete(contract)
+    db.commit()
     return contract
 
 # ───────── Export CSV ────────────────────────────────────────────
