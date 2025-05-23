@@ -16,6 +16,7 @@ import {
   ArrowUp, // Icon für Sort Ascending
   ArrowDown, // Icon für Sort Descending
   ArrowUpDown, // Icon für Sort Both Ways
+  ChevronFirst, // NEU: für 'erste Seite'
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import Notification from "../components/Notification";
@@ -252,60 +253,66 @@ export default function Dashboard() {
       {/* Header + action buttons */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-semibold text-white">Overview</h1>
-        <div className="flex gap-2 relative">
-          <button
-            className="btn-accent rounded-full p-3"
-            title="New contract"
-            onClick={() => navigate("/contracts/new")}
-          >
-            <PlusCircle size={24} />
-          </button>
-          <button
-            className="btn-primary rounded-full px-4 py-2 flex items-center gap-2"
-            title="Export contracts"
-            onClick={() => setExportOpen((v) => !v)}
-            ref={exportRef}
-          >
-            <FileSpreadsheet size={18} strokeWidth={2} /> / <FileText size={18} strokeWidth={2} /> Export
-          </button>
-          {exportOpen && (
-            <div className="absolute right-0 mt-12 z-10 bg-[#181f3a] border border-white/10 rounded-lg shadow-lg min-w-[160px] animate-pop">
-              <button
-                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
-                onClick={async () => {
-                  setExportOpen(false);
-                  const res = await fetchWithAuth(`${API}/contracts/export/csv`, { headers: authHeader }, navigate);
-                  if (!res.ok) return setErr("Export failed");
-                  const blob = await res.blob();
-                  const url = window.URL.createObjectURL(blob);
-                  const a = Object.assign(document.createElement("a"), {
-                    href: url,
-                    download: "contracts.csv",
-                  });
-                  a.click(); window.URL.revokeObjectURL(url);
-                }}
-              >
-                <FileSpreadsheet size={18} strokeWidth={2} /> Export as CSV
-              </button>
-              <button
-                className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
-                onClick={async () => {
-                  setExportOpen(false);
-                  const res = await fetchWithAuth(`${API}/contracts/export/pdf`, { headers: authHeader }, navigate);
-                  if (!res.ok) return setErr("Export failed");
-                  const blob = await res.blob();
-                  const url = window.URL.createObjectURL(blob);
-                  const a = Object.assign(document.createElement("a"), {
-                    href: url,
-                    download: "contracts.pdf",
-                  });
-                  a.click(); window.URL.revokeObjectURL(url);
-                }}
-              >
-                <FileText size={18} strokeWidth={2} /> Export as PDF
-              </button>
-            </div>
-          )}
+        {/* Gesamtanzahl der Verträge anzeigen */}
+        <div className="flex items-center gap-4">
+          <span className="text-white/70 text-lg font-medium hidden sm:inline-block">
+            {`Total contracts: ${total}`}
+          </span>
+          <div className="flex gap-2 relative">
+            <button
+              className="btn-accent rounded-full p-3"
+              title="New contract"
+              onClick={() => navigate("/contracts/new")}
+            >
+              <PlusCircle size={24} />
+            </button>
+            <button
+              className="btn-primary rounded-full px-4 py-2 flex items-center gap-2"
+              title="Export contracts"
+              onClick={() => setExportOpen((v) => !v)}
+              ref={exportRef}
+            >
+              <FileSpreadsheet size={18} strokeWidth={2} /> / <FileText size={18} strokeWidth={2} /> Export
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 mt-12 z-10 bg-[#181f3a] border border-white/10 rounded-lg shadow-lg min-w-[160px] animate-pop">
+                <button
+                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
+                  onClick={async () => {
+                    setExportOpen(false);
+                    const res = await fetchWithAuth(`${API}/contracts/export/csv`, { headers: authHeader }, navigate);
+                    if (!res.ok) return setErr("Export failed");
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = Object.assign(document.createElement("a"), {
+                      href: url,
+                      download: "contracts.csv",
+                    });
+                    a.click(); window.URL.revokeObjectURL(url);
+                  }}
+                >
+                  <FileSpreadsheet size={18} strokeWidth={2} /> Export as CSV
+                </button>
+                <button
+                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
+                  onClick={async () => {
+                    setExportOpen(false);
+                    const res = await fetchWithAuth(`${API}/contracts/export/pdf`, { headers: authHeader }, navigate);
+                    if (!res.ok) return setErr("Export failed");
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = Object.assign(document.createElement("a"), {
+                      href: url,
+                      download: "contracts.pdf",
+                    });
+                    a.click(); window.URL.revokeObjectURL(url);
+                  }}
+                >
+                  <FileText size={18} strokeWidth={2} /> Export as PDF
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -495,8 +502,17 @@ export default function Dashboard() {
               <div className="flex items-center justify-center gap-2 mt-4 mb-2">
                 <button
                   className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
+                  onClick={() => setPage(0)}
+                  disabled={page === 0}
+                  title="Zur ersten Seite"
+                >
+                  <ChevronFirst size={20} />
+                </button>
+                <button
+                  className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
                   onClick={() => setPage((p) => p - 1)}
                   disabled={page === 0}
+                  title="Vorherige Seite"
                 >
                   <ChevronsLeft size={18} />
                 </button>
@@ -513,6 +529,7 @@ export default function Dashboard() {
                   className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page === totalPages - 1}
+                  title="Nächste Seite"
                 >
                   <ChevronsRight size={18} />
                 </button>
@@ -791,8 +808,17 @@ export default function Dashboard() {
         <div className="hidden sm:flex items-center justify-center gap-2 mt-6">
           <button
             className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
+            onClick={() => setPage(0)}
+            disabled={page === 0}
+            title="Zur ersten Seite"
+          >
+            <ChevronFirst size={20} />
+          </button>
+          <button
+            className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
             onClick={() => setPage((p) => p - 1)}
             disabled={page === 0}
+            title="Vorherige Seite"
           >
             <ChevronsLeft size={18} />
           </button>
@@ -809,6 +835,7 @@ export default function Dashboard() {
             className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
             onClick={() => setPage((p) => p + 1)}
             disabled={page === totalPages - 1}
+            title="Nächste Seite"
           >
             <ChevronsRight size={18} />
           </button>
