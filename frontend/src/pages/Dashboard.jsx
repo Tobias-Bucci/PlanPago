@@ -76,6 +76,7 @@ export default function Dashboard() {
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef();
   const sortRef = useRef();
+  const [filesCache, setFilesCache] = useState({}); // contractId -> files array
 
   const navigate = useNavigate();
   const API = API_BASE;
@@ -107,23 +108,39 @@ export default function Dashboard() {
       if (!r.ok) throw new Error(await r.text());
       const { items, total } = await r.json();
 
-      /* enrich with attachments of visible rows */
-      const withFiles = await Promise.all(
-        items.map(async (c) => {
-          const fr = await fetchWithAuth(`${API}/contracts/${c.id}/files`, { headers: authHeader }, navigate);
-          const files = fr.ok ? await fr.json() : [];
-          return { ...c, files };
-        })
-      );
-
-      setContracts(withFiles);
+      setContracts(items);
       setTotal(total);
+
+      // Batch-load files for all visible contracts
+      const filesPromises = items.map(async (contract) => {
+        const fr = await fetchWithAuth(`${API}/contracts/${contract.id}/files`, { headers: authHeader }, navigate);
+        const files = fr.ok ? await fr.json() : [];
+        return { contractId: contract.id, files };
+      });
+      const filesResults = await Promise.all(filesPromises);
+      const filesMap = filesResults.reduce((acc, { contractId, files }) => {
+        acc[contractId] = files;
+        return acc;
+      }, {});
+      setFilesCache(filesMap);
     } catch (e) {
       setErr(e.message || "Loading error");
     } finally {
       setLd(false);
     }
   }, [API, authHeader, page, query, filterType, filterStat, navigate, sortField, sortDir]);
+
+  /* Attachments for a contract: load and cache */
+  const loadFilesForContract = async (contractId) => {
+    if (filesCache[contractId]) return; // already loaded
+    try {
+      const fr = await fetchWithAuth(`${API}/contracts/${contractId}/files`, { headers: authHeader }, navigate);
+      const files = fr.ok ? await fr.json() : [];
+      setFilesCache((prev) => ({ ...prev, [contractId]: files }));
+    } catch {
+      setFilesCache((prev) => ({ ...prev, [contractId]: [] }));
+    }
+  };
 
   /* initial + dependents */
   useEffect(() => { loadPage(); }, [loadPage]);
@@ -397,7 +414,7 @@ export default function Dashboard() {
                     <span className="bg-white/10 rounded px-2 py-1">{c.amount} {currency}</span>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {c.files.map((f) => (
+                    {filesCache[c.id]?.map((f) => (
                       <div key={f.id} className="relative inline-block">
                         <button
                           onClick={async (e) => {
@@ -571,7 +588,14 @@ export default function Dashboard() {
                   <React.Fragment key={c.id}>
                     <tr
                       className={`${(expired || cancelled) ? "opacity-50" : ""} hover:bg-white/10 transition cursor-pointer`}
-                      onClick={() => setExpandedId(expanded ? null : c.id)}
+                      onClick={async () => {
+                        if (expandedId !== c.id) {
+                          setExpandedId(c.id);
+                          if (!filesCache[c.id]) await loadFilesForContract(c.id);
+                        } else {
+                          setExpandedId(null);
+                        }
+                      }}
                     >
                       <td className="px-6 py-4 text-center">{c.name}</td>
                       <td className="px-6 py-4 text-center">{TYPE_OPTIONS.find(t => t.value === c.contract_type)?.label || c.contract_type}</td>
@@ -586,7 +610,7 @@ export default function Dashboard() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-wrap gap-2 justify-center">
-                          {c.files.map((f) => (
+                          {filesCache[c.id]?.map((f) => (
                             <div key={f.id} className="relative inline-block">
                               <button
                                 onClick={async (e) => {
@@ -691,6 +715,60 @@ export default function Dashboard() {
                               <div className="whitespace-pre-line text-white/80 min-h-[1.5em]">
                                 {c.notes ? c.notes : <span className="italic text-white/40">No notes entered.</span>}
                               </div>
+                              <div className="font-semibold mt-4 mb-2">Attachments:</div>
+                              {filesCache[c.id] === undefined ? (
+                                <span className="text-white/60 text-sm">Loading files…</span>
+                              ) : filesCache[c.id].length === 0 ? (
+                                <span className="text-white/40 text-sm italic">No attachments.</span>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {filesCache[c.id].map((f) => (
+                                    <div key={f.id} className="relative inline-block">
+                                      <button
+                                        onClick={async (e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          const token = localStorage.getItem("token");
+                                          const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
+                                          const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+                                          if (!res.ok) {
+                                            alert("Fehler beim Laden der Datei: " + (await res.text()));
+                                            return;
+                                          }
+                                          const blob = await res.blob();
+                                          const fileUrl = window.URL.createObjectURL(blob);
+                                          if (f.url.endsWith(".pdf")) {
+                                            window.open(fileUrl, "_blank");
+                                          } else {
+                                            const img = new window.Image();
+                                            img.src = fileUrl;
+                                            const w = window.open();
+                                            w.document.write(img.outerHTML);
+                                          }
+                                        }}
+                                        style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                                        title="Preview/download"
+                                      >
+                                        {f.url.endsWith(".pdf") ? (
+                                          <span className="text-2xl">📄</span>
+                                        ) : (
+                                          <img
+                                            src="/static/placeholder.png"
+                                            alt={f.original_filename}
+                                            className="h-10 w-10 rounded object-cover"
+                                          />
+                                        )}
+                                      </button>
+                                      <button
+                                        className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
+                                        onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
