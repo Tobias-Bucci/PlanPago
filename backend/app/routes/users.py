@@ -445,7 +445,31 @@ def admin_health(cur: models.User = Depends(get_current_user),
         sched_jobs = len(app.state.scheduler.get_jobs())
     except Exception:
         sched_jobs = 0
-    return {"db": db_ok, "smtp": smtp_ok, "scheduler_jobs": sched_jobs}
+        
+    # Server Uptime - Linux-spezifische Methode
+    try:
+        with open('/proc/uptime', 'r') as f:
+            uptime_seconds = float(f.readline().split()[0])
+            # Umrechnung in Tage, Stunden, Minuten
+            days, remainder = divmod(uptime_seconds, 86400)
+            hours, remainder = divmod(remainder, 3600)
+            minutes, _ = divmod(remainder, 60)
+            
+            days = int(days)
+            hours = int(hours)
+            minutes = int(minutes)
+            
+            if days > 0:
+                uptime = f"{days}d {hours}h {minutes}m"
+            else:
+                uptime = f"{hours}h {minutes}m"
+    except Exception as e:
+        # Fallback für nicht-Linux-Systeme oder wenn Zugriff verweigert
+        from datetime import datetime
+        # Keine Uptime bekannt, aber wenigstens aktuelle Serverzeit
+        uptime = f"Active: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    
+    return {"db": db_ok, "smtp": smtp_ok, "scheduler_jobs": sched_jobs, "uptime": uptime}
 
 # ───────── Broadcast an alle Nutzer ─────────────────────────────
 class _Broadcast(BaseModel):

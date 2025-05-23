@@ -13,7 +13,6 @@ export default function AdminPanel() {
   /* ─────────────── state ─────────────────────────────── */
   const [tab, setTab] = useState("users");
   const [users, setUsers] = useState([]);
-  const [logs, setLogs] = useState("");
   const [mailRaw, setMailRaw] = useState("");
   const [health, setHealth] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -31,6 +30,9 @@ export default function AdminPanel() {
   const [body, setBody] = useState("");
   // Neu: Dateien für Broadcast
   const [broadcastFiles, setBroadcastFiles] = useState([]);
+
+  const [uptime, setUptime] = useState("");
+  const [buildInfo, setBuildInfo] = useState("");
 
   const navigate = useNavigate();
   const authHeader = useMemo(
@@ -106,8 +108,37 @@ export default function AdminPanel() {
   /* ─────────────── health check ───────────────────────── */
   const loadHealth = async () => {
     setTab("health"); setBusy(true);
-    try { setHealth(await fetchJSON(`${API}/users/admin/health`)); setErr(""); }
-    catch (e) { setErr(e.message); }
+    try {
+      const data = await fetchJSON(`${API}/users/admin/health`);
+      setHealth(data);
+
+      // Uptime aus den Health-Daten extrahieren
+      if (data.uptime) {
+        setUptime(data.uptime);
+      } else {
+        console.log("Keine Uptime in den Health-Daten gefunden");
+        setUptime("Backend running");  // Fallback-Wert
+      }
+
+      // Build-Info aus verschiedenen Quellen versuchen
+      const meta = document.querySelector('meta[name="build-info"]');
+      if (meta) {
+        setBuildInfo(meta.content);
+      } else if (window.BUILD_INFO) {
+        setBuildInfo(window.BUILD_INFO);
+      } else {
+        // Ultimativer Fallback: aktuelle Zeit nutzen
+        const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+        setBuildInfo(`Frontend active (${timestamp})`);
+      }
+
+      setErr("");
+    }
+    catch (e) {
+      setErr(e.message);
+      setUptime("Error fetching data");
+      setBuildInfo("Error fetching data");
+    }
     finally { setBusy(false); }
   };
 
@@ -242,6 +273,9 @@ export default function AdminPanel() {
     );
 
   /* ─────────────── JSX ───────────────────────────────── */
+  // Keine separate useEffect für Health-Tab mehr nötig, 
+  // loadHealth-Funktion handhabt jetzt alles
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] p-0">
       <div className="w-full max-w-5xl mx-auto rounded-3xl bg-white/10 shadow-2xl border border-white/10 backdrop-blur-2xl px-2 sm:px-6 md:px-8 py-6 md:py-10 relative overflow-hidden animate-pop flex flex-col min-h-[80vh]">
@@ -445,16 +479,44 @@ export default function AdminPanel() {
                   <div className="space-y-6 text-white mt-2 w-full max-w-2xl">
                     <h2 className="text-2xl font-bold flex items-center gap-3 mb-4"><HeartPulse size={24} /> System health</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                      <div className="p-8 bg-white/10 rounded-2xl flex items-center justify-between shadow-lg border border-white/10">
-                        <span className="text-lg">Database</span> <Status ok={health.db} />
+                      <div className="p-8 bg-white/10 rounded-2xl flex flex-col items-start justify-between shadow-lg border border-white/10">
+                        <span className="text-lg mb-2">Database</span> <Status ok={health.db} />
+                        <span className="text-xs mt-2 text-white/60">Checks DB connection with a test query.</span>
                       </div>
-                      <div className="p-8 bg-white/10 rounded-2xl flex items-center justify-between shadow-lg border border-white/10">
-                        <span className="text-lg">SMTP login</span> <Status ok={health.smtp} />
+                      <div className="p-8 bg-white/10 rounded-2xl flex flex-col items-start justify-between shadow-lg border border-white/10">
+                        <span className="text-lg mb-2">SMTP login</span> <Status ok={health.smtp} />
+                        <span className="text-xs mt-2 text-white/60">Verifies mail server connectivity.</span>
                       </div>
-                      <div className="p-8 bg-white/10 rounded-2xl flex items-center justify-between shadow-lg border border-white/10">
-                        <span className="text-lg">Scheduled jobs</span>
+                      <div className="p-8 bg-white/10 rounded-2xl flex flex-col items-start justify-between shadow-lg border border-white/10">
+                        <span className="text-lg mb-2">Scheduled jobs</span>
                         <span className="flex items-center gap-1 text-emerald-300 text-lg font-semibold">{health.scheduler_jobs}</span>
+                        <span className="text-xs mt-2 text-white/60">Active background jobs (reminders, etc).</span>
                       </div>
+                    </div>
+
+                    {/* Erweiterte Health-Infos */}
+                    <div className="mt-10 bg-black/30 rounded-2xl p-6 border border-white/10 shadow-xl">
+                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Server size={20} /> Backend Diagnostics</h3>
+                      <ul className="space-y-2 text-white/90 text-sm">
+                        <li><b>Uptime:</b> <span>{uptime || "-"}</span></li>
+                        <li><b>Server time:</b> {new Date().toLocaleString()}</li>
+                        <li><b>Frontend build:</b> <span>{buildInfo || "-"}</span></li>
+                        <li><b>Browser:</b> {navigator.userAgent}</li>
+                        <li><b>Platform:</b> {navigator.platform}</li>
+                        <li><b>Language:</b> {navigator.language}</li>
+                        <li><b>Screen:</b> {window.screen.width}x{window.screen.height} px</li>
+                        <li><b>Timezone:</b> {Intl.DateTimeFormat().resolvedOptions().timeZone}</li>
+                        <li><b>API base:</b> {API}</li>
+                      </ul>
+                      <div className="mt-4 text-xs text-white/60">
+                        <b>Tip:</b> For more details, check browser console and backend logs.
+                      </div>
+                    </div>
+
+                    {/* Live ping to backend for latency */}
+                    <div className="mt-8 flex flex-col gap-2 text-white/80 text-sm">
+                      <span className="font-bold">Live API latency:</span>
+                      <LatencyCheck api={API} />
                     </div>
                   </div>
                 </div>
@@ -483,5 +545,29 @@ export default function AdminPanel() {
         />
       )}
     </main>
+  );
+}
+
+// Zusatz-Komponente für Latenz
+function LatencyCheck({ api }) {
+  const [latency, setLatency] = React.useState(null);
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const t0 = performance.now();
+      try {
+        await fetch(`${api}/users/admin/health`, { cache: "no-store" });
+        const t1 = performance.now();
+        if (mounted) setLatency(Math.round(t1 - t0));
+      } catch {
+        if (mounted) setLatency(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [api]);
+  return (
+    <span className="inline-block px-3 py-1 rounded bg-white/10">
+      {latency === null ? "-" : `${latency} ms`}
+    </span>
   );
 }
