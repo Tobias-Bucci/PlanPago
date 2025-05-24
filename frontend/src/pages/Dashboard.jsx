@@ -870,6 +870,28 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Footer: Imprint & Privacy Policy */}
+      <footer
+        style={{
+          width: "100%",
+          textAlign: "center",
+          marginTop: 40,
+          marginBottom: 12,
+          color: "#e1e6f9",
+          fontSize: 15,
+          letterSpacing: 0.1,
+          opacity: 0.85,
+          zIndex: 2,
+          position: "relative",
+        }}
+      >
+        <span style={{ verticalAlign: "middle", marginRight: 6, fontSize: 17 }}>&copy;</span>
+        {new Date().getFullYear()} PlanPago &ndash;{' '}
+        <a href="/impressum" className="underline hover:text-white" style={{ color: "#e1e6f9" }}>Imprint & Contact</a>
+        {' '}|{' '}
+        <a href="/privacypolicy" className="underline hover:text-white" style={{ color: "#e1e6f9" }}>Privacy Policy</a>
+      </footer>
     </main>
   );
 }

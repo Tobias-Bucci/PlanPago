@@ -13,6 +13,8 @@ import AdminPanel from "./pages/AdminPanel";
 import Terms from "./pages/Terms";
 import Landing from "./pages/Landing";
 import ImpersonateConfirm from "./pages/ImpersonateConfirm";
+import Impressum from "./pages/Impressum";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 function App() {
   return (
@@ -79,10 +81,10 @@ function App() {
           element={<ImpersonateConfirm />}
         />
 
-        <Route
-          path="/"
-          element={<Landing />}
-        />
+        <Route path="/impressum" element={<Impressum />} />
+        <Route path="/privacypolicy" element={<PrivacyPolicy />} />
+
+        <Route path="/" element={<Landing />} />
       </Routes>
     </BrowserRouter>
   );
