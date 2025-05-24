@@ -344,27 +344,6 @@ export default function Dashboard() {
             <option key={value} value={value}>{label}</option>
           ))}
         </select>
-
-        <div className="relative" ref={sortRef}>
-          <select
-            className="frosted-input sm:w-56 pr-10"
-            value={`${sortField}_${sortDir}`}
-            onChange={(e) => {
-              const [field, direction] = e.target.value.split('_');
-              setSortField(field);
-              setSortDir(direction);
-            }}
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={`${option.field}_${option.dir}`} value={`${option.field}_${option.dir}`}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#aaa' }}>
-            <ArrowUpDown size={20} />
-          </span>
-        </div>
       </div>
 
       {/* Flash messages */}
