@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
+import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -17,9 +18,10 @@ export default function Landing() {
         position: "relative",
         overflow: "hidden",
         background: "#181c2f",
-        paddingTop: "4.5rem" 
+        paddingTop: "4.5rem"
       }}
     >
+      <AnimatedParticlesParallax />
       {/* Modern animated background with blurred gradients (now: top left blue, bottom right pink) */}
       <motion.div
         aria-hidden="true"
