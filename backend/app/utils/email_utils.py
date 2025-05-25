@@ -165,7 +165,28 @@ def send_reminder_email(
     msg["Subject"] = subj
     msg["From"] = EMAIL_USER or "planpago@example.com"
     msg["To"] = to_address
+
+    # HTML email with logo and professional layout
+    logo_url = "https://planpago.buccilab.com/PlanPago-trans.png"  # Update to your real public logo URL if available
+    html_body = f"""
+    <div style="font-family: 'Inter', Arial, sans-serif; background: #f6f8fa; padding: 32px 0;">
+      <div style="max-width: 420px; margin: auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(30,99,255,0.08); padding: 32px 32px 24px 32px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <img src="{logo_url}" alt="PlanPago Logo" style="height: 40px;"/>
+        </div>
+        <h1 style="font-size: 1.5rem; font-weight: 600; color: #333; text-align: center; margin-bottom: 24px;">{subj}</h1>
+        <div style='text-align: center;'>
+          <p style="font-size: 1rem; color: #444; margin-bottom: 18px; white-space: pre-wrap;">{body}</p>
+        </div>
+        <div style="text-align: center; color: #aaa; font-size: 0.95rem; margin-top: 24px;">Best regards,<br><b>The PlanPago Team</b></div>
+      </div>
+      <div style="text-align: center; color: #bbb; font-size: 0.9rem; margin-top: 18px;">&copy; {datetime.utcnow().year} PlanPago</div>
+    </div>
+    """
+    # Remove duplicate closing in plain text body
+    body = body.replace("Best regards,\nYour PlanPago Team", "").strip()
     msg.set_content(body)
+    msg.add_alternative(html_body, subtype="html")
 
     _smtp_send(msg, to_address)
 
@@ -269,30 +290,6 @@ def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False)
                 args=[contract.user.email, contract.id, days, "end"],
                 timezone="Europe/Berlin",
             )
-
-
-# ────────────────────────────────────────────────────────────────
-#  (5)  ADMIN IMPERSONATION NOTIFICATION
-# ────────────────────────────────────────────────────────────────
-def send_admin_impersonation_email(to_address: str, admin_email: str) -> None:
-    msg = EmailMessage()
-    msg["Subject"] = "PlanPago – Admin login notification"
-    msg["From"] = EMAIL_USER or "planpago@example.com"
-    msg["To"] = to_address
-    msg.set_content(
-    f"""Hello,
-        We wanted to inform you that an administrator has just accessed your PlanPago account to provide support or perform troubleshooting.
-
-        If you were not expecting this access or have any concerns, please contact our support team immediately.
-
-        Thank you for using PlanPago.
-
-        Best regards,  
-        The PlanPago Team"""
-    )
-
-    _smtp_send(msg, to_address)
-
 
 def send_admin_impersonation_request_email(to_address: str, admin_email: str, confirm_url: str) -> None:
     display_admin = "Administrator" if admin_email == "admin@admin" else admin_email

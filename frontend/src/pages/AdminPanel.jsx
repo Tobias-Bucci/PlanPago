@@ -6,6 +6,7 @@ import {
   CheckCircle, XCircle, Loader2, Users, Server, Send, HeartPulse
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
+import Notification from "../components/Notification"; // Import Notification
 
 const API = API_BASE;
 
@@ -18,6 +19,7 @@ export default function AdminPanel() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [notification, setNotification] = useState({ message: "", type: "" }); // State for Notification
 
   /* Dialog state for ConfirmModal */
   const [dialog, setDialog] = useState({ open: false });
@@ -80,10 +82,10 @@ export default function AdminPanel() {
         headers: authHeader,
       });
       setUsers((u) => u.filter((x) => x.id !== id));
-      setMsg("User deleted.");
+      setNotification({ message: "User deleted successfully.", type: "success" }); // Use Notification
       setErr("");
     } catch (e) {
-      setErr(e.message);
+      setNotification({ message: e.message, type: "error" }); // Use Notification for error
     } finally {
       setBusy(false);
     }
@@ -94,7 +96,10 @@ export default function AdminPanel() {
       open: true,
       title: "Delete user?",
       message: "This action cannot be undone.",
-      onConfirm: () => reallyDeleteUser(id),
+      onConfirm: () => {
+        reallyDeleteUser(id);
+        setDialog({ open: false });
+      },
     });
 
   /* ─────────────── server & mail logs ─────────────────── */
@@ -146,7 +151,8 @@ export default function AdminPanel() {
   const sendBroadcast = async (e) => {
     e.preventDefault();
     if (!subj.trim() || !body.trim()) {
-      setErr("Subject and body required."); return;
+      setNotification({ message: "Subject and body required.", type: "error" }); // Use Notification
+      return;
     }
     setBusy(true);
     try {
@@ -171,9 +177,10 @@ export default function AdminPanel() {
         });
       }
       if (!response.ok) throw new Error(await response.text());
-      setMsg("Broadcast sent."); setSubj(""); setBody(""); setBroadcastFiles([]); setErr("");
+      setNotification({ message: "Broadcast sent successfully.", type: "success" }); // Use Notification
+      setSubj(""); setBody(""); setBroadcastFiles([]); setErr("");
     } catch (e) {
-      setErr(e.message);
+      setNotification({ message: e.message, type: "error" }); // Use Notification for error
     } finally {
       setBusy(false);
     }
@@ -297,8 +304,7 @@ export default function AdminPanel() {
           <TabBtn id="health" label={<><HeartPulse size={20} className="inline mr-2" />Health</>} onClick={loadHealth} />
         </div>
         {/* flash msgs */}
-        {msg && <p className="mb-4 sm:mb-6 p-3 bg-emerald-600/20 text-emerald-300 rounded-lg shadow text-center text-base sm:text-lg font-medium max-w-lg mx-auto">{msg}</p>}
-        {err && <p className="mb-4 sm:mb-6 p-3 bg-red-600/20 text-red-300 rounded-lg shadow text-center text-base sm:text-lg font-medium max-w-lg mx-auto">{err}</p>}
+        <Notification message={notification.message} type={notification.type} onDone={() => setNotification({ message: "", type: "" })} />
         {/* main area */}
         <div className="flex-1 flex flex-col overflow-hidden min-h-[400px]">
           {busy ? (
@@ -540,8 +546,7 @@ export default function AdminPanel() {
           open={true}
           title="Waiting for user confirmation"
           message={`Waiting for ${impersonateWait.user?.email} to approve admin access.\n\nPlease inform the user that they need to confirm the email. This window will close automatically once the user has confirmed.`}
-          confirmLabel="Cancel"
-          onConfirm={() => setImpersonateWait({ open: false, user: null, requestId: null })}
+          onClose={() => setImpersonateWait({ open: false, user: null, requestId: null })}
         />
       )}
     </main>

@@ -6,8 +6,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your rent payment for contract '{name}' of {amount} EUR is due in {days} days (on {date}).\n"
                 "Please ensure the amount is transferred on time.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "insurance": {
@@ -16,8 +14,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "The premium for your insurance '{name}' of {amount} EUR is due in {days} days (on {date}).\n"
                 "Please pay on time to keep your coverage active.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "streaming": {
@@ -26,8 +22,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your streaming subscription '{name}' of {amount} EUR is due in {days} days (on {date}).\n"
                 "Please renew your subscription on time.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "salary": {
@@ -36,8 +30,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your salary payment of {amount} EUR will be received in {days} days (on {date}).\n"
                 "Please check your account statement if needed.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "leasing": {
@@ -46,8 +38,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "The next leasing rate for '{name}' of {amount} EUR is due in {days} days (on {date}).\n"
                 "Please ensure the funds are available on time.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "other": {
@@ -55,8 +45,6 @@ TEMPLATES = {
             "body": (
                 "Hello,\n\n"
                 "A payment for your contract '{name}' of {amount} EUR is due in {days} days (on {date}).\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "default": {
@@ -64,8 +52,6 @@ TEMPLATES = {
             "body": (
                 "Hello,\n\n"
                 "A payment of {amount} EUR is due in {days} days (on {date}).\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         }
     },
@@ -76,8 +62,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your rent contract '{name}' ends in {days} days (on {date}).\n"
                 "You can cancel or renew it as needed.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "insurance": {
@@ -86,8 +70,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your insurance contract '{name}' ends in {days} days (on {date}).\n"
                 "Please check your options for renewal or changes.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "streaming": {
@@ -96,8 +78,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your streaming contract '{name}' ends in {days} days (on {date}).\n"
                 "Please renew your subscription to avoid interruptions.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "salary": {
@@ -106,8 +86,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your salary contract ends in {days} days (on {date}).\n"
                 "Please clarify changes or extensions in time.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "leasing": {
@@ -116,8 +94,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your leasing contract '{name}' ends in {days} days (on {date}).\n"
                 "Consider signing a new contract if needed.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "other": {
@@ -126,8 +102,6 @@ TEMPLATES = {
                 "Hello,\n\n"
                 "Your contract '{name}' ends in {days} days (on {date}).\n"
                 "Please take appropriate action.\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         },
         "default": {
@@ -135,8 +109,6 @@ TEMPLATES = {
             "body": (
                 "Hello,\n\n"
                 "A contract ends in {days} days (on {date}).\n\n"
-                "Best regards,\n"
-                "Your PlanPago Team"
             )
         }
     },
@@ -147,8 +119,6 @@ TEMPLATES = {
             "An administrator wants to access your PlanPago account for support purposes.\n"
             "Please confirm this request by clicking the button below.\n\n"
             "If you did not expect this, you can ignore this email.\n\n"
-            "Best regards,\n"
-            "Your PlanPago Team"
         )
     }
 }
