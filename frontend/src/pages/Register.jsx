@@ -204,10 +204,20 @@ export default function Register() {
         {step === 2 && (
           <form onSubmit={handleVerify} className="space-y-4">
             {twofa === "totp" && qrUrl && (
-              <div className="mb-2 text-center">
-                <div className="mb-2 text-white/80">Scan this QR-Code in your Authenticator app:</div>
-                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`} alt="QR Code" className="mx-auto mb-2" />
-                <div className="text-xs text-white/60 break-all">{qrUrl}</div>
+              <div className="mb-4 p-4 bg-white/10 rounded-lg text-center">
+                <p className="mb-3 text-white/90 text-sm">
+                  Scan this QR code with your authenticator app:
+                </p>
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}&bgcolor=ffffff&color=0d1117&qzone=1`}
+                  alt="TOTP QR Code"
+                  className="mx-auto mb-3 rounded-md border border-white/20 shadow-lg"
+                  width="180"
+                  height="180"
+                />
+                <p className="text-xs text-white/70 break-all bg-black/20 p-2 rounded-md">
+                  {qrUrl}
+                </p>
               </div>
             )}
             <input
