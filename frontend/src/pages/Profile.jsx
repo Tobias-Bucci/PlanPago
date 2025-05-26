@@ -10,26 +10,26 @@ const passwordValid = pw =>
 
 export default function Profile() {
   /* state */
-  const [email, setEmail]     = useState("");
-  const [oldPw, setOldPw]     = useState("");
-  const [newPw, setNewPw]     = useState("");
+  const [email, setEmail] = useState("");
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
   const [country, setCountry] = useState("");
   const [currency, setCurrency] = useState("EUR");
   const [emailRem, setEmailRem] = useState(true);
-  const [msg, setMsg]         = useState("");
-  const [tmp, setTmp]         = useState("");
-  const [code, setCode]       = useState("");
+  const [msg, setMsg] = useState("");
+  const [tmp, setTmp] = useState("");
+  const [code, setCode] = useState("");
   const [newPwError, setNewPwError] = useState("");
   const [showOldPw, setShowOldPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [twofaMethod, setTwofaMethod] = useState("email");
 
   /* Dialog-State */
-  const [dialog, setDialog]   = useState({ open: false });
+  const [dialog, setDialog] = useState({ open: false });
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-  const API   = API_BASE;
+  const API = API_BASE;
 
   /* load profile */
   useEffect(() => {
@@ -124,10 +124,10 @@ export default function Profile() {
           <h2 className="text-xl font-medium text-white">Confirm code</h2>
           <div className="space-y-2">
             <label className="block text-white/80 mb-1">
-              {twofaMethod==="totp" ? "Code from Authenticator-App" : "6-digit code from email"}
+              {twofaMethod === "totp" ? "Code from Authenticator-App" : "6-digit code from email"}
             </label>
-            <input className="frosted-input" placeholder={twofaMethod==="totp" ? "Code from Authenticator-App" : "6-digit code from email"}
-                   value={code} onChange={e => setCode(e.target.value)} required />
+            <input className="frosted-input" placeholder={twofaMethod === "totp" ? "Code from Authenticator-App" : "6-digit code from email"}
+              value={code} onChange={e => setCode(e.target.value)} required />
             {twofaMethod === "email" && (
               <div className="text-xs text-white/60">A 6-digit code was sent to your email.</div>
             )}
@@ -143,13 +143,13 @@ export default function Profile() {
           <div className="space-y-2">
             <label className="block text-white/80 mb-1">E-mail</label>
             <input className="frosted-input" type="email" placeholder="E-mail"
-                   value={email} onChange={e => setEmail(e.target.value)} required />
+              value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           <div className="space-y-2">
             <label className="block text-white/80 mb-1">Current password</label>
             <div className="relative">
               <input className="frosted-input pr-10" type={showOldPw ? "text" : "password"} placeholder="Current password"
-                     value={oldPw} onChange={e => setOldPw(e.target.value)} required />
+                value={oldPw} onChange={e => setOldPw(e.target.value)} required />
               <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={() => setShowOldPw(v => !v)} aria-label={showOldPw ? "Hide password" : "Show password"}>
                 {showOldPw ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
@@ -163,12 +163,12 @@ export default function Profile() {
             <label className="block text-white/80 mb-1">New password (optional)</label>
             <div className="relative">
               <input className="frosted-input pr-10" type={showNewPw ? "text" : "password"} placeholder="New password (optional)"
-                     value={newPw} onChange={e => {
-                       setNewPw(e.target.value);
-                       setNewPwError(e.target.value && !passwordValid(e.target.value)
-                         ? "Password must be at least 8 characters, include upper/lowercase, number, and special character."
-                         : "");
-                     }} />
+                value={newPw} onChange={e => {
+                  setNewPw(e.target.value);
+                  setNewPwError(e.target.value && !passwordValid(e.target.value)
+                    ? "Password must be at least 8 characters, include upper/lowercase, number, and special character."
+                    : "");
+                }} />
               <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={() => setShowNewPw(v => !v)} aria-label={showNewPw ? "Hide password" : "Show password"}>
                 {showNewPw ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
@@ -186,7 +186,7 @@ export default function Profile() {
       {/* personal settings */}
       <section className="glass-card p-6 space-y-6 animate-pop">
         <h2 className="text-xl font-medium text-white">Personal settings</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
           <div className="space-y-2">
             <label className="block text-white/80 mb-1">Country</label>
             <CountryAutoComplete value={country} onChange={setCountry} />
@@ -198,19 +198,29 @@ export default function Profile() {
             </select>
           </div>
         </div>
-        <label className="flex items-center gap-2 text-white/90">
+        <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:justify-end">
           <input type="checkbox" checked={emailRem}
-                 onChange={e => setEmailRem(e.target.checked)}
-                 className="h-5 w-5 rounded" />
-          Enable e-mail reminders
-        </label>
+            onChange={e => setEmailRem(e.target.checked)}
+            className="h-5 w-5 rounded" id="email-reminder-checkbox" />
+          <label htmlFor="email-reminder-checkbox" className="text-white/90 cursor-pointer">Enable e-mail reminders</label>
+        </div>
         <div className="text-right">
           <button onClick={saveSettings} className="btn-primary">Save</button>
         </div>
       </section>
 
+      {/* Contact section */}
+      <section className="glass-card p-6 space-y-4 animate-pop">
+        <h2 className="text-xl font-medium text-white">Contact & Support</h2>
+        <p className="text-white/90">If you have questions, feedback, or need support, feel free to contact us. We are happy to help!</p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <a href="mailto:planpago.contact@gmail.com" className="btn-primary w-full sm:w-auto">Contact via E-Mail</a>
+          <span className="text-white/70 text-sm">or see <a href='/impressum' className='underline'>Imprint & Legal Notice</a></span>
+        </div>
+      </section>
+
       <button onClick={delAccount}
-              className="btn-accent bg-red-600 hover:bg-red-700 w-full">
+        className="btn-accent bg-red-600 hover:bg-red-700 w-full">
         Delete account
       </button>
 
