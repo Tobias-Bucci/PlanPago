@@ -417,7 +417,7 @@ export default function AdminPanel() {
               )}
               {/* MAIL LOGS --------------------------------------------- */}
               {tab === "email" && (
-                <div className="flex-1 flex flex-col w-full max-w-3xl mx-auto bg-black/60 rounded-2xl shadow-xl border border-white/10 mt-2 p-4 overflow-auto custom-scrollbar">
+                <div className="flex-1 flex flex-col w-full max-w-3xl mx-auto bg-black/60 rounded-2xl shadow-xl border border-white/10 mt-2 p-4 overflow-auto custom-scrollbar max-h-[500px]">
                   {groupedMails.length === 0 ? (
                     <p className="p-2 text-amber-200 text-xs">No e-mail logs.</p>
                   ) : (

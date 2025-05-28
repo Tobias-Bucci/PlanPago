@@ -4,37 +4,41 @@
 @tailwind utilities;
 
 /* ─── Brand palette ───────────────────────────────────────────── */
-:root{
-  --brand       : #1e63ff;   /* Logo-Blau */
-  --brand-light : #4f7dff;   /* Hover */
-  --secondary   : #9b5de5;   /* Neon-Pink/Violet */
+:root {
+  --brand: #1e63ff;
+  /* Logo-Blau */
+  --brand-light: #4f7dff;
+  /* Hover */
+  --secondary: #9b5de5;
+  /* Neon-Pink/Violet */
 }
 
 /* ─── Global background ──────────────────────────────────────── */
-body{
+body {
   @apply text-white antialiased min-h-screen;
 
   background:
-    radial-gradient(circle at 30% 30%, rgba(30,99,255,.40) 0%, transparent 70%),
-    radial-gradient(circle at 70% 70%, rgba(155,93,229,.30) 0%, transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(30, 99, 255, .40) 0%, transparent 70%),
+    radial-gradient(circle at 70% 70%, rgba(155, 93, 229, .30) 0%, transparent 70%),
     #0b0e17;
-  background-repeat:no-repeat;
-  background-position:30% 30%, 70% 70%, center;
-  background-size:cover, cover, cover;
-  animation:none;
+  background-repeat: no-repeat;
+  background-position: 30% 30%, 70% 70%, center;
+  background-size: cover, cover, cover;
+  animation: none;
 
   /* verhindert „weißes Aufleuchten“ in Safari */
   color-scheme: dark light;
 }
 
 /* ─── Glass card ──────────────────────────────────────────────── */
-.glass-card{
-  backdrop-filter:blur(20px) saturate(180%);
-  -webkit-backdrop-filter:blur(20px) saturate(180%);   /* iOS */
-  background-color:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.20);
-  border-radius:1.5rem;
-  box-shadow:0 25px 40px rgba(0,0,0,.30);
+.glass-card {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  /* iOS */
+  background-color: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .20);
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 40px rgba(0, 0, 0, .30);
 }
 
 /* ─── Frosted inputs (input, select, textarea) ────────────────── */
@@ -44,101 +48,123 @@ body{
 .frosted-input[type="password"],
 .frosted-input[type="email"],
 select.frosted-input,
-textarea.frosted-input{
+textarea.frosted-input {
   @apply w-full px-4 py-2 rounded-lg text-white placeholder-white/70 appearance-none;
-  font-size:16px;                              /* kein Auto-Zoom in iOS */
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  background-color:rgba(255,255,255,.10);
-  border:1px solid rgba(255,255,255,.25);
-  color:#ffffff;                               /* Fallback für ältere Safari-Versionen */
-  transition:background .15s;
+  font-size: 16px;
+  /* kein Auto-Zoom in iOS */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, .10);
+  border: 1px solid rgba(255, 255, 255, .25);
+  color: #ffffff;
+  /* Fallback für ältere Safari-Versionen */
+  transition: background .15s;
 }
-.frosted-input:focus{
-  outline:none;
-  box-shadow:0 0 0 2px var(--brand);
-  background-color:rgba(255,255,255,.15);
+
+.frosted-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--brand);
+  background-color: rgba(255, 255, 255, .15);
 }
 
 /* iOS Spezial-Patch ─ verhindert weiße Felder & Textverlust */
 @supports (-webkit-touch-callout: none) {
 
   /* forcierter dunkler Glas-Hintergrund, damit Blur nicht strahlend weiß wird */
-  .frosted-input{
-    background-color:rgba(30,34,47,.35) !important;   /* etwas dunkler als Desktop */
-    -webkit-text-fill-color:#ffffff !important;       /* Text immer weiß */
+  .frosted-input {
+    background-color: rgba(30, 34, 47, .35) !important;
+    /* etwas dunkler als Desktop */
+    -webkit-text-fill-color: #ffffff !important;
+    /* Text immer weiß */
   }
 
   /* AutoFill-Layer (gelb-grün) überschreiben */
   input.frosted-input:-webkit-autofill,
   select.frosted-input:-webkit-autofill,
-  textarea.frosted-input:-webkit-autofill{
-    -webkit-box-shadow:0 0 0 1000px rgba(30,34,47,.35) inset !important;
-    -webkit-text-fill-color:#ffffff !important;
+  textarea.frosted-input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px rgba(30, 34, 47, .35) inset !important;
+    -webkit-text-fill-color: #ffffff !important;
   }
 }
 
 /* little chevron for selects */
-select.frosted-input{
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-position:right .8rem center;
-  background-size:.8rem;
+select.frosted-input {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .8rem center;
+  background-size: .8rem;
 }
-select.frosted-input option{
-  background-color:#152043;
-  color:#ffffff;
+
+select.frosted-input option {
+  background-color: #152043;
+  color: #ffffff;
 }
 
 /* ─── Gefrosteter File-Input ─────────────────────────────────── */
-input[type="file"].frosted-file{
+input[type="file"].frosted-file {
   @apply w-full cursor-pointer text-sm text-white/80 rounded-lg p-2;
-  backdrop-filter:blur(8px);  -webkit-backdrop-filter:blur(8px);
-  background-color:rgba(255,255,255,.10);
-  border:1px solid rgba(255,255,255,.25);
-  transition:background .15s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, .10);
+  border: 1px solid rgba(255, 255, 255, .25);
+  transition: background .15s;
 }
-input[type="file"].frosted-file:hover{
-  background-color:rgba(255,255,255,.15);
+
+input[type="file"].frosted-file:hover {
+  background-color: rgba(255, 255, 255, .15);
 }
 
 /* ─── Buttons ─────────────────────────────────────────────────── */
 .btn-primary,
-.btn-accent{
-  @apply font-semibold py-2 px-4 rounded-lg text-white transition
-         disabled:cursor-not-allowed disabled:opacity-60;
+.btn-accent {
+  @apply font-semibold py-2 px-4 rounded-lg text-white transition disabled:cursor-not-allowed disabled:opacity-60;
 }
-.btn-primary{
-  background:var(--brand);
+
+.btn-primary {
+  background: var(--brand);
 }
-.btn-primary:hover{
-  background:var(--brand-light);
-  transform:translateY(-2px);
-  box-shadow:0 10px 18px rgba(30,99,255,.35);
+
+.btn-primary:hover {
+  background: var(--brand-light);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(30, 99, 255, .35);
 }
-.btn-accent{
-  background:var(--secondary);
+
+.btn-accent {
+  background: var(--secondary);
 }
-.btn-accent:hover{
-  background:#b07df8;
-  transform:translateY(-2px);
-  box-shadow:0 10px 18px rgba(155,93,229,.35);
+
+.btn-accent:hover {
+  background: #b07df8;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(155, 93, 229, .35);
 }
 
 /* ─── Pop-in anim for cards ──────────────────────────────────── */
-@keyframes pop{
-  0%  {opacity:0; transform:scale(.92) translateY(20px)}
-  100%{opacity:1; transform:scale(1)   translateY(0)}
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(.92) translateY(20px)
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0)
+  }
 }
-.animate-pop{animation:pop .5s ease forwards}
+
+.animate-pop {
+  animation: pop .5s ease forwards
+}
 
 /* ─── Contract notes expand animation ───────────────────────── */
 .contract-notes-transition {
-  transition: max-height 0.35s cubic-bezier(.4,2,.6,1), opacity 0.25s;
+  transition: max-height 0.35s cubic-bezier(.4, 2, .6, 1), opacity 0.25s;
   max-height: 0;
   opacity: 0;
   overflow: hidden;
 }
+
 .contract-notes-transition.open {
   max-height: 120px;
   opacity: 1;
@@ -146,17 +172,20 @@ input[type="file"].frosted-file:hover{
 
 /* ─── Mobile Media Queries ───────────────────────────────────── */
 @media (max-width: 640px) {
+
   .container,
   .container.mx-auto {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
     max-width: 100vw;
   }
+
   .glass-card {
     padding: 1rem !important;
     border-radius: 1rem !important;
-    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
   }
+
   .btn-primary,
   .btn-accent {
     width: 100%;
@@ -165,6 +194,7 @@ input[type="file"].frosted-file:hover{
     padding-bottom: 1rem;
     border-radius: 0.75rem;
   }
+
   .frosted-input,
   select.frosted-input,
   textarea.frosted-input {
@@ -172,11 +202,13 @@ input[type="file"].frosted-file:hover{
     padding: 1rem 1.1rem;
     border-radius: 0.75rem;
   }
+
   input[type="file"].frosted-file {
     font-size: 1rem;
     padding: 0.7rem 1rem;
     border-radius: 0.75rem;
   }
+
   /* Tabellen als Scroll-List oder Cards */
   table.min-w-full {
     display: block;
@@ -184,17 +216,20 @@ input[type="file"].frosted-file:hover{
     overflow-x: auto;
     border: 0;
   }
+
   table.min-w-full thead {
     display: none;
   }
+
   table.min-w-full tbody tr {
     display: block;
     margin-bottom: 1.5rem;
-    background: rgba(255,255,255,0.04);
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
     padding: 1rem;
   }
+
   table.min-w-full td {
     display: flex;
     justify-content: space-between;
@@ -203,10 +238,14 @@ input[type="file"].frosted-file:hover{
     border: 0;
     font-size: 1rem;
   }
+
   /* KPI-Grid und Charts untereinander */
-  .grid.sm\:grid-cols-2, .grid.lg\:grid-cols-4, .grid.lg\:grid-cols-2 {
+  .grid.sm\:grid-cols-2,
+  .grid.lg\:grid-cols-4,
+  .grid.lg\:grid-cols-2 {
     grid-template-columns: 1fr !important;
   }
+
   /* Modal-Dialoge: Fullscreen auf Mobile */
   .glass-card.p-6.w-80 {
     width: 95vw !important;

@@ -1,16 +1,11 @@
 // src/utils/taxUtils.js
 
-/**
- * Realistische progressive Steuerberechnung basierend auf Jahreseinkommen
- * Werte sind vereinfacht und für Bildungszwecke
- * Für reale Steuererklärungen sollte man Steuerberatung konsultieren
- */
 const taxCalculators = {
   Germany: (bruttoMonatlich) => {
     // Auf Jahreseinkommen umrechnen
     const brutto = bruttoMonatlich * 12;
     let steuer = 0;
-    
+
     // Progressiver Steuersatz nach ESt-Tarif (vereinfacht)
     if (brutto <= 10908) {
       // Grundfreibetrag
@@ -30,16 +25,16 @@ const taxCalculators = {
       // Vierte Zone (45%)
       steuer = 0.45 * brutto - 18307.73;
     }
-    
+
     // Sozialversicherungsbeiträge (ca. 20% vereinfacht)
     const sozialabgaben = brutto * 0.20;
-    
+
     // Kirchensteuer ignoriert
-    
+
     // Monatlich zurückrechnen
     return (steuer + sozialabgaben) / 12;
   },
-  
+
   Austria: (bruttoMonatlich) => {
     // Auf Jahreseinkommen umrechnen
     const brutto = bruttoMonatlich * 12;
@@ -61,10 +56,10 @@ const taxCalculators = {
     } else {
       steuer = (brutto - 1000000) * 0.55 + 486186.70;
     }
-    
+
     // Sozialversicherungsbeiträge (etwa 18% Mitarbeiteranteil)
     const sozialabgaben = brutto * 0.18;
-    
+
     // Monatlich zurückrechnen
     return (steuer + sozialabgaben) / 12;
   },
