@@ -25,6 +25,7 @@ backend/app/utils/__pycache__/
 *.env
 .env.*
 backend/.env
+backend/app/.env
 frontend/.env
 backend/env/
 backend/venv/
