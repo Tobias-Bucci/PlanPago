@@ -3,6 +3,7 @@ import { API_BASE } from "../config";
 import React, { useState } from "react";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import Notification from "../components/Notification";
+import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
 
 /* Cache country / currency locally after login ---------------- */
 const cacheProfile = async (token) => {
@@ -157,8 +158,14 @@ export default function Login() {
 
   /* ── JSX ─────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="glass-card w-full max-w-md p-8 animate-pop">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{
+      position: "relative",
+      overflow: "hidden",
+      background: "linear-gradient(135deg, #0f1419 0%, #1a1f2e 25%, #2d3748 50%, #1a202c 75%, #0f1419 100%)"
+    }}>
+      <AnimatedParticlesParallax />
+      
+      <div className="glass-card w-full max-w-md p-8 animate-pop" style={{ position: "relative", zIndex: 10 }}>
         <h2 className="text-2xl font-semibold text-center mb-6 tracking-wide">
           {step === 1 ? "Log in"
             : step === 2 ? "Confirm code"
