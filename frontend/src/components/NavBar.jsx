@@ -11,7 +11,7 @@ export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Seiten, auf denen nur Login/Register angezeigt werden soll
-  const onlyAuthRoutes = ["/login", "/register"];
+  const onlyAuthRoutes = ["/login", "/register", "/terms", "/privacypolicy", "/impressum"];
   const showOnlyAuth = onlyAuthRoutes.includes(location.pathname);
 
   /* — activeLink helper (works for both desktop & mobile) — */

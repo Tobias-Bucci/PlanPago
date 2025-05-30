@@ -6,6 +6,7 @@ import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
 
 export default function Landing() {
   const navigate = useNavigate();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -17,275 +18,293 @@ export default function Landing() {
         color: "white",
         position: "relative",
         overflow: "hidden",
-        background: "#181c2f",
+        background: "linear-gradient(135deg, #0f1419 0%, #1a1f2e 25%, #2d3748 50%, #1a202c 75%, #0f1419 100%)",
         paddingTop: "4.5rem"
       }}
     >
       <AnimatedParticlesParallax />
-      {/* Modern animated background with blurred gradients (now: top left blue, bottom right pink) */}
-      <motion.div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: "-10%",
-          left: "-10%",
-          width: "60vw",
-          height: "60vw",
-          background: "radial-gradient(circle at 30% 30%, #61dafb 0%, transparent 70%)",
-          filter: "blur(80px)",
-          opacity: 0.5,
-          zIndex: 0
-        }}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.5 }}
-        transition={{ duration: 1.2 }}
-      />
-      <motion.div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          bottom: "-15%",
-          right: "-10%",
-          width: "55vw",
-          height: "55vw",
-          background: "radial-gradient(circle at 70% 70%, #ff61d9 0%, transparent 70%)",
-          filter: "blur(80px)",
-          opacity: 0.5,
-          zIndex: 0
-        }}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.5 }}
-        transition={{ duration: 1.2, delay: 0.2 }}
-      />
-      <div className="landing-content" style={{ maxWidth: 900, margin: "0 auto", padding: "4rem 1rem", textAlign: "center", position: "relative", zIndex: 1 }}>
-        {/* Removed logo at the top */}
-        <motion.h1
-          initial={{ y: -40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.7 }}
-          style={{ fontSize: "2.8rem", fontWeight: 700, background: "linear-gradient(90deg, #ff61d9 30%, #61dafb 70%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
-        >
-          Welcome to PlanPago
-        </motion.h1>
-        <motion.p
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.7 }}
-          style={{ fontSize: "1.3rem", margin: "1.5rem 0 2.5rem 0" }}
-        >
-          PlanPago is your all-in-one digital assistant for managing contracts, recurring payments, and important deadlines. Designed for individuals and households, PlanPago provides a clear, structured platform to organize all your contracts—such as rent, insurance, subscriptions, and salary agreements—in one secure place.<br /><br />
-          Easily add new contracts using dynamic forms tailored to each contract type. Upload your documents securely, set payment intervals and amounts, and receive automatic reminders for upcoming payments or cancellation deadlines directly via email. Never miss a due date again!<br /><br />
-          The intuitive dashboard gives you a real-time overview of all your active contracts, upcoming payments, and deadlines. Interactive charts visualize your monthly fixed costs, contract types, and show you exactly how much of your income remains after all obligations. PlanPago helps you understand your financial situation at a glance and supports better financial planning.<br /><br />
-          <b>Key features:</b> Smart contract management · Automatic email reminders · Visual analytics · Secure authentication · GDPR-compliant · Responsive design · Data export · Optional shared accounts & calendar integration
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1, duration: 0.7 }}
-          style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 40 }}
-        >
-          <motion.button
-            whileHover={{ scale: 1.08, backgroundColor: "#ff61d9", color: "#fff" }}
-            whileTap={{ scale: 0.97 }}
-            className="landing-btn"
+
+      {/* Hero Section */}
+      <section className="relative z-10 container mx-auto px-6 py-20">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Main Headline */}
+          <motion.h1
+            initial={{ y: -40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="text-5xl md:text-7xl font-bold mb-6"
             style={{
-              background: "linear-gradient(90deg, #ff61d9 0%, #61dafb 100%)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "0.9rem 2.2rem",
-              fontSize: "1.1rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: "0 2px 16px 0 rgba(97,218,251,0.15)",
-              transition: "background 0.2s, color 0.2s"
+              background: "linear-gradient(135deg, #61dafb 0%, #ff61d9 50%, #61dafb 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text"
             }}
-            onClick={() => navigate("/register")}
           >
-            Get Started
-          </motion.button>
-        </motion.div>
+            PlanPago
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
+            className="text-xl md:text-2xl text-white/80 mb-8 leading-relaxed"
+          >
+            Your intelligent contract management platform
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.7 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-4 text-lg font-semibold rounded-xl"
+              style={{
+                background: "linear-gradient(135deg, #61dafb 0%, #ff61d9 100%)",
+                boxShadow: "0 8px 32px rgba(97, 218, 251, 0.3)",
+                border: "none",
+                color: "white"
+              }}
+              onClick={() => navigate("/register")}
+            >
+              Get Started Free
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-4 text-lg font-semibold rounded-xl border-2 border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 transition-all duration-300"
+              onClick={() => navigate("/login")}
+            >
+              Sign In
+            </motion.button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="relative z-10 container mx-auto px-6 py-20">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.7 }}
-          style={{ display: "flex", justifyContent: "center", gap: 48, flexWrap: "wrap", marginBottom: 24 }}
+          transition={{ delay: 1.2, duration: 0.8 }}
+          className="max-w-6xl mx-auto"
         >
-          {/* Management Icon */}
-          <motion.div
-            whileHover={{
-              scale: 1.09,
-              boxShadow: "0 12px 36px 0 #ff61d9cc",
-              y: -10,
-              rotate: [0, 2, -2, 0],
-              transition: { duration: 0.5, type: "spring" }
-            }}
-            whileTap={{ scale: 0.97 }}
-            style={{
-              background: "linear-gradient(135deg, #181c2f 60%, #ff61d9 100%)",
-              borderRadius: 20,
-              padding: 32,
-              boxShadow: "0 2px 16px 0 #ff61d933",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              minWidth: 170,
-              minHeight: 170,
-              width: 170,
-              height: 170,
-              justifyContent: "center",
-              transition: "box-shadow 0.18s, transform 0.18s"
-            }}
-          >
-            <motion.svg
-              width="64" height="64" viewBox="0 0 64 64" fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ display: "block" }}
-            >
-              <rect x="10" y="10" width="44" height="44" rx="10" fill="#fff" fillOpacity="0.08" />
-              <rect x="18" y="18" width="28" height="7" rx="3.5" fill="#ff61d9" />
-              <rect x="18" y="30" width="20" height="5" rx="2.5" fill="#61dafb" />
-              <rect x="18" y="40" width="16" height="5" rx="2.5" fill="#fff" fillOpacity="0.18" />
-              <circle cx="44" cy="44" r="7" fill="#61dafb" />
-              <path d="M42.5 44.5l2.5 2.5 3.5-3.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-            </motion.svg>
-            <span style={{ color: "#ff61d9", fontWeight: 600, fontSize: 20, marginTop: 18, letterSpacing: 0.5 }}>
-              Management
-            </span>
-          </motion.div>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
+            Everything you need to manage contracts
+          </h2>
 
-          {/* Reminders Icon */}
-          <motion.div
-            whileHover={{
-              scale: 1.09,
-              boxShadow: "0 12px 36px 0 #61dafbcc",
-              y: -10,
-              rotate: [0, -2, 2, 0],
-              transition: { duration: 0.5, type: "spring" }
-            }}
-            whileTap={{ scale: 0.97 }}
-            style={{
-              background: "linear-gradient(135deg, #181c2f 60%, #61dafb 100%)",
-              borderRadius: 20,
-              padding: 32,
-              boxShadow: "0 2px 16px 0 #61dafb33",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              minWidth: 170,
-              minHeight: 170,
-              width: 170,
-              height: 170,
-              justifyContent: "center",
-              transition: "box-shadow 0.18s, transform 0.18s"
-            }}
-          >
-            <motion.svg
-              width="64" height="64" viewBox="0 0 64 64" fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ display: "block" }}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature 1 - Management */}
+            <motion.div
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative group"
             >
-              <circle cx="32" cy="32" r="28" fill="#fff" fillOpacity="0.08" />
-              <path d="M32 20v14l10 6" stroke="#61dafb" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="32" cy="32" r="18" stroke="#ff61d9" strokeWidth="3" fill="none" />
-              <circle cx="32" cy="32" r="8" fill="#ff61d9" fillOpacity="0.18" />
-              <rect x="28" y="48" width="8" height="5" rx="2.5" fill="#61dafb" />
-            </motion.svg>
-            <span style={{ color: "#61dafb", fontWeight: 600, fontSize: 20, marginTop: 18, letterSpacing: 0.5 }}>
-              Reminders
-            </span>
-          </motion.div>
+              <div className="glass-card p-8 h-full text-center">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
+                  <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="10" y="10" width="44" height="44" rx="10" fill="white" fillOpacity="0.9" />
+                    <rect x="18" y="18" width="28" height="7" rx="3.5" fill="#1a202c" />
+                    <rect x="18" y="30" width="20" height="5" rx="2.5" fill="#4299e1" />
+                    <rect x="18" y="40" width="16" height="5" rx="2.5" fill="#63b3ed" />
+                    <circle cx="44" cy="44" r="7" fill="#4299e1" />
+                    <path d="M42.5 44.5l2.5 2.5 3.5-3.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold mb-4 text-blue-300">Smart Management</h3>
+                <p className="text-white/70">
+                  Organize all your contracts in one secure place. Dynamic forms, automated categorization, and intelligent reminders.
+                </p>
+              </div>
+            </motion.div>
 
-          {/* Analytics Icon (custom, modern, not blurry) */}
-          <motion.div
-            whileHover={{
-              scale: 1.09,
-              boxShadow: "0 12px 36px 0 #ff61d9cc",
-              y: -10,
-              rotate: [0, 2, -2, 0],
-              transition: { duration: 0.5, type: "spring" }
-            }}
-            whileTap={{ scale: 0.97 }}
-            style={{
-              background: "linear-gradient(135deg, #181c2f 60%, #ff61d9 100%)",
-              borderRadius: 20,
-              padding: 32,
-              boxShadow: "0 2px 16px 0 #ff61d933",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              minWidth: 170,
-              minHeight: 170,
-              width: 170,
-              height: 170,
-              justifyContent: "center",
-              transition: "box-shadow 0.18s, transform 0.18s"
-            }}
-          >
-            <motion.svg
-              width="64" height="64" viewBox="0 0 64 64" fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ display: "block" }}
+            {/* Feature 2 - Reminders */}
+            <motion.div
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative group"
             >
-              <rect x="8" y="12" width="48" height="40" rx="10" fill="#fff" fillOpacity="0.08" />
-              {/* Modern analytics bars */}
-              <rect x="18" y="38" width="6" height="14" rx="3" fill="#61dafb" />
-              <rect x="28" y="28" width="6" height="24" rx="3" fill="#ff61d9" />
-              <rect x="38" y="20" width="6" height="32" rx="3" fill="#fff" fillOpacity="0.18" />
-              {/* Dots for data points */}
-              <circle cx="21" cy="36" r="2.5" fill="#61dafb" />
-              <circle cx="31" cy="26" r="2.5" fill="#ff61d9" />
-              <circle cx="41" cy="18" r="2.5" fill="#fff" fillOpacity="0.5" />
-              {/* Connecting line */}
-              <polyline points="21,36 31,26 41,18" fill="none" stroke="#ff61d9" strokeWidth="2" strokeLinecap="round" />
-            </motion.svg>
-            <span style={{ color: "#ff61d9", fontWeight: 600, fontSize: 20, marginTop: 18, letterSpacing: 0.5 }}>
-              Analytics
-            </span>
-          </motion.div>
+              <div className="glass-card p-8 h-full text-center">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-400 flex items-center justify-center">
+                  <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="32" cy="32" r="28" fill="white" fillOpacity="0.9" />
+                    <path d="M32 20v14l10 6" stroke="#1a202c" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="32" cy="32" r="16" stroke="#8b5cf6" strokeWidth="2.5" fill="none" />
+                    <rect x="28" y="48" width="8" height="5" rx="2.5" fill="#a855f7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold mb-4 text-purple-300">Never Miss a Date</h3>
+                <p className="text-white/70">
+                  Automated email reminders for payments, renewals, and cancellation deadlines. Stay ahead of every important date.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Feature 3 - Analytics */}
+            <motion.div
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative group"
+            >
+              <div className="glass-card p-8 h-full text-center">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center">
+                  <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="8" y="12" width="48" height="40" rx="8" fill="white" fillOpacity="0.9" />
+                    <rect x="16" y="36" width="6" height="14" rx="3" fill="#10b981" />
+                    <rect x="26" y="26" width="6" height="24" rx="3" fill="#059669" />
+                    <rect x="36" y="18" width="6" height="32" rx="3" fill="#047857" />
+                    <rect x="46" y="28" width="6" height="22" rx="3" fill="#065f46" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold mb-4 text-emerald-300">Financial Insights</h3>
+                <p className="text-white/70">
+                  Visualize your spending patterns, track contract costs, and understand your financial commitments at a glance.
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </motion.div>
-        {/* Decorative animated divider */}
+      </section>
+
+      {/* Benefits Section */}
+      <section className="relative z-10 container mx-auto px-6 py-20">
         <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ delay: 1.7, duration: 0.7, type: "spring" }}
-          style={{
-            margin: "3rem auto 0 auto",
-            width: "60%",
-            height: 4,
-            background: "linear-gradient(90deg, #ff61d9 0%, #61dafb 100%)",
-            borderRadius: 2,
-            transformOrigin: "left"
-          }}
-        />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2.0, duration: 0.7 }}
-          style={{ marginTop: 16, fontSize: "0.95rem", color: "#e1b7e9" }}
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.5, duration: 0.8 }}
+          className="max-w-4xl mx-auto text-center"
         >
-          <span>100% GDPR-compliant · Secure</span>
+          <h2 className="text-3xl md:text-4xl font-bold mb-12">
+            Why choose PlanPago?
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center mt-1">
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">100% GDPR Compliant</h4>
+                  <p className="text-white/70">Your data is encrypted and stored securely on EU servers in South Tyrol, Italy.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center mt-1">
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Secure Document Storage</h4>
+                  <p className="text-white/70">Upload and store your contracts with military-grade encryption and HTTPS protection.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center mt-1">
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Easy Export & Backup</h4>
+                  <p className="text-white/70">Export your data anytime in CSV or PDF format. Your data, your control.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center mt-1">
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Multi-Device Access</h4>
+                  <p className="text-white/70">Access your contracts from any device with our responsive web application.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center mt-1">
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Smart Analytics</h4>
+                  <p className="text-white/70">Understand your spending with interactive charts and financial insights.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center mt-1">
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Two-Factor Authentication</h4>
+                  <p className="text-white/70">Enhanced security with email codes or authenticator app support.</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </motion.div>
-      </div>
-      {/* Footer: Copyright, Imprint, Privacy Policy */}
-      <div style={{
-        width: "100%",
-        textAlign: "center",
-        marginTop: 40,
-        marginBottom: 12,
-        color: "#e1e6f9",
-        fontSize: 15,
-        letterSpacing: 0.1,
-        opacity: 0.85,
-        zIndex: 2,
-        position: "relative"
-      }}>
-        <span style={{ verticalAlign: "middle", marginRight: 6, fontSize: 17 }}>&copy;</span>
-        {new Date().getFullYear()} PlanPago &ndash;{' '}
-        <a href="/impressum" className="underline hover:text-white" style={{ color: "#e1e6f9" }}>Imprint &amp; Contact</a>
-        {' '}|{' '}
-        <a href="/privacypolicy" className="underline hover:text-white" style={{ color: "#e1e6f9" }}>Privacy Policy</a>
-      </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="relative z-10 container mx-auto px-6 py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.8, duration: 0.8 }}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <div className="glass-card p-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Ready to take control of your contracts?
+            </h2>
+            <p className="text-xl text-white/80 mb-8">
+              Join thousands of users who trust PlanPago to manage their financial commitments.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-10 py-4 text-xl font-semibold rounded-xl"
+              style={{
+                background: "linear-gradient(135deg, #61dafb 0%, #ff61d9 100%)",
+                boxShadow: "0 8px 32px rgba(97, 218, 251, 0.3)",
+                border: "none",
+                color: "white"
+              }}
+              onClick={() => navigate("/register")}
+            >
+              Start Free Today
+            </motion.button>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-white/10 py-8">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <img src="/PlanPago-trans.png" alt="PlanPago" className="h-6 w-6" />
+              <span className="text-lg font-semibold">PlanPago</span>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm text-white/70">
+              <span>&copy; {new Date().getFullYear()} PlanPago</span>
+              <a href="/impressum" className="hover:text-white transition-colors">
+                Imprint & Contact
+              </a>
+              <a href="/privacypolicy" className="hover:text-white transition-colors">
+                Privacy Policy
+              </a>
+              <a href="/terms" className="hover:text-white transition-colors">
+                Terms & Conditions
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </motion.div>
   );
 }
