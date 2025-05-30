@@ -19,6 +19,24 @@ export default function AnimatedParticlesParallax() {
     const mouse = useRef({ x: null, y: null });
     const animationRef = useRef();
 
+    // Scroll detection for scrollbar animation
+    useEffect(() => {
+        let scrollTimeout;
+        const handleScroll = () => {
+            document.body.classList.add('scrolling');
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                document.body.classList.remove('scrolling');
+            }, 1000);
+        };
+        
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            clearTimeout(scrollTimeout);
+        };
+    }, []);
+
     // Resize canvas to fill parent
     useEffect(() => {
         const canvas = canvasRef.current;
