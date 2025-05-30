@@ -1,4 +1,4 @@
-// Dashboard.jsx  –  overview, filters, inline-expand rows & exports
+// Dashboard.jsx  –  glass-morphism edition
 import { API_BASE } from "../config";
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -11,12 +11,14 @@ import {
   Search,
   FileSpreadsheet,
   FileText,
-  XCircle, // Icon für Cancel
-  Undo2, // Icon für Re-activate
-  ArrowUp, // Icon für Sort Ascending
-  ArrowDown, // Icon für Sort Descending
-  ArrowUpDown, // Icon für Sort Both Ways
-  ChevronFirst, // NEU: für 'erste Seite'
+  XCircle,
+  Undo2,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  ChevronFirst,
+  Filter,
+  SlidersHorizontal,
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import Notification from "../components/Notification";
@@ -153,6 +155,26 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, filterType, filterStat, sortField, sortDir]);
 
+  /* ───── close export dropdown on outside click ───────────── */
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportRef.current && !exportRef.current.contains(event.target)) {
+        setExportOpen(false);
+      }
+    };
+
+    if (exportOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [exportOpen]);
+
+  /* ───── clear search filter ─────────────────────────────────── */
+  const clearSearch = () => {
+    setQuery("");
+    setPage(0);
+  };
+
   /* ───── deletion helpers ───────────────────────────────────── */
   const reallyDeleteContract = async (id) => {
     try {
@@ -248,121 +270,253 @@ export default function Dashboard() {
 
   /* ───── JSX ────────────────────────────────────────────────── */
   return (
-    <main className="container mx-auto pt-24 p-6 animate-fadeIn">
+    <div className="min-h-screen" style={{
+      position: "relative",
+      overflow: "hidden",
+      background: "linear-gradient(135deg, #0f1419 0%, #1a1f2e 25%, #2d3748 50%, #1a202c 75%, #0f1419 100%)"
+    }}>
+      {/* Flash messages - positioned above everything */}
+      <div className="fixed top-4 right-4 z-[9999]">
+        {msg && <Notification message={msg} type={msgType} onDone={() => setMsg("")} />}
+        {err && <Notification message={err} type="error" onDone={() => setErr("")} />}
+      </div>
 
-      {/* Header + action buttons */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-semibold text-white">Overview</h1>
-        {/* Gesamtanzahl der Verträge anzeigen */}
-        <div className="flex items-center gap-4">
-          <span className="text-white/70 text-lg font-medium hidden sm:inline-block">
-            {`Total contracts: ${total}`}
-          </span>
-          <div className="flex gap-2 relative">
-            <button
-              className="btn-accent rounded-full p-3"
-              title="New contract"
-              onClick={() => navigate("/contracts/new")}
-            >
-              <PlusCircle size={24} />
-            </button>
-            <button
-              className="btn-primary rounded-full px-4 py-2 flex items-center gap-2"
-              title="Export contracts"
-              onClick={() => setExportOpen((v) => !v)}
-              ref={exportRef}
-            >
-              <FileSpreadsheet size={18} strokeWidth={2} /> / <FileText size={18} strokeWidth={2} /> Export
-            </button>
-            {exportOpen && (
-              <div className="absolute right-0 mt-12 z-10 bg-[#181f3a] border border-white/10 rounded-lg shadow-lg min-w-[160px] animate-pop">
+      <main className="container mx-auto pt-24 p-6 animate-fadeIn" style={{ position: "relative", zIndex: 10 }}>
+
+        {/* Header + action buttons - without glass card wrapper */}
+        <div className="mb-8 animate-pop">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-semibold text-white mb-2">Contract Overview</h1>
+              <p className="text-white/70 text-lg">
+                {`Total contracts: ${total}`}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                className="btn-primary flex items-center justify-center gap-2 px-6 py-3 rounded-xl"
+                onClick={() => navigate("/contracts/new")}
+              >
+                <PlusCircle size={20} />
+                <span>New Contract</span>
+              </button>
+              <div className="relative" ref={exportRef}>
                 <button
-                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
-                  onClick={async () => {
-                    setExportOpen(false);
-                    const res = await fetchWithAuth(`${API}/contracts/export/csv`, { headers: authHeader }, navigate);
-                    if (!res.ok) return setErr("Export failed");
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = Object.assign(document.createElement("a"), {
-                      href: url,
-                      download: "contracts.csv",
-                    });
-                    a.click(); window.URL.revokeObjectURL(url);
+                  className="btn-accent flex items-center justify-center gap-2 px-6 py-3 rounded-xl relative z-10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setExportOpen((v) => !v);
                   }}
                 >
-                  <FileSpreadsheet size={18} strokeWidth={2} /> Export as CSV
+                  <FileSpreadsheet size={18} strokeWidth={2} />
+                  <span>Export</span>
                 </button>
-                <button
-                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-white/10 text-white"
-                  onClick={async () => {
-                    setExportOpen(false);
-                    const res = await fetchWithAuth(`${API}/contracts/export/pdf`, { headers: authHeader }, navigate);
-                    if (!res.ok) return setErr("Export failed");
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = Object.assign(document.createElement("a"), {
-                      href: url,
-                      download: "contracts.pdf",
-                    });
-                    a.click(); window.URL.revokeObjectURL(url);
-                  }}
-                >
-                  <FileText size={18} strokeWidth={2} /> Export as PDF
-                </button>
+                {exportOpen && (
+                  <div className="absolute left-full top-0 ml-2 z-[99999] min-w-[200px] animate-pop"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+                    }}>
+                    <div className="p-2">
+                      <button
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/20 text-white rounded-lg transition-colors text-left"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setExportOpen(false);
+                          try {
+                            console.log('Starting CSV export...');
+                            const res = await fetchWithAuth(`${API}/contracts/export/csv`, { headers: authHeader }, navigate);
+                            console.log('CSV export response status:', res.status);
+                            if (!res.ok) {
+                              const errorText = await res.text();
+                              console.error('CSV export error:', errorText);
+                              throw new Error(`Export failed: ${errorText}`);
+                            }
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = Object.assign(document.createElement("a"), {
+                              href: url,
+                              download: "contracts.csv",
+                            });
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                            setMsg("CSV export successful");
+                            setMsgType("success");
+                          } catch (e) {
+                            console.error('CSV export error:', e);
+                            setErr(e.message || "CSV export failed");
+                          }
+                        }}
+                      >
+                        <FileSpreadsheet size={18} strokeWidth={2} />
+                        <span>Export as CSV</span>
+                      </button>
+                      <button
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/20 text-white rounded-lg transition-colors text-left"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setExportOpen(false);
+                          try {
+                            console.log('Starting PDF export...');
+                            setMsg("Generating PDF export...");
+                            setMsgType("info");
+
+                            const res = await fetchWithAuth(`${API}/contracts/export/pdf`, {
+                              headers: authHeader,
+                              method: 'GET'
+                            }, navigate);
+
+                            console.log('PDF export response status:', res.status);
+                            console.log('PDF export response headers:', Object.fromEntries(res.headers.entries()));
+
+                            if (!res.ok) {
+                              const errorText = await res.text();
+                              console.error('PDF export error response:', errorText);
+                              throw new Error(`PDF export failed (${res.status}): ${errorText}`);
+                            }
+
+                            const contentType = res.headers.get('content-type');
+                            console.log('Content-Type:', contentType);
+
+                            if (!contentType || !contentType.includes('application/pdf')) {
+                              const responseText = await res.text();
+                              console.error('Unexpected content type:', contentType, 'Response:', responseText);
+                              throw new Error(`Expected PDF but got: ${contentType}`);
+                            }
+
+                            const blob = await res.blob();
+                            console.log('PDF blob size:', blob.size);
+
+                            if (blob.size === 0) {
+                              throw new Error('PDF file is empty');
+                            }
+
+                            const url = window.URL.createObjectURL(blob);
+                            const a = Object.assign(document.createElement("a"), {
+                              href: url,
+                              download: `contracts_${new Date().toISOString().split('T')[0]}.pdf`,
+                            });
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+
+                            setMsg("PDF export successful");
+                            setMsgType("success");
+                          } catch (e) {
+                            console.error('PDF export error:', e);
+                            setErr(e.message || "PDF export failed");
+                          }
+                        }}
+                      >
+                        <FileText size={18} strokeWidth={2} />
+                        <span>Export as PDF</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Filters */}
-      <div className="glass-card p-4 mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
-        <button
-          className="btn-primary flex items-center gap-2 sm:w-auto"
-          onClick={() => setModalOpen(true)}
-        >
-          <Search size={18} /> Search
-        </button>
+        {/* Filters - removed glass card wrapper */}
+        <div className="mb-6 animate-pop">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4 p-6 rounded-2xl bg-white/5 border border-white/10 relative z-[1]">
+            {/* Search Section */}
+            <div className="flex items-center gap-3">
+              <button
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white border border-white/20"
+                onClick={() => setModalOpen(true)}
+              >
+                <Search size={18} />
+                <span className="hidden sm:inline">Search</span>
+              </button>
 
-        <select
-          className="frosted-input sm:w-40"
-          value={filterType}
-          onChange={(e) => setFType(e.target.value)}
-        >
-          {TYPE_OPTIONS.map(({ label, value }) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
+              {query && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-blue-600/20 text-blue-300 rounded-lg text-sm border border-blue-500/30">
+                  <span>"{query}"</span>
+                  <button
+                    onClick={clearSearch}
+                    className="hover:bg-blue-600/30 rounded-full p-1 transition-colors"
+                    title="Clear search"
+                  >
+                    <XCircle size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
 
-        <select
-          className="frosted-input sm:w-40"
-          value={filterStat}
-          onChange={(e) => setFStat(e.target.value)}
-        >
-          {STATUS_OPTIONS.map(({ label, value }) => (
-            <option key={value} value={value}>{label}</option>
-          ))}
-        </select>
-      </div>
+            {/* Divider */}
+            <div className="hidden lg:block w-px h-8 bg-white/20"></div>
 
-      {/* Flash messages */}
-      {msg && <Notification message={msg} type={msgType} onDone={() => setMsg("")} />}
-      {err && <Notification message={err} type="error" onDone={() => setErr("")} />}
+            {/* Filter Section */}
+            <div className="flex items-center gap-3 lg:ml-auto">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={18} className="text-white/70" />
+                <span className="text-white/70 text-sm hidden sm:inline">Filters:</span>
+              </div>
 
-      {/* Table/Card-List */}
-      {loading ? (
-        <p className="text-center py-10 text-white/70">Loading contracts…</p>
-      ) : contracts.length === 0 ? (
-        <p className="text-center py-10 text-white/70">No contracts found.</p>
-      ) : (
-        <div className="glass-card overflow-x-auto">
-          {/* Mobile: Cards, Desktop: Table */}
-          <div className="block sm:hidden">
-            {/* Mobile Sorting Options */}
-            <div className="flex items-center mb-4 p-4 bg-white/5 rounded-lg">
-              <div className="w-full">
-                <label className="block text-white/70 mb-2">Sort by:</label>
+              <div className="flex flex-col sm:flex-row gap-3 relative z-[2]">
+                <div>
+                  <label className="block text-white/70 text-xs mb-1 sm:hidden">Type</label>
+                  <select
+                    className="frosted-input w-full sm:w-36 text-sm relative z-[3]"
+                    value={filterType}
+                    onChange={(e) => setFType(e.target.value)}
+                  >
+                    {TYPE_OPTIONS.map(({ label, value }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-white/70 text-xs mb-1 sm:hidden">Status</label>
+                  <select
+                    className="frosted-input w-full sm:w-36 text-sm relative z-[3]"
+                    value={filterStat}
+                    onChange={(e) => setFStat(e.target.value)}
+                  >
+                    {STATUS_OPTIONS.map(({ label, value }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table/Card-List */}
+        {loading ? (
+          <div className="glass-card p-12 text-center animate-pop">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white/70 mb-4"></div>
+            <p className="text-white/70">Loading contracts…</p>
+          </div>
+        ) : contracts.length === 0 ? (
+          <div className="glass-card p-12 text-center animate-pop">
+            <div className="text-6xl mb-4 opacity-50">📄</div>
+            <p className="text-xl text-white/70 mb-2">No contracts found</p>
+            <p className="text-white/50">Create your first contract to get started</p>
+          </div>
+        ) : (
+          <div className="glass-card overflow-x-auto animate-pop">
+            {/* Mobile: Cards, Desktop: Table */}
+            <div className="block lg:hidden p-6">
+              {/* Mobile Sorting Options */}
+              <div className="mb-6">
+                <label className="block text-white/70 text-sm mb-2">Sort by:</label>
                 <select
                   className="frosted-input w-full"
                   value={`${sortField}_${sortDir}`}
@@ -379,519 +533,539 @@ export default function Dashboard() {
                   ))}
                 </select>
               </div>
-            </div>
 
-            {contracts.slice(0, PAGE_SIZE).map((c, idx) => {
-              const end = new Date(c.end_date || "");
-              const expired = c.end_date && end < today;
-              const cancelled = c.status === "cancelled";
-              return (
-                <div key={c.id} className={`mb-4 p-4 rounded-xl bg-white/5 shadow flex flex-col gap-2 ${(expired || cancelled) ? "opacity-50" : ""}`}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-lg">{c.name}</span>
-                    <span className={`text-xs px-2 py-1 rounded ${cancelled ? "bg-gray-600/30 text-gray-400" : expired ? "bg-red-600/30 text-red-300" : "bg-emerald-600/20 text-emerald-300"}`}>
-                      {cancelled ? "Cancelled" : expired ? "Expired" : c.status}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-sm">
-                    <span className="bg-white/10 rounded px-2 py-1">{c.contract_type}</span>
-                    <span className="bg-white/10 rounded px-2 py-1">{new Date(c.start_date).toLocaleDateString()}</span>
-                    <span className="bg-white/10 rounded px-2 py-1">{c.end_date ? end.toLocaleDateString() : "-"}</span>
-                    <span className="bg-white/10 rounded px-2 py-1">{c.amount} {currency}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {filesCache[c.id]?.map((f) => (
-                      <div key={f.id} className="relative inline-block">
-                        <button
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            // Authentifizierte Vorschau/Download per fetch
-                            const token = localStorage.getItem("token");
-                            const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
-                            const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-                            if (!res.ok) {
-                              alert("Fehler beim Laden der Datei: " + (await res.text()));
-                              return;
-                            }
-                            const blob = await res.blob();
-                            const fileUrl = window.URL.createObjectURL(blob);
-                            if (f.url.endsWith(".pdf")) {
-                              window.open(fileUrl, "_blank");
-                            } else {
-                              const img = new window.Image();
-                              img.src = fileUrl;
-                              const w = window.open();
-                              w.document.write(img.outerHTML);
-                            }
-                          }}
-                          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                          title="Preview/download"
-                        >
-                          {f.url.endsWith(".pdf") ? (
-                            <span className="text-2xl">📄</span>
-                          ) : (
-                            <img
-                              src="/static/placeholder.png"
-                              alt={f.original_filename}
-                              className="h-10 w-10 rounded object-cover"
-                            />
-                          )}
-                        </button>
-                        <button
-                          className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
-                          onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <button className="btn-primary flex-1" onClick={() => navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })}>Edit</button>
-                    <button className="btn-accent flex-1 bg-red-600 hover:bg-red-700" onClick={() => deleteContract(c.id)}>Delete</button>
-                    {cancelled ? (
-                      <button
-                        className="btn-accent flex-1 bg-emerald-700 hover:bg-emerald-800"
-                        onClick={() => reactivateContract(c.id)}
-                        title="Reactivate contract"
-                      >
-                        Reactivate
-                      </button>
-                    ) : (
-                      <button
-                        className="btn-accent flex-1 bg-gray-500 hover:bg-gray-600"
-                        onClick={() => cancelContract(c.id)}
-                        disabled={expired}
-                        title="Cancel contract"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                  {c.notes && (
-                    <div className="mt-2 text-white/80 text-sm bg-white/5 rounded p-2">
-                      <span className="font-semibold">Notes:</span> {c.notes}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-4 mb-2">
-                <button
-                  className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
-                  onClick={() => setPage(0)}
-                  disabled={page === 0}
-                  title="Zur ersten Seite"
-                >
-                  <ChevronFirst size={20} />
-                </button>
-                <button
-                  className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
-                  onClick={() => setPage((p) => p - 1)}
-                  disabled={page === 0}
-                  title="Vorherige Seite"
-                >
-                  <ChevronsLeft size={18} />
-                </button>
-                {pageNumbers.map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setPage(n)}
-                    className={`px-3 py-1 rounded-lg ${n === page ? "bg-[var(--secondary)]" : "hover:bg-white/10"}`}
-                  >
-                    {n + 1}
-                  </button>
-                ))}
-                <button
-                  className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page === totalPages - 1}
-                  title="Nächste Seite"
-                >
-                  <ChevronsRight size={18} />
-                </button>
-              </div>
-            )}
-          </div>
-          <table className="min-w-full text-white/90 hidden sm:table">
-            <thead className="text-white uppercase text-sm bg-white/10">
-              <tr>
-                <th className="px-6 py-3 text-center">Name</th>
-                <th className="px-6 py-3 text-center">Type</th>
-                <th className="px-6 py-3 text-center">Interval</th>
-                <th className="px-6 py-3 text-center">
-                  <button
-                    className="inline-flex items-center gap-1"
-                    onClick={() => setSortDir(sortField === "start_date" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("start_date")}
-                    title={sortField === "start_date" ? (sortDir === "asc" ? "Sort start date descending" : "Sort start date ascending") : "Sort by start date"}
-                  >
-                    Start
-                    {sortField === "start_date" ? (
-                      sortDir === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                    ) : (
-                      <ArrowUpDown size={14} className="opacity-50" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-center">
-                  <button
-                    className="inline-flex items-center gap-1"
-                    onClick={() => setSortDir(sortField === "end_date" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("end_date")}
-                    title={sortField === "end_date" ? (sortDir === "asc" ? "Sort end date descending" : "Sort end date ascending") : "Sort by end date"}
-                  >
-                    End
-                    {sortField === "end_date" ? (
-                      sortDir === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                    ) : (
-                      <ArrowUpDown size={14} className="opacity-50" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-center">
-                  <button
-                    className="inline-flex items-center gap-1"
-                    onClick={() => setSortDir(sortField === "amount" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("amount")}
-                    title={sortField === "amount" ? (sortDir === "asc" ? "Sort amount descending" : "Sort amount ascending") : "Sort by amount"}
-                  >
-                    Amount
-                    {sortField === "amount" ? (
-                      sortDir === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />
-                    ) : (
-                      <ArrowUpDown size={14} className="opacity-50" />
-                    )}
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-center">Status</th>
-                <th className="px-6 py-3 text-center">Files</th>
-                <th className="px-6 py-3 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contracts.map((c, idx) => {
+              {contracts.slice(0, PAGE_SIZE).map((c, idx) => {
                 const end = new Date(c.end_date || "");
                 const expired = c.end_date && end < today;
                 const cancelled = c.status === "cancelled";
-                const expanded = expandedId === c.id;
-                // Payment interval label
-                let intervalLabel = "-";
-                if (c.payment_interval === "yearly") intervalLabel = "Yearly";
-                else if (c.payment_interval === "monthly") intervalLabel = "Monthly";
-                else if (c.payment_interval === "one-time") intervalLabel = "One-time";
-
                 return (
-                  <React.Fragment key={c.id}>
-                    <tr
-                      className={`${(expired || cancelled) ? "opacity-50" : ""} hover:bg-white/10 transition cursor-pointer`}
-                      onClick={async () => {
-                        if (expandedId !== c.id) {
-                          setExpandedId(c.id);
-                          if (!filesCache[c.id]) await loadFilesForContract(c.id);
-                        } else {
-                          setExpandedId(null);
-                        }
-                      }}
-                    >
-                      <td className="px-6 py-4 text-center">{c.name}</td>
-                      <td className="px-6 py-4 text-center">{TYPE_OPTIONS.find(t => t.value === c.contract_type)?.label || c.contract_type}</td>
-                      <td className="px-6 py-4 text-center">{intervalLabel}</td>
-                      <td className="px-6 py-4 text-center">{new Date(c.start_date).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-center">{c.end_date ? end.toLocaleDateString() : "-"}</td>
-                      <td className="px-6 py-4 text-center">{c.amount} {currency}</td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={cancelled ? "text-gray-400" : expired ? "text-red-400" : "text-emerald-300"}>
-                          {cancelled ? "Cancelled" : expired ? "Expired" : (STATUS_OPTIONS.find(s => s.value === c.status)?.label || c.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          {filesCache[c.id]?.map((f) => (
-                            <div key={f.id} className="relative inline-block">
-                              <button
-                                onClick={async (e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  // Authentifizierte Vorschau/Download per fetch
-                                  const token = localStorage.getItem("token");
-                                  const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
-                                  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-                                  if (!res.ok) {
-                                    alert("Fehler beim Laden der Datei: " + (await res.text()));
-                                    return;
-                                  }
-                                  const blob = await res.blob();
-                                  const fileUrl = window.URL.createObjectURL(blob);
-                                  if (f.url.endsWith(".pdf")) {
-                                    window.open(fileUrl, "_blank");
-                                  } else {
-                                    const img = new window.Image();
-                                    img.src = fileUrl;
-                                    const w = window.open();
-                                    w.document.write(img.outerHTML);
-                                  }
-                                }}
-                                style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                                title="Preview/download"
-                              >
-                                {f.url.endsWith(".pdf") ? (
-                                  <span className="text-2xl">📄</span>
-                                ) : (
-                                  <img
-                                    src="/static/placeholder.png"
-                                    alt={f.original_filename}
-                                    className="h-10 w-10 rounded object-cover"
-                                  />
-                                )}
-                              </button>
-                              <button
-                                className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
-                                onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex justify-center gap-4">
+                  <div key={c.id} className={`mb-4 p-5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm ${(expired || cancelled) ? "opacity-60" : ""}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-bold text-lg text-white">{c.name}</h3>
+                      <span className={`text-xs px-3 py-1 rounded-full ${cancelled ? "bg-gray-600/30 text-gray-300" : expired ? "bg-red-600/30 text-red-300" : "bg-emerald-600/30 text-emerald-300"}`}>
+                        {cancelled ? "Cancelled" : expired ? "Expired" : c.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                      <div className="bg-white/10 rounded-lg px-3 py-2">
+                        <span className="text-white/60 block">Type</span>
+                        <span className="text-white">{c.contract_type}</span>
+                      </div>
+                      <div className="bg-white/10 rounded-lg px-3 py-2">
+                        <span className="text-white/60 block">Amount</span>
+                        <span className="text-white font-semibold">{c.amount} {currency}</span>
+                      </div>
+                      <div className="bg-white/10 rounded-lg px-3 py-2">
+                        <span className="text-white/60 block">Start Date</span>
+                        <span className="text-white">{new Date(c.start_date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="bg-white/10 rounded-lg px-3 py-2">
+                        <span className="text-white/60 block">End Date</span>
+                        <span className="text-white">{c.end_date ? end.toLocaleDateString() : "-"}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {filesCache[c.id]?.map((f) => (
+                        <div key={f.id} className="relative inline-block">
                           <button
-                            className="btn-primary flex items-center justify-center w-12 h-12 rounded-lg transition hover:scale-110 hover:brightness-125"
-                            onClick={(e) => {
+                            onClick={async (e) => {
+                              e.preventDefault();
                               e.stopPropagation();
-                              navigate(`/contracts/${c.id}/edit`, { state: { contract: c } });
+                              // Authentifizierte Vorschau/Download per fetch
+                              const token = localStorage.getItem("token");
+                              const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
+                              const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+                              if (!res.ok) {
+                                alert("Fehler beim Laden der Datei: " + (await res.text()));
+                                return;
+                              }
+                              const blob = await res.blob();
+                              const fileUrl = window.URL.createObjectURL(blob);
+                              if (f.url.endsWith(".pdf")) {
+                                window.open(fileUrl, "_blank");
+                              } else {
+                                const img = new window.Image();
+                                img.src = fileUrl;
+                                const w = window.open();
+                                w.document.write(img.outerHTML);
+                              }
                             }}
-                            title="Edit contract"
-                            style={{ minWidth: 48, minHeight: 48 }}
+                            style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                            title="Preview/download"
                           >
-                            <Edit3 size={24} />
+                            {f.url.endsWith(".pdf") ? (
+                              <span className="text-2xl">📄</span>
+                            ) : (
+                              <img
+                                src="/static/placeholder.png"
+                                alt={f.original_filename}
+                                className="h-10 w-10 rounded object-cover"
+                              />
+                            )}
                           </button>
                           <button
-                            className="btn-accent flex items-center justify-center w-12 h-12 rounded-lg bg-red-600 hover:bg-red-700 transition hover:scale-110 hover:brightness-125"
-                            onClick={(e) => { e.stopPropagation(); deleteContract(c.id); }}
-                            title="Delete contract"
-                            style={{ minWidth: 48, minHeight: 48 }}
+                            className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
+                            onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
                           >
-                            <Trash2 size={24} />
+                            ×
                           </button>
-                          {c.status === "cancelled" ? (
-                            <button
-                              className="flex items-center justify-center w-12 h-12 rounded-lg bg-emerald-700 hover:bg-emerald-600 transition hover:scale-110 hover:brightness-125"
-                              onClick={(e) => { e.stopPropagation(); reactivateContract(c.id); }}
-                              title="Re-activate contract"
-                              style={{ minWidth: 48, minHeight: 48 }}
-                            >
-                              <Undo2 size={24} />
-                            </button>
-                          ) : (
-                            <button
-                              className="flex items-center justify-center w-12 h-12 rounded-lg bg-purple-700 hover:bg-gray-700 transition hover:scale-110 hover:brightness-125"
-                              onClick={(e) => { e.stopPropagation(); cancelContract(c.id); }}
-                              title="Cancel contract"
-                              style={{ minWidth: 48, minHeight: 48 }}
-                              disabled={c.status === "expired"}
-                            >
-                              <XCircle size={24} />
-                            </button>
-                          )}
                         </div>
-                      </td>
-                    </tr>
-
-                    {/* expandable notes row */}
-                    <tr>
-                      <td colSpan="9" style={{ padding: 0, border: 0 }}>
-                        <div
-                          className={`transition-[max-height,opacity] duration-300 ${expanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"} overflow-hidden`}
+                      ))}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button className="btn-primary flex-1 py-2 text-sm" onClick={() => navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })}>Edit</button>
+                      <button className="btn-accent flex-1 py-2 text-sm bg-red-600 hover:bg-red-700" onClick={() => deleteContract(c.id)}>Delete</button>
+                      {cancelled ? (
+                        <button
+                          className="btn-accent flex-1 py-2 text-sm bg-emerald-700 hover:bg-emerald-800"
+                          onClick={() => reactivateContract(c.id)}
                         >
-                          {expanded && (
-                            <div className="p-6 bg-white/5 border-t border-white/10 animate-pop text-white/90">
-                              <div className="font-semibold mb-1">Notes</div>
-                              <div className="whitespace-pre-line text-white/80 min-h-[1.5em]">
-                                {c.notes ? c.notes : <span className="italic text-white/40">No notes entered.</span>}
-                              </div>
-                              <div className="font-semibold mt-4 mb-2">Attachments:</div>
-                              {filesCache[c.id] === undefined ? (
-                                <span className="text-white/60 text-sm">Loading files…</span>
-                              ) : filesCache[c.id].length === 0 ? (
-                                <span className="text-white/40 text-sm italic">No attachments.</span>
-                              ) : (
-                                <div className="flex flex-wrap gap-2">
-                                  {filesCache[c.id].map((f) => (
-                                    <div key={f.id} className="relative inline-block">
-                                      <button
-                                        onClick={async (e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          const token = localStorage.getItem("token");
-                                          const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
-                                          const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-                                          if (!res.ok) {
-                                            alert("Fehler beim Laden der Datei: " + (await res.text()));
-                                            return;
-                                          }
-                                          const blob = await res.blob();
-                                          const fileUrl = window.URL.createObjectURL(blob);
-                                          if (f.url.endsWith(".pdf")) {
-                                            window.open(fileUrl, "_blank");
-                                          } else {
-                                            const img = new window.Image();
-                                            img.src = fileUrl;
-                                            const w = window.open();
-                                            w.document.write(img.outerHTML);
-                                          }
-                                        }}
-                                        style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                                        title="Preview/download"
-                                      >
-                                        {f.url.endsWith(".pdf") ? (
-                                          <span className="text-2xl">📄</span>
-                                        ) : (
-                                          <img
-                                            src="/static/placeholder.png"
-                                            alt={f.original_filename}
-                                            className="h-10 w-10 rounded object-cover"
-                                          />
-                                        )}
-                                      </button>
-                                      <button
-                                        className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
-                                        onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {idx < contracts.length - 1 && (
-                      <tr><td colSpan="9"><div className="border-b border-white/10" /></td></tr>
+                          Reactivate
+                        </button>
+                      ) : (
+                        <button
+                          className="btn-accent flex-1 py-2 text-sm bg-purple-600 hover:bg-purple-700"
+                          onClick={() => cancelContract(c.id)}
+                          disabled={expired}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                    {c.notes && (
+                      <div className="mt-2 text-white/80 text-sm bg-white/5 rounded p-2">
+                        <span className="font-semibold">Notes:</span> {c.notes}
+                      </div>
                     )}
-                  </React.Fragment>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
-      )}
 
-      {/* Pagination für Desktop bleibt wie gehabt */}
-      {totalPages > 1 && (
-        <div className="hidden sm:flex items-center justify-center gap-2 mt-6">
-          <button
-            className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
-            onClick={() => setPage(0)}
-            disabled={page === 0}
-            title="Zur ersten Seite"
-          >
-            <ChevronFirst size={20} />
-          </button>
-          <button
-            className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
-            onClick={() => setPage((p) => p - 1)}
-            disabled={page === 0}
-            title="Vorherige Seite"
-          >
-            <ChevronsLeft size={18} />
-          </button>
-          {pageNumbers.map((n) => (
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4 mb-2">
+                  <button
+                    className="p-3 rounded-lg hover:bg-white/10 disabled:opacity-40 transition-colors"
+                    onClick={() => setPage(0)}
+                    disabled={page === 0}
+                    title="First page"
+                  >
+                    <ChevronFirst size={20} />
+                  </button>
+                  <button
+                    className="p-3 rounded-lg hover:bg-white/10 disabled:opacity-40 transition-colors"
+                    onClick={() => setPage((p) => p - 1)}
+                    disabled={page === 0}
+                    title="Previous page"
+                  >
+                    <ChevronsLeft size={18} />
+                  </button>
+                  {pageNumbers.map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setPage(n)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${n === page ? "bg-blue-600 text-white" : "hover:bg-white/10 text-white/80"}`}
+                    >
+                      {n + 1}
+                    </button>
+                  ))}
+                  <button
+                    className="p-3 rounded-lg hover:bg-white/10 disabled:opacity-40 transition-colors"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={page === totalPages - 1}
+                    title="Next page"
+                  >
+                    <ChevronsRight size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <table className="min-w-full text-white/90 hidden lg:table">
+              <thead className="text-white uppercase text-sm bg-white/10">
+                <tr>
+                  <th className="px-6 py-4 text-center font-semibold">Name</th>
+                  <th className="px-6 py-4 text-center font-semibold">Type</th>
+                  <th className="px-6 py-4 text-center font-semibold">Interval</th>
+                  <th className="px-6 py-4 text-center font-semibold">
+                    <button
+                      className="inline-flex items-center gap-2 hover:text-white transition-colors"
+                      onClick={() => setSortDir(sortField === "start_date" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("start_date")}
+                    >
+                      Start Date
+                      {sortField === "start_date" ? (
+                        sortDir === "asc" ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                      ) : (
+                        <ArrowUpDown size={16} className="opacity-50" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-6 py-4 text-center font-semibold">
+                    <button
+                      className="inline-flex items-center gap-2 hover:text-white transition-colors"
+                      onClick={() => setSortDir(sortField === "end_date" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("end_date")}
+                    >
+                      End Date
+                      {sortField === "end_date" ? (
+                        sortDir === "asc" ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                      ) : (
+                        <ArrowUpDown size={16} className="opacity-50" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-6 py-4 text-center font-semibold">
+                    <button
+                      className="inline-flex items-center gap-2 hover:text-white transition-colors"
+                      onClick={() => setSortDir(sortField === "amount" ? (sortDir === "asc" ? "desc" : "asc") : "asc") || setSortField("amount")}
+                    >
+                      Amount
+                      {sortField === "amount" ? (
+                        sortDir === "asc" ? <ArrowUp size={16} /> : <ArrowDown size={16} />
+                      ) : (
+                        <ArrowUpDown size={16} className="opacity-50" />
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-6 py-4 text-center font-semibold">Status</th>
+                  <th className="px-6 py-4 text-center font-semibold">Files</th>
+                  <th className="px-6 py-4 text-center font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contracts.map((c, idx) => {
+                  const end = new Date(c.end_date || "");
+                  const expired = c.end_date && end < today;
+                  const cancelled = c.status === "cancelled";
+                  const expanded = expandedId === c.id;
+                  let intervalLabel = "-";
+                  if (c.payment_interval === "yearly") intervalLabel = "Yearly";
+                  else if (c.payment_interval === "monthly") intervalLabel = "Monthly";
+                  else if (c.payment_interval === "one-time") intervalLabel = "One-time";
+
+                  return (
+                    <React.Fragment key={c.id}>
+                      <tr
+                        className={`${(expired || cancelled) ? "opacity-60" : ""} hover:bg-white/5 transition-all cursor-pointer border-b border-white/10`}
+                        onClick={async () => {
+                          if (expandedId !== c.id) {
+                            setExpandedId(c.id);
+                            if (!filesCache[c.id]) await loadFilesForContract(c.id);
+                          } else {
+                            setExpandedId(null);
+                          }
+                        }}
+                      >
+                        <td className="px-6 py-4 text-center font-medium">{c.name}</td>
+                        <td className="px-6 py-4 text-center">{TYPE_OPTIONS.find(t => t.value === c.contract_type)?.label || c.contract_type}</td>
+                        <td className="px-6 py-4 text-center">{intervalLabel}</td>
+                        <td className="px-6 py-4 text-center">{new Date(c.start_date).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-center">{c.end_date ? end.toLocaleDateString() : "-"}</td>
+                        <td className="px-6 py-4 text-center font-semibold">{c.amount} {currency}</td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${cancelled ? "bg-gray-600/30 text-gray-300" : expired ? "bg-red-600/30 text-red-300" : "bg-emerald-600/30 text-emerald-300"}`}>
+                            {cancelled ? "Cancelled" : expired ? "Expired" : (STATUS_OPTIONS.find(s => s.value === c.status)?.label || c.status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {filesCache[c.id]?.map((f) => (
+                              <div key={f.id} className="relative inline-block">
+                                <button
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // Authentifizierte Vorschau/Download per fetch
+                                    const token = localStorage.getItem("token");
+                                    const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
+                                    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+                                    if (!res.ok) {
+                                      alert("Fehler beim Laden der Datei: " + (await res.text()));
+                                      return;
+                                    }
+                                    const blob = await res.blob();
+                                    const fileUrl = window.URL.createObjectURL(blob);
+                                    if (f.url.endsWith(".pdf")) {
+                                      window.open(fileUrl, "_blank");
+                                    } else {
+                                      const img = new window.Image();
+                                      img.src = fileUrl;
+                                      const w = window.open();
+                                      w.document.write(img.outerHTML);
+                                    }
+                                  }}
+                                  style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                                  title="Preview/download"
+                                >
+                                  {f.url.endsWith(".pdf") ? (
+                                    <span className="text-2xl">📄</span>
+                                  ) : (
+                                    <img
+                                      src="/static/placeholder.png"
+                                      alt={f.original_filename}
+                                      className="h-10 w-10 rounded object-cover"
+                                    />
+                                  )}
+                                </button>
+                                <button
+                                  className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
+                                  onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex justify-center gap-4">
+                            <button
+                              className="btn-primary flex items-center justify-center w-12 h-12 rounded-lg transition hover:scale-110 hover:brightness-125"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/contracts/${c.id}/edit`, { state: { contract: c } });
+                              }}
+                              title="Edit contract"
+                              style={{ minWidth: 48, minHeight: 48 }}
+                            >
+                              <Edit3 size={24} />
+                            </button>
+                            <button
+                              className="btn-accent flex items-center justify-center w-12 h-12 rounded-lg bg-red-600 hover:bg-red-700 transition hover:scale-110 hover:brightness-125"
+                              onClick={(e) => { e.stopPropagation(); deleteContract(c.id); }}
+                              title="Delete contract"
+                              style={{ minWidth: 48, minHeight: 48 }}
+                            >
+                              <Trash2 size={24} />
+                            </button>
+                            {c.status === "cancelled" ? (
+                              <button
+                                className="flex items-center justify-center w-12 h-12 rounded-lg bg-emerald-700 hover:bg-emerald-600 transition hover:scale-110 hover:brightness-125"
+                                onClick={(e) => { e.stopPropagation(); reactivateContract(c.id); }}
+                                title="Re-activate contract"
+                                style={{ minWidth: 48, minHeight: 48 }}
+                              >
+                                <Undo2 size={24} />
+                              </button>
+                            ) : (
+                              <button
+                                className="flex items-center justify-center w-12 h-12 rounded-lg bg-purple-700 hover:bg-gray-700 transition hover:scale-110 hover:brightness-125"
+                                onClick={(e) => { e.stopPropagation(); cancelContract(c.id); }}
+                                title="Cancel contract"
+                                style={{ minWidth: 48, minHeight: 48 }}
+                                disabled={c.status === "expired"}
+                              >
+                                <XCircle size={24} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* expandable notes row */}
+                      <tr>
+                        <td colSpan="9" style={{ padding: 0, border: 0 }}>
+                          <div
+                            className={`transition-[max-height,opacity] duration-300 ${expanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"} overflow-hidden`}
+                          >
+                            {expanded && (
+                              <div className="p-6 bg-white/5 border-t border-white/10 animate-pop text-white/90">
+                                <div className="font-semibold mb-1">Notes</div>
+                                <div className="whitespace-pre-line text-white/80 min-h-[1.5em]">
+                                  {c.notes ? c.notes : <span className="italic text-white/40">No notes entered.</span>}
+                                </div>
+                                <div className="font-semibold mt-4 mb-2">Attachments:</div>
+                                {filesCache[c.id] === undefined ? (
+                                  <span className="text-white/60 text-sm">Loading files…</span>
+                                ) : filesCache[c.id].length === 0 ? (
+                                  <span className="text-white/40 text-sm italic">No attachments.</span>
+                                ) : (
+                                  <div className="flex flex-wrap gap-2">
+                                    {filesCache[c.id].map((f) => (
+                                      <div key={f.id} className="relative inline-block">
+                                        <button
+                                          onClick={async (e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            const token = localStorage.getItem("token");
+                                            const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
+                                            const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+                                            if (!res.ok) {
+                                              alert("Fehler beim Laden der Datei: " + (await res.text()));
+                                              return;
+                                            }
+                                            const blob = await res.blob();
+                                            const fileUrl = window.URL.createObjectURL(blob);
+                                            if (f.url.endsWith(".pdf")) {
+                                              window.open(fileUrl, "_blank");
+                                            } else {
+                                              const img = new window.Image();
+                                              img.src = fileUrl;
+                                              const w = window.open();
+                                              w.document.write(img.outerHTML);
+                                            }
+                                          }}
+                                          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                                          title="Preview/download"
+                                        >
+                                          {f.url.endsWith(".pdf") ? (
+                                            <span className="text-2xl">📄</span>
+                                          ) : (
+                                            <img
+                                              src="/static/placeholder.png"
+                                              alt={f.original_filename}
+                                              className="h-10 w-10 rounded object-cover"
+                                            />
+                                          )}
+                                        </button>
+                                        <button
+                                          className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
+                                          onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {idx < contracts.length - 1 && (
+                        <tr><td colSpan="9"><div className="border-b border-white/10" /></td></tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination - Modern floating circles */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-8 mb-8 animate-pop">
             <button
-              key={n}
-              onClick={() => setPage(n)}
-              className={`px-3 py-1 rounded-lg ${n === page ? "bg-[var(--secondary)]" : "hover:bg-white/10"}`}
+              className="w-12 h-12 rounded-full backdrop-blur-md bg-white/10 border border-white/20 hover:bg-white/20 disabled:opacity-40 transition-all duration-300 flex items-center justify-center text-white shadow-lg hover:shadow-xl hover:scale-110"
+              onClick={() => setPage(0)}
+              disabled={page === 0}
+              title="First page"
             >
-              {n + 1}
+              <ChevronFirst size={20} />
             </button>
-          ))}
-          <button
-            className="p-2 rounded hover:bg-white/10 disabled:opacity-40"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page === totalPages - 1}
-            title="Nächste Seite"
-          >
-            <ChevronsRight size={18} />
-          </button>
-        </div>
-      )}
+            <button
+              className="w-12 h-12 rounded-full backdrop-blur-md bg-white/10 border border-white/20 hover:bg-white/20 disabled:opacity-40 transition-all duration-300 flex items-center justify-center text-white shadow-lg hover:shadow-xl hover:scale-110"
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page === 0}
+              title="Previous page"
+            >
+              <ChevronsLeft size={18} />
+            </button>
 
-      {/* Confirm dialog */}
-      <ConfirmModal
-        open={dialog.open}
-        title={dialog.title}
-        message={dialog.message}
-        onConfirm={dialog.onConfirm}
-        onClose={() => setDialog({ open: false })}
-      />
+            {pageNumbers.map((n) => (
+              <button
+                key={n}
+                onClick={() => setPage(n)}
+                className={`w-12 h-12 rounded-full backdrop-blur-md border transition-all duration-300 flex items-center justify-center font-medium shadow-lg hover:shadow-xl hover:scale-110 ${n === page
+                  ? "bg-gradient-to-r from-blue-500 to-purple-600 border-blue-400 text-white"
+                  : "bg-white/10 border-white/20 text-white/80 hover:bg-white/20 hover:text-white"
+                  }`}
+              >
+                {n + 1}
+              </button>
+            ))}
 
-      {/* Search modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="glass-card p-6 w-80 animate-pop">
-            <h3 className="text-lg font-semibold mb-4 text-white flex items-center gap-2">
-              <Search size={18} /> Search by name
-            </h3>
-            <input
-              className="frosted-input mb-4"
-              autoFocus
-              placeholder="Type a name…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                className="btn-accent"
-                onClick={() => {
-                  setQuery("");
-                  setPage(0);
-                  loadPage();
-                  setModalOpen(false);
+            <button
+              className="w-12 h-12 rounded-full backdrop-blur-md bg-white/10 border border-white/20 hover:bg-white/20 disabled:opacity-40 transition-all duration-300 flex items-center justify-center text-white shadow-lg hover:shadow-xl hover:scale-110"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page === totalPages - 1}
+              title="Next page"
+            >
+              <ChevronsRight size={18} />
+            </button>
+          </div>
+        )}
+
+        {/* Confirm dialog */}
+        <ConfirmModal
+          open={dialog.open}
+          title={dialog.title}
+          message={dialog.message}
+          onConfirm={dialog.onConfirm}
+          onClose={() => setDialog({ open: false })}
+        />
+
+        {/* Search modal */}
+        {modalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="glass-card p-8 w-full max-w-md mx-4 animate-pop">
+              <h3 className="text-xl font-semibold mb-6 text-white flex items-center gap-3">
+                <Search size={20} />
+                Search Contracts
+              </h3>
+              <input
+                className="frosted-input mb-6"
+                autoFocus
+                placeholder="Enter contract name..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setPage(0);
+                    setModalOpen(false);
+                  }
                 }}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn-primary"
-                onClick={() => {
-                  setPage(0);
-                  loadPage();
-                  setModalOpen(false);
-                }}
-              >
-                Search
-              </button>
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  className="btn-accent px-6 py-2"
+                  onClick={() => {
+                    setModalOpen(false);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-primary px-6 py-2"
+                  onClick={() => {
+                    setPage(0);
+                    setModalOpen(false);
+                  }}
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-white/10 py-8">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <img src="/PlanPago-trans.png" alt="PlanPago" className="h-6 w-6" />
+              <span className="text-lg font-semibold">PlanPago</span>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm text-white/70">
+              <span>&copy; {new Date().getFullYear()} PlanPago</span>
+              <a href="/impressum" className="hover:text-white transition-colors">
+                Imprint & Contact
+              </a>
+              <a href="/privacypolicy" className="hover:text-white transition-colors">
+                Privacy Policy
+              </a>
+              <a href="/terms" className="hover:text-white transition-colors">
+                Terms & Conditions
+              </a>
             </div>
           </div>
         </div>
-      )}
-
-      {/* Footer: Imprint & Privacy Policy */}
-      <footer
-        style={{
-          width: "100%",
-          textAlign: "center",
-          marginTop: 40,
-          marginBottom: 12,
-          color: "#e1e6f9",
-          fontSize: 15,
-          letterSpacing: 0.1,
-          opacity: 0.85,
-          zIndex: 2,
-          position: "relative",
-        }}
-      >
-        <span style={{ verticalAlign: "middle", marginRight: 6, fontSize: 17 }}>&copy;</span>
-        {new Date().getFullYear()} PlanPago &ndash;{' '}
-        <a href="/impressum" className="underline hover:text-white" style={{ color: "#e1e6f9" }}>Imprint & Contact</a>
-        {' '}|{' '}
-        <a href="/privacypolicy" className="underline hover:text-white" style={{ color: "#e1e6f9" }}>Privacy Policy</a>
       </footer>
-    </main>
+    </div>
   );
 }
