@@ -6,7 +6,8 @@ import {
   CheckCircle, XCircle, Loader2, Users, Server, Send, HeartPulse
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
-import Notification from "../components/Notification"; // Import Notification
+import Notification from "../components/Notification";
+import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
 
 const API = API_BASE;
 
@@ -258,10 +259,10 @@ export default function AdminPanel() {
   const TabBtn = ({ id, label, onClick }) => (
     <button
       onClick={onClick}
-      className={`px-6 py-2 rounded-t-lg font-medium transition
-        ${tab === id
-          ? "bg-[var(--brand)] text-white"
-          : "bg-white/10 text-white/70 hover:bg-white/20"}`}
+      className={`px-6 py-4 font-medium transition-all border-b-2 ${tab === id
+          ? "border-blue-500 text-white bg-white/10"
+          : "border-transparent text-white/70 hover:text-white hover:bg-white/5"
+        }`}
     >
       {label}
     </button>
@@ -269,13 +270,15 @@ export default function AdminPanel() {
 
   const Status = ({ ok }) =>
     ok ? (
-      <span className="flex items-center gap-1 text-emerald-400">
-        <CheckCircle size={16} /> OK
-      </span>
+      <div className="flex items-center justify-center gap-2 text-emerald-400">
+        <CheckCircle size={20} />
+        <span className="font-semibold">OK</span>
+      </div>
     ) : (
-      <span className="flex items-center gap-1 text-red-400">
-        <XCircle size={16} /> FAIL
-      </span>
+      <div className="flex items-center justify-center gap-2 text-red-400">
+        <XCircle size={20} />
+        <span className="font-semibold">FAIL</span>
+      </div>
     );
 
   /* ─────────────── JSX ───────────────────────────────── */
@@ -283,261 +286,359 @@ export default function AdminPanel() {
   // loadHealth-Funktion handhabt jetzt alles
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] p-0">
-      <div className="w-full max-w-5xl mx-auto rounded-3xl bg-white/10 shadow-2xl border border-white/10 backdrop-blur-2xl px-2 sm:px-6 md:px-8 py-6 md:py-10 relative overflow-hidden animate-pop flex flex-col min-h-[80vh]">
-        {/* Header */}
-        <div className="flex items-center gap-4 sm:gap-6 mb-8 sm:mb-10 border-b border-white/10 pb-4 sm:pb-6 pl-1 sm:pl-2">
-          <div className="bg-[var(--brand)] rounded-full p-3 sm:p-4 shadow-lg flex items-center justify-center">
-            <Users className="text-white" size={32} />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-wide">Admin Panel</h1>
-            <p className="text-white/60 text-base mt-1">Manage users, system health, logs & more</p>
-          </div>
-        </div>
-        {/* Tabs */}
-        <div className="flex border-b border-white/20 mb-6 sm:mb-10 gap-1 sm:gap-2 px-1 sm:px-2 overflow-x-auto">
-          <TabBtn id="users" label={<><Users size={20} className="inline mr-2" />Users</>} onClick={() => setTab("users")} />
-          <TabBtn id="email" label={<><Mail size={20} className="inline mr-2" />E-mail logs</>} onClick={loadMailLogs} />
-          <TabBtn id="broadcast" label={<><Send size={20} className="inline mr-2" />Broadcast</>} onClick={() => setTab("broadcast")} />
-          <TabBtn id="health" label={<><HeartPulse size={20} className="inline mr-2" />Health</>} onClick={loadHealth} />
-        </div>
-        {/* flash msgs */}
+    <div className="min-h-screen" style={{
+      position: "relative",
+      overflow: "hidden",
+      background: "linear-gradient(135deg, #0f1419 0%, #1a1f2e 25%, #2d3748 50%, #1a202c 75%, #0f1419 100%)"
+    }}>
+      <AnimatedParticlesParallax />
+
+      {/* Flash messages - positioned above everything */}
+      <div className="fixed top-4 right-4 z-[9999]">
         <Notification message={notification.message} type={notification.type} onDone={() => setNotification({ message: "", type: "" })} />
-        {/* main area */}
-        <div className="flex-1 flex flex-col overflow-hidden min-h-[400px]">
-          {busy ? (
-            <p className="flex items-center justify-center py-32 text-white/60 gap-3 text-xl">
-              <Loader2 className="animate-spin" size={28} /> Please wait…
-            </p>
-          ) : (
-            <>
-              {/* USERS --------------------------------------------------- */}
-              {tab === "users" && (
-                <div className="flex-1 flex flex-col overflow-hidden">
-                  <div className="overflow-auto rounded-2xl ring-1 ring-white/10 bg-gradient-to-br from-black/40 to-white/5 p-0 mt-2 h-full flex-1">
-                    <table className="min-w-full text-left h-full">
-                      <thead className="bg-white/10 text-white/80 sticky top-0 z-10">
-                        <tr>
-                          <th className="px-8 py-4 rounded-tl-2xl text-lg font-semibold">ID</th>
-                          <th className="px-8 py-4 text-lg font-semibold">E-mail</th>
-                          <th className="px-8 py-4 text-center rounded-tr-2xl text-lg font-semibold">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="align-top">
-                        {users.length === 0 ? (
-                          <tr>
-                            <td colSpan="3" className="px-8 py-6 text-center text-white/60 bg-black/20 rounded-b-2xl text-lg">
-                              No users.
-                            </td>
-                          </tr>
-                        ) : (
-                          users.map((u, i) => {
-                            const isLast = i === users.length - 1;
-                            return (
-                              <tr
-                                key={u.id}
-                                className={`transition hover:bg-[var(--brand)]/10 ${i % 2 ? "bg-white/5" : ""} ${isLast ? "rounded-b-2xl" : ""}`}
-                              >
-                                <td className={`px-8 py-4 font-mono text-base text-white/80 flex items-center gap-4 ${i === 0 ? "pt-6" : ""} ${isLast ? "pb-6" : ""}`}>
-                                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--brand)]/80 text-white font-bold text-lg shadow">
-                                    {u.email?.[0]?.toUpperCase() || "U"}
-                                  </span>
-                                  {u.id}
-                                </td>
-                                <td className="px-8 py-4 text-white/90 text-base align-middle">{u.email}</td>
-                                <td className="px-8 py-4 text-center flex gap-4 justify-center align-middle">
-                                  <button
-                                    onClick={() => deleteUser(u.id)}
-                                    title="Delete user"
-                                    className="p-3 bg-red-600 rounded-xl hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 transition-shadow shadow text-white flex items-center justify-center"
-                                  >
-                                    <Trash2 size={20} />
-                                  </button>
-                                  <button
-                                    onClick={async () => {
-                                      setBusy(true);
-                                      // Show waiting modal immediately
-                                      setImpersonateWait({ open: true, user: u, requestId: null });
-                                      try {
-                                        // Step 1: Create impersonation request (triggers email)
-                                        const r = await fetch(`${API}/users/admin/impersonate-request/${u.id}`, {
-                                          method: "POST",
-                                          headers: authHeader,
-                                        });
-                                        if (!r.ok) throw new Error(await r.text());
-                                        const data = await r.json();
-                                        setImpersonateWait({ open: true, user: u, requestId: data.request_id });
-                                        // Step 2: Poll for confirmation
-                                        let confirmed = false;
-                                        for (let i = 0; i < 60; ++i) { // up to 60s
-                                          await new Promise(res => setTimeout(res, 2000));
-                                          const poll = await fetch(`${API}/users/admin/impersonate-status/${data.request_id}`, { headers: authHeader });
-                                          if (!poll.ok) throw new Error(await poll.text());
-                                          const pollData = await poll.json();
-                                          if (pollData.confirmed) { confirmed = true; break; }
-                                        }
-                                        if (!confirmed) throw new Error("User did not confirm in time.");
-                                        // Step 3: Do the actual impersonation
-                                        const r2 = await fetch(`${API}/users/admin/impersonate/${u.id}`, {
-                                          method: "POST",
-                                          headers: authHeader,
-                                        });
-                                        if (!r2.ok) throw new Error(await r2.text());
-                                        const data2 = await r2.json();
-                                        localStorage.setItem("token", data2.access_token);
-                                        localStorage.setItem("currentEmail", u.email);
-                                        setImpersonateWait({ open: false, user: null, requestId: null });
-                                        navigate("/dashboard", { replace: true });
-                                      } catch (e) {
-                                        setNotification({ message: e.message, type: "error" });
-                                        setImpersonateWait({ open: false, user: null, requestId: null });
-                                      } finally {
-                                        setBusy(false);
-                                      }
-                                    }}
-                                    title="Login as user"
-                                    className="p-3 bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-shadow text-white shadow flex items-center justify-center"
-                                  >
-                                    <span className="sr-only">Login as user</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="inline w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H3m0 0l4-4m-4 4l4 4m13-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                  </button>
+      </div>
+
+      <main className="container mx-auto pt-24 p-6 animate-fadeIn" style={{ position: "relative", zIndex: 10 }}>
+        {/* Header */}
+        <div className="mb-8 animate-pop">
+          <div className="flex items-center gap-6 mb-6">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <Users className="text-white" size={32} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-semibold text-white mb-2 tracking-wide">Admin Panel</h1>
+              <p className="text-white/70 text-lg">Manage users, system health, logs & more</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="glass-card mb-8 animate-pop">
+          <div className="flex border-b border-white/20 overflow-x-auto">
+            <TabBtn id="users" label={<><Users size={20} className="inline mr-2" />Users</>} onClick={() => setTab("users")} />
+            <TabBtn id="email" label={<><Mail size={20} className="inline mr-2" />E-mail logs</>} onClick={loadMailLogs} />
+            <TabBtn id="broadcast" label={<><Send size={20} className="inline mr-2" />Broadcast</>} onClick={() => setTab("broadcast")} />
+            <TabBtn id="health" label={<><HeartPulse size={20} className="inline mr-2" />Health</>} onClick={loadHealth} />
+          </div>
+
+          {/* Main content area */}
+          <div className="p-6">
+            {busy ? (
+              <div className="flex items-center justify-center py-32">
+                <div className="text-center">
+                  <Loader2 className="animate-spin mx-auto mb-4 text-white/70" size={32} />
+                  <p className="text-white/60 text-lg">Please wait…</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* USERS */}
+                {tab === "users" && (
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">User Management</h2>
+                    <div className="glass-card overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-white/90">
+                          <thead className="bg-white/10 text-white/80">
+                            <tr>
+                              <th className="px-6 py-4 text-left font-semibold">User</th>
+                              <th className="px-6 py-4 text-left font-semibold">Email</th>
+                              <th className="px-6 py-4 text-center font-semibold">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {users.length === 0 ? (
+                              <tr>
+                                <td colSpan="3" className="px-6 py-12 text-center text-white/60">
+                                  <div className="text-4xl mb-4 opacity-50">👥</div>
+                                  <p>No users found</p>
                                 </td>
                               </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
+                            ) : (
+                              users.map((u, i) => (
+                                <tr key={u.id} className={`border-b border-white/10 hover:bg-white/5 transition-colors ${i % 2 ? "bg-white/5" : ""}`}>
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow">
+                                        {u.email?.[0]?.toUpperCase() || "U"}
+                                      </div>
+                                      <span className="font-mono text-sm text-white/70">#{u.id}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 text-white/90">{u.email}</td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex gap-2 justify-center">
+                                      <button
+                                        onClick={() => deleteUser(u.id)}
+                                        title="Delete user"
+                                        className="btn-accent bg-red-600 hover:bg-red-700 p-3 rounded-lg transition-all hover:scale-105"
+                                      >
+                                        <Trash2 size={18} />
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          setBusy(true);
+                                          setImpersonateWait({ open: true, user: u, requestId: null });
+                                          try {
+                                            // Step 1: Create impersonation request (triggers email)
+                                            const r = await fetch(`${API}/users/admin/impersonate-request/${u.id}`, {
+                                              method: "POST",
+                                              headers: authHeader,
+                                            });
+                                            if (!r.ok) throw new Error(await r.text());
+                                            const data = await r.json();
+                                            setImpersonateWait({ open: true, user: u, requestId: data.request_id });
+                                            // Step 2: Poll for confirmation
+                                            let confirmed = false;
+                                            for (let i = 0; i < 60; ++i) { // up to 60s
+                                              await new Promise(res => setTimeout(res, 2000));
+                                              const poll = await fetch(`${API}/users/admin/impersonate-status/${data.request_id}`, { headers: authHeader });
+                                              if (!poll.ok) throw new Error(await poll.text());
+                                              const pollData = await poll.json();
+                                              if (pollData.confirmed) { confirmed = true; break; }
+                                            }
+                                            if (!confirmed) throw new Error("User did not confirm in time.");
+                                            // Step 3: Do the actual impersonation
+                                            const r2 = await fetch(`${API}/users/admin/impersonate/${u.id}`, {
+                                              method: "POST",
+                                              headers: authHeader,
+                                            });
+                                            if (!r2.ok) throw new Error(await r2.text());
+                                            const data2 = await r2.json();
+                                            localStorage.setItem("token", data2.access_token);
+                                            localStorage.setItem("currentEmail", u.email);
+                                            setImpersonateWait({ open: false, user: null, requestId: null });
+                                            navigate("/dashboard", { replace: true });
+                                          } catch (e) {
+                                            setNotification({ message: e.message, type: "error" });
+                                            setImpersonateWait({ open: false, user: null, requestId: null });
+                                          } finally {
+                                            setBusy(false);
+                                          }
+                                        }}
+                                        title="Login as user"
+                                        className="btn-primary p-3 rounded-lg transition-all hover:scale-105"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H3m0 0l4-4m-4 4l4 4m13-4a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-              {/* MAIL LOGS --------------------------------------------- */}
-              {tab === "email" && (
-                <div className="flex-1 flex flex-col w-full max-w-3xl mx-auto bg-black/60 rounded-2xl shadow-xl border border-white/10 mt-2 p-4 overflow-auto custom-scrollbar max-h-[500px]">
-                  {groupedMails.length === 0 ? (
-                    <p className="p-2 text-amber-200 text-xs">No e-mail logs.</p>
-                  ) : (
-                    groupedMails.map((m, i) => <MailRow key={i} mail={m} idx={i} />)
-                  )}
-                </div>
-              )}
-              {/* BROADCAST --------------------------------------------- */}
-              {tab === "broadcast" && (
-                <div className="flex-1 flex flex-col justify-center items-center">
-                  <form onSubmit={sendBroadcast} className="space-y-6 w-full max-w-lg bg-white/10 p-10 rounded-2xl shadow-xl border border-white/10 mt-2 flex flex-col justify-center">
-                    <h2 className="text-white text-2xl font-bold flex items-center gap-3 mb-4">
-                      <Mail size={24} /> Broadcast to all users
-                    </h2>
-                    <input
-                      className="frosted-input w-full px-5 py-3 rounded-lg text-base bg-white/20 border border-white/20 focus:ring-2 focus:ring-[var(--brand)] focus:outline-none text-white placeholder-white/60"
-                      placeholder="Subject"
-                      value={subj}
-                      onChange={(e) => setSubj(e.target.value)}
-                      required
-                    />
-                    <textarea
-                      className="frosted-input w-full px-5 py-3 rounded-lg text-base bg-white/20 border border-white/20 focus:ring-2 focus:ring-[var(--brand)] focus:outline-none text-white placeholder-white/60"
-                      rows={6}
-                      placeholder="Message body"
-                      value={body}
-                      onChange={(e) => setBody(e.target.value)}
-                      required
-                    />
-                    {/* Datei-Upload */}
-                    <div className="flex flex-col gap-2">
-                      <label className="text-white/80 font-medium">Dateien anhängen</label>
-                      <input
-                        type="file"
-                        multiple
-                        className="block w-full text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[var(--brand)]/80 file:text-white hover:file:bg-[var(--brand)]/100 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-2 focus:ring-[var(--brand)]"
-                        onChange={e => setBroadcastFiles(Array.from(e.target.files))}
-                      />
-                      {broadcastFiles.length > 0 && (
-                        <ul className="mt-2 space-y-1 bg-black/20 rounded-lg p-3 text-white/80 text-sm">
-                          {broadcastFiles.map((file, idx) => (
-                            <li key={idx} className="flex items-center gap-2">
-                              <span className="inline-block w-4 h-4 bg-[var(--brand)]/80 rounded-full mr-2"></span>
-                              {file.name}
-                              <button
-                                type="button"
-                                className="ml-auto text-red-400 hover:text-red-600 text-xs font-bold px-2"
-                                onClick={() => setBroadcastFiles(files => files.filter((_, i) => i !== idx))}
-                                title="Entfernen"
-                              >✕</button>
-                            </li>
-                          ))}
-                        </ul>
+                )}
+
+                {/* EMAIL LOGS */}
+                {tab === "email" && (
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">Email Logs</h2>
+                    <div className="glass-card max-h-96 overflow-y-auto">
+                      {groupedMails.length === 0 ? (
+                        <div className="p-12 text-center">
+                          <div className="text-4xl mb-4 opacity-50">📧</div>
+                          <p className="text-white/60">No email logs found</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-white/10">
+                          {groupedMails.map((m, i) => <MailRow key={i} mail={m} idx={i} />)}
+                        </div>
                       )}
                     </div>
-                    <button className="btn-accent w-full py-3 text-lg font-bold rounded-lg shadow-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-pink-500 hover:to-purple-500 transition-all duration-200 text-white" disabled={busy}>
-                      {busy ? "Sending…" : "Send broadcast"}
-                    </button>
-                  </form>
-                </div>
-              )}
-              {/* HEALTH CHECK ------------------------------------------ */}
-              {tab === "health" && (health ? (
-                <div className="flex-1 flex flex-col justify-center items-center">
-                  <div className="space-y-6 text-white mt-2 w-full max-w-2xl">
-                    <h2 className="text-2xl font-bold flex items-center gap-3 mb-4"><HeartPulse size={24} /> System health</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                      <div className="p-8 bg-white/10 rounded-2xl flex flex-col items-start justify-between shadow-lg border border-white/10">
-                        <span className="text-lg mb-2">Database</span> <Status ok={health.db} />
-                        <span className="text-xs mt-2 text-white/60">Checks DB connection with a test query.</span>
-                      </div>
-                      <div className="p-8 bg-white/10 rounded-2xl flex flex-col items-start justify-between shadow-lg border border-white/10">
-                        <span className="text-lg mb-2">SMTP login</span> <Status ok={health.smtp} />
-                        <span className="text-xs mt-2 text-white/60">Verifies mail server connectivity.</span>
-                      </div>
-                      <div className="p-8 bg-white/10 rounded-2xl flex flex-col items-start justify-between shadow-lg border border-white/10">
-                        <span className="text-lg mb-2">Scheduled jobs</span>
-                        <span className="flex items-center gap-1 text-emerald-300 text-lg font-semibold">{health.scheduler_jobs}</span>
-                        <span className="text-xs mt-2 text-white/60">Active background jobs (reminders, etc).</span>
-                      </div>
-                    </div>
+                  </div>
+                )}
 
-                    {/* Erweiterte Health-Infos */}
-                    <div className="mt-10 bg-black/30 rounded-2xl p-6 border border-white/10 shadow-xl">
-                      <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Server size={20} /> Backend Diagnostics</h3>
-                      <ul className="space-y-2 text-white/90 text-sm">
-                        <li><b>Uptime:</b> <span>{uptime || "-"}</span></li>
-                        <li><b>Server time:</b> {new Date().toLocaleString()}</li>
-                        <li><b>Frontend build:</b> <span>{buildInfo || "-"}</span></li>
-                        <li><b>Browser:</b> {navigator.userAgent}</li>
-                        <li><b>Platform:</b> {navigator.platform}</li>
-                        <li><b>Language:</b> {navigator.language}</li>
-                        <li><b>Screen:</b> {window.screen.width}x{window.screen.height} px</li>
-                        <li><b>Timezone:</b> {Intl.DateTimeFormat().resolvedOptions().timeZone}</li>
-                        <li><b>API base:</b> {API}</li>
-                      </ul>
-                      <div className="mt-4 text-xs text-white/60">
-                        <b>Tip:</b> For more details, check browser console and backend logs.
-                      </div>
-                    </div>
+                {/* BROADCAST */}
+                {tab === "broadcast" && (
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">Broadcast Message</h2>
+                    <div className="max-w-2xl mx-auto">
+                      <form onSubmit={sendBroadcast} className="space-y-6">
+                        <input
+                          className="frosted-input"
+                          placeholder="Subject"
+                          value={subj}
+                          onChange={(e) => setSubj(e.target.value)}
+                          required
+                        />
+                        <textarea
+                          className="frosted-input"
+                          rows={6}
+                          placeholder="Message body"
+                          value={body}
+                          onChange={(e) => setBody(e.target.value)}
+                          required
+                        />
 
-                    {/* Live ping to backend for latency */}
-                    <div className="mt-8 flex flex-col gap-2 text-white/80 text-sm">
-                      <span className="font-bold">Live API latency:</span>
-                      <LatencyCheck api={API} />
+                        {/* File upload */}
+                        <div className="space-y-3">
+                          <label className="block text-white/80 font-medium">Attach Files</label>
+                          <input
+                            type="file"
+                            multiple
+                            className="frosted-file"
+                            onChange={e => setBroadcastFiles(Array.from(e.target.files))}
+                          />
+                          {broadcastFiles.length > 0 && (
+                            <div className="glass-card p-4">
+                              <p className="text-white/70 text-sm mb-3">Selected files:</p>
+                              <div className="space-y-2">
+                                {broadcastFiles.map((file, idx) => (
+                                  <div key={idx} className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                                    <span className="text-white/90 text-sm">{file.name}</span>
+                                    <button
+                                      type="button"
+                                      className="text-red-400 hover:text-red-300 transition-colors"
+                                      onClick={() => setBroadcastFiles(files => files.filter((_, i) => i !== idx))}
+                                    >
+                                      <XCircle size={18} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          className="btn-primary w-full py-4 text-lg font-semibold"
+                          disabled={busy}
+                        >
+                          {busy ? "Sending…" : "Send Broadcast"}
+                        </button>
+                      </form>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <p className="py-10 text-center text-white/60">No data – click the tab again to refresh.</p>
-              ))}
-            </>
-          )}
+                )}
+
+                {/* HEALTH CHECK */}
+                {tab === "health" && (health ? (
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">System Health</h2>
+
+                    {/* Health status cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                      <div className="glass-card p-6 text-center">
+                        <div className="text-lg font-semibold text-white mb-3">Database</div>
+                        <Status ok={health.db} />
+                        <p className="text-white/60 text-sm mt-2">Connection status</p>
+                      </div>
+                      <div className="glass-card p-6 text-center">
+                        <div className="text-lg font-semibold text-white mb-3">SMTP</div>
+                        <Status ok={health.smtp} />
+                        <p className="text-white/60 text-sm mt-2">Mail server</p>
+                      </div>
+                      <div className="glass-card p-6 text-center">
+                        <div className="text-lg font-semibold text-white mb-3">Scheduler</div>
+                        <div className="text-emerald-400 text-xl font-bold">{health.scheduler_jobs}</div>
+                        <p className="text-white/60 text-sm mt-2">Active jobs</p>
+                      </div>
+                    </div>
+
+                    {/* System information */}
+                    <div className="glass-card p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Server size={20} /> System Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-white/70">Uptime:</span>
+                            <span className="text-white">{uptime || "-"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/70">Server time:</span>
+                            <span className="text-white">{new Date().toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/70">Frontend build:</span>
+                            <span className="text-white">{buildInfo || "-"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/70">API base:</span>
+                            <span className="text-white font-mono text-xs">{API}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-white/70">Browser:</span>
+                            <span className="text-white text-xs">{navigator.userAgent.split(' ')[0]}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/70">Platform:</span>
+                            <span className="text-white">{navigator.platform}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/70">Language:</span>
+                            <span className="text-white">{navigator.language}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/70">Timezone:</span>
+                            <span className="text-white">{Intl.DateTimeFormat().resolvedOptions().timeZone}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Live latency check */}
+                      <div className="mt-6 pt-4 border-t border-white/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white/70">API Latency:</span>
+                          <LatencyCheck api={API} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="glass-card p-12 text-center">
+                    <div className="text-4xl mb-4 opacity-50">🔍</div>
+                    <p className="text-white/60">Click the Health tab again to refresh data</p>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
         </div>
-      </div>
-      {/* ───────── Confirm-Dialog ───────── */}
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-[1] border-t border-white/10 py-8">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <img src="/PlanPago-trans.png" alt="PlanPago" className="h-6 w-6" />
+              <span className="text-lg font-semibold">PlanPago</span>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-white/70">
+              <span>&copy; {new Date().getFullYear()} PlanPago</span>
+              <a href="/imprint" className="hover:text-white transition-colors">
+                Imprint & Contact
+              </a>
+              <a href="/privacypolicy" className="hover:text-white transition-colors">
+                Privacy Policy
+              </a>
+              <a href="/terms" className="hover:text-white transition-colors">
+                Terms & Conditions
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Modals */}
       <ConfirmModal
         open={dialog.open}
         title={dialog.title}
         message={dialog.message}
         onConfirm={dialog.onConfirm}
+        onClose={() => setDialog({ open: false })}
       />
-      {/* ───────── Impersonation-Wait Modal ───────── */}
+
       {impersonateWait.open && (
         <ConfirmModal
           open={true}
@@ -546,7 +647,7 @@ export default function AdminPanel() {
           onClose={() => setImpersonateWait({ open: false, user: null, requestId: null })}
         />
       )}
-    </main>
+    </div>
   );
 }
 
