@@ -613,7 +613,7 @@ export default function Profile() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <img src="/PlanPago-trans.png" alt="PlanPago" className="h-6 w-6" />
-              <span className="text-lg font-semibold">PlanPago</span>
+              <span className="text-lg font-semibold text-white">PlanPago</span>
             </div>
 
             <div className="flex items-center gap-6 text-sm text-white/70">

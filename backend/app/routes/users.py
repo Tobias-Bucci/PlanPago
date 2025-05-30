@@ -575,3 +575,49 @@ def confirm_password_reset(
     db.delete(vc)
     db.commit()
     return {"message": "Password has been reset successfully."}
+
+# ───────── Database Reset (Admin Only) ──────────────────────────
+@router.post("/admin/reset-database")
+def admin_reset_database(
+    cur: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ensure_admin(cur)
+    
+    try:
+        # Close current session
+        db.close()
+        
+        # Import necessary modules
+        from ..database import engine, Base
+        from ..config import UPLOAD_DIR
+        import shutil
+        
+        # Drop all tables
+        Base.metadata.drop_all(bind=engine)
+        
+        # Recreate all tables
+        Base.metadata.create_all(bind=engine)
+        
+        # Clear upload directory
+        if UPLOAD_DIR.exists():
+            shutil.rmtree(UPLOAD_DIR)
+            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        
+        # Create new database session and recreate admin user
+        new_db = database.SessionLocal()
+        try:
+            admin_user = models.User(
+                email="admin@admin",
+                hashed_password=_hash("admin"),
+                is_admin=True
+            )
+            new_db.add(admin_user)
+            new_db.commit()
+        finally:
+            new_db.close()
+            
+        return {"message": "Database has been reset successfully. All data has been deleted."}
+        
+    except Exception as e:
+        raise HTTPException(500, f"Database reset failed: {str(e)}")

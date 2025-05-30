@@ -20,6 +20,9 @@ export async function fetchWithAuth(url, options = {}, navigate) {
       if (data?.detail) {
         throw new Error(data.detail);
       }
+      if (data?.message) {
+        throw new Error(data.message);
+      }
     } catch (jsonError) {
       // If JSON parsing fails, try to get text response
       try {

@@ -22,6 +22,10 @@ export default function AdminPanel() {
   /* Dialog state for ConfirmModal */
   const [dialog, setDialog] = useState({ open: false });
 
+  /* Database reset confirmation state */
+  const [dbResetDialog, setDbResetDialog] = useState({ open: false, step: 1 });
+  const [dbResetConfirmText, setDbResetConfirmText] = useState("");
+
   /* Impersonation waiting modal state */
   const [impersonateWait, setImpersonateWait] = useState({ open: false, user: null, requestId: null });
 
@@ -219,6 +223,42 @@ export default function AdminPanel() {
       return a.ts < b.ts ? 1 : -1;
     });
   }, [mailRaw]);
+
+  /* ─────────────── database reset functions ─────────── */
+  const openDatabaseResetDialog = () => {
+    setDbResetDialog({ open: true, step: 1 });
+    setDbResetConfirmText("");
+  };
+
+  const resetDatabase = async () => {
+    setBusy(true);
+    try {
+      const response = await fetch(`${API}/users/admin/reset-database`, {
+        method: "POST",
+        headers: authHeader,
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+      
+      setNotification({ message: "Database has been reset successfully. All data has been deleted.", type: "success" });
+      setDbResetDialog({ open: false, step: 1 });
+      setDbResetConfirmText("");
+      
+      // Clear local storage and redirect to login
+      localStorage.clear();
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 2000);
+      
+    } catch (e) {
+      setNotification({ message: e.message, type: "error" });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const MailRow = ({ mail, idx }) => {
     const [open, setOpen] = useState(false);
@@ -591,6 +631,30 @@ export default function AdminPanel() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Danger Zone - Database Reset */}
+                    <div className="glass-card p-6 border-2 border-red-500/30 bg-red-600/10">
+                      <h3 className="text-lg font-semibold text-red-300 mb-4 flex items-center gap-2">
+                        ⚠️ Danger Zone
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-white font-medium mb-2">Reset Database</h4>
+                          <p className="text-white/70 text-sm mb-4">
+                            This will permanently delete ALL data including users, contracts, and files. 
+                            The database will be recreated with only the admin account. This action cannot be undone.
+                          </p>
+                          <button
+                            onClick={openDatabaseResetDialog}
+                            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                            disabled={busy}
+                          >
+                            <Trash2 size={18} />
+                            Reset Database
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="glass-card p-12 text-center">
@@ -647,6 +711,90 @@ export default function AdminPanel() {
           />
         )
       }
+
+      {/* Database Reset Confirmation Modal */}
+      {dbResetDialog.open && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="glass-card p-8 w-full max-w-md mx-4 animate-pop border-2 border-red-500/50">
+            {dbResetDialog.step === 1 && (
+              <>
+                <h3 className="text-xl font-semibold mb-6 text-red-300 flex items-center gap-3">
+                  ⚠️ Database Reset Warning
+                </h3>
+                <div className="space-y-4 mb-6">
+                  <p className="text-white">
+                    You are about to reset the entire database. This will:
+                  </p>
+                  <ul className="text-white/80 text-sm space-y-2 list-disc list-inside ml-4">
+                    <li>Delete ALL user accounts (except admin)</li>
+                    <li>Delete ALL contracts and data</li>
+                    <li>Delete ALL uploaded files</li>
+                    <li>Reset the database to factory state</li>
+                  </ul>
+                  <div className="bg-red-600/20 border border-red-500/50 rounded-lg p-4 mt-4">
+                    <p className="text-red-300 font-semibold text-center">
+                      THIS ACTION CANNOT BE UNDONE!
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    className="btn-accent px-6 py-2"
+                    onClick={() => setDbResetDialog({ open: false, step: 1 })}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                    onClick={() => setDbResetDialog({ open: true, step: 2 })}
+                  >
+                    I Understand, Continue
+                  </button>
+                </div>
+              </>
+            )}
+
+            {dbResetDialog.step === 2 && (
+              <>
+                <h3 className="text-xl font-semibold mb-6 text-red-300 flex items-center gap-3">
+                  🔐 Final Confirmation
+                </h3>
+                <div className="space-y-4 mb-6">
+                  <p className="text-white">
+                    To confirm the database reset, please type the following text exactly:
+                  </p>
+                  <div className="bg-white/10 rounded-lg p-3 text-center">
+                    <code className="text-red-300 font-mono font-bold">RESET DATABASE NOW</code>
+                  </div>
+                  <input
+                    type="text"
+                    className="frosted-input"
+                    placeholder="Type the confirmation text..."
+                    value={dbResetConfirmText}
+                    onChange={(e) => setDbResetConfirmText(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    className="btn-accent px-6 py-2"
+                    onClick={() => setDbResetDialog({ open: false, step: 1 })}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={resetDatabase}
+                    disabled={dbResetConfirmText !== "RESET DATABASE NOW" || busy}
+                  >
+                    {busy ? "Resetting..." : "Reset Database"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div >
   );
 }
