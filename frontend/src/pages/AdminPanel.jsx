@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import Notification from "../components/Notification";
-import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
 
 const API = API_BASE;
 
@@ -260,8 +259,8 @@ export default function AdminPanel() {
     <button
       onClick={onClick}
       className={`px-6 py-4 font-medium transition-all border-b-2 ${tab === id
-          ? "border-blue-500 text-white bg-white/10"
-          : "border-transparent text-white/70 hover:text-white hover:bg-white/5"
+        ? "border-blue-500 text-white bg-white/10"
+        : "border-transparent text-white/70 hover:text-white hover:bg-white/5"
         }`}
     >
       {label}
@@ -291,7 +290,6 @@ export default function AdminPanel() {
       overflow: "hidden",
       background: "linear-gradient(135deg, #0f1419 0%, #1a1f2e 25%, #2d3748 50%, #1a202c 75%, #0f1419 100%)"
     }}>
-      <AnimatedParticlesParallax />
 
       {/* Flash messages - positioned above everything */}
       <div className="fixed top-4 right-4 z-[9999]">
@@ -639,15 +637,17 @@ export default function AdminPanel() {
         onClose={() => setDialog({ open: false })}
       />
 
-      {impersonateWait.open && (
-        <ConfirmModal
-          open={true}
-          title="Waiting for user confirmation"
-          message={`Waiting for ${impersonateWait.user?.email} to approve admin access.\n\nPlease inform the user that they need to confirm the email. This window will close automatically once the user has confirmed.`}
-          onClose={() => setImpersonateWait({ open: false, user: null, requestId: null })}
-        />
-      )}
-    </div>
+      {
+        impersonateWait.open && (
+          <ConfirmModal
+            open={true}
+            title="Waiting for user confirmation"
+            message={`Waiting for ${impersonateWait.user?.email} to approve admin access.\n\nPlease inform the user that they need to confirm the email. This window will close automatically once the user has confirmed.`}
+            onClose={() => setImpersonateWait({ open: false, user: null, requestId: null })}
+          />
+        )
+      }
+    </div >
   );
 }
 
