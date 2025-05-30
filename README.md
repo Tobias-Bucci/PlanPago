@@ -171,10 +171,10 @@ frontend/
 
 * **Modern Glass-Morphism Design**
 
-  * Consistent visual language across all pages (Dashboard, Forms, Profile)
+  * Consistent visual language across all pages (Dashboard, Forms, Profile, Statistics)
   * Semi-transparent cards with backdrop blur effects
   * Smooth animations and hover transitions
-* **NavBar** with links to Dashboard, New Contract, Profile, and Logout
+* **NavBar** with links to Dashboard, New Contract, Statistics, Profile, and Logout
 * **Dashboard**
 
   * Responsive table/card layout for all screen sizes
@@ -182,6 +182,13 @@ frontend/
   * Bulk export functionality (CSV/PDF)
   * File attachment preview and management
   * Intuitive pagination with visual feedback
+* **Statistics Page**
+
+  * Comprehensive financial overview with KPI cards
+  * Interactive pie charts for expense and income breakdown
+  * Upcoming payments timeline with visual indicators
+  * Responsive design optimized for all devices
+  * Real-time calculation of savings rate and available budget
 * **ContractForm** (Create & Edit)
 
   * Structured multi-section layout with clear visual hierarchy
