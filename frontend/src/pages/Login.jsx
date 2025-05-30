@@ -14,20 +14,20 @@ const cacheProfile = async (token) => {
     if (!res.ok) return;
     const me = await res.json();
     localStorage.setItem("currentEmail", me.email);
-    localStorage.setItem(`country_${me.email}`,  me.country  || "");
+    localStorage.setItem(`country_${me.email}`, me.country || "");
     localStorage.setItem(`currency_${me.email}`, me.currency || "EUR");
-  } catch {/* silent */}
+  } catch {/* silent */ }
 };
 
 export default function Login() {
   /* ── state ──────────────────────────────────────────────── */
-  const [step, setStep]       = useState(1);
-  const [email, setEmail]     = useState("");
-  const [password, setPwd]    = useState("");
-  const [tempToken, setTemp]  = useState("");
-  const [code, setCode]       = useState("");
-  const [error, setError]     = useState("");
-  const [loading, setLoad]    = useState(false);
+  const [step, setStep] = useState(1);
+  const [email, setEmail] = useState("");
+  const [password, setPwd] = useState("");
+  const [tempToken, setTemp] = useState("");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoad] = useState(false);
 
   const [resetEmail, setResetEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
@@ -41,8 +41,8 @@ export default function Login() {
   const [twofaMethod, setTwofaMethod] = useState("email");
 
   const navigate = useNavigate();
-  const target   = useLocation().state?.from || "/dashboard";
-  const API      = API_BASE;
+  const target = useLocation().state?.from || "/dashboard";
+  const API = API_BASE;
 
   /* ── step 1: ask for e-mail & password ───────────────────── */
   const handleLogin = async (e) => {
@@ -51,9 +51,9 @@ export default function Login() {
     try {
       const body = new URLSearchParams({ username: email, password });
       const r = await fetch(`${API}/users/login`, {
-        method : "POST",
+        method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body   : body.toString(),
+        body: body.toString(),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.detail || "Login failed");
@@ -71,26 +71,26 @@ export default function Login() {
         }
         return navigate(target, { replace: true });
       }
-      if (data.temp_token){
+      if (data.temp_token) {
         setTemp(data.temp_token);
         setTwofaMethod(data.twofa_method || "email");
         setStep(2);
       } else {
         throw new Error("Unexpected server response");
       }
-    } catch (err){ setError(err.message) }
-    finally      { setLoad(false) }
+    } catch (err) { setError(err.message) }
+    finally { setLoad(false) }
   };
 
   /* ── step 2: verify 2-FA code ────────────────────────────── */
   const handleVerify = async (e) => {
     e.preventDefault();
     setError(""); setLoad(true);
-    try{
-      const r = await fetch(`${API}/users/verify-code`,{
-        method :"POST",
-        headers: { "Content-Type":"application/json" },
-        body   : JSON.stringify({ temp_token: tempToken, code }),
+    try {
+      const r = await fetch(`${API}/users/verify-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ temp_token: tempToken, code }),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.detail || "Invalid code");
@@ -102,11 +102,11 @@ export default function Login() {
       if (meRes.ok) me = await meRes.json();
       if (me && me.email === "admin@admin") {
         localStorage.setItem("currentEmail", me.email);
-        return navigate("/adminpanel", { replace:true });
+        return navigate("/adminpanel", { replace: true });
       }
-      navigate(target, { replace:true });
-    } catch (err){ setError(err.message) }
-    finally      { setLoad(false) }
+      navigate(target, { replace: true });
+    } catch (err) { setError(err.message) }
+    finally { setLoad(false) }
   };
 
   /* ── step 3: password reset ──────────────────────────────── */
@@ -164,16 +164,16 @@ export default function Login() {
       background: "linear-gradient(135deg, #0f1419 0%, #1a1f2e 25%, #2d3748 50%, #1a202c 75%, #0f1419 100%)"
     }}>
       <AnimatedParticlesParallax />
-      
+
       <div className="glass-card w-full max-w-md p-8 animate-pop" style={{ position: "relative", zIndex: 10 }}>
         <h2 className="text-2xl font-semibold text-center mb-6 tracking-wide">
           {step === 1 ? "Log in"
             : step === 2 ? "Confirm code"
-            : step === 3 ? "Reset Password"
-            : step === 4 ? "Set New Password"
-            : step === 5 ? "Confirm code" // für TOTP-Reset
-            : step === 6 ? "Set New Password" // für TOTP-Reset: neues Passwort
-            : ""}
+              : step === 3 ? "Reset Password"
+                : step === 4 ? "Set New Password"
+                  : step === 5 ? "Confirm code" // für TOTP-Reset
+                    : step === 6 ? "Set New Password" // für TOTP-Reset: neues Passwort
+                      : ""}
         </h2>
 
         {error && (
@@ -191,7 +191,7 @@ export default function Login() {
               placeholder="E-mail"
               className="frosted-input"
               value={email}
-              onChange={e=>setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               required
             />
             <div className="relative">
@@ -201,10 +201,10 @@ export default function Login() {
                 placeholder="Password"
                 className="frosted-input pr-10"
                 value={password}
-                onChange={e=>setPwd(e.target.value)}
+                onChange={e => setPwd(e.target.value)}
                 required
               />
-              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={()=>setShowPw(v=>!v)} aria-label={showPw?"Hide password":"Show password"}>
+              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={() => setShowPw(v => !v)} aria-label={showPw ? "Hide password" : "Show password"}>
                 {showPw ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                 ) : (
@@ -241,16 +241,16 @@ export default function Login() {
           <form onSubmit={handleVerify} className="space-y-4">
             <input
               type="text"
-              placeholder={twofaMethod==="totp" ? "Code from Authenticator-App" : "6-digit code from email"}
+              placeholder={twofaMethod === "totp" ? "Code from Authenticator-App" : "6-digit code from email"}
               className="frosted-input"
               value={code}
-              onChange={e=>setCode(e.target.value)}
+              onChange={e => setCode(e.target.value)}
               required
             />
-            {twofaMethod==="email" && (
+            {twofaMethod === "email" && (
               <div className="text-xs text-white/60">A 6-digit code was sent to your email.</div>
             )}
-            {twofaMethod==="totp" && (
+            {twofaMethod === "totp" && (
               <div className="text-xs text-white/60">Enter the 6-digit code from your Authenticator-App.</div>
             )}
             <button className="btn-accent w-full" disabled={loading}>
@@ -299,7 +299,7 @@ export default function Login() {
                 onChange={e => setResetPwd(e.target.value)}
                 required
               />
-              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={()=>setShowResetPw(v=>!v)} aria-label={showResetPw?"Hide password":"Show password"}>
+              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={() => setShowResetPw(v => !v)} aria-label={showResetPw ? "Hide password" : "Show password"}>
                 {showResetPw ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                 ) : (
@@ -381,7 +381,7 @@ export default function Login() {
                 onChange={e => setResetPwd(e.target.value)}
                 required
               />
-              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={()=>setShowResetPw(v=>!v)} aria-label={showResetPw?"Hide password":"Show password"}>
+              <button type="button" tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70" onClick={() => setShowResetPw(v => !v)} aria-label={showResetPw ? "Hide password" : "Show password"}>
                 {showResetPw ? (
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                 ) : (

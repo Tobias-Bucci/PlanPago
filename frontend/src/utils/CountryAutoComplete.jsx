@@ -215,25 +215,31 @@ export default function CountryAutoComplete({ value, onChange }) {
   };
   const handleSelect = c => { onChange(c); setSuggestions([]); setOpen(false); };
 
-  useEffect(()=>{
-    const click=(e)=>{ if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown",click); return()=>document.removeEventListener("mousedown",click);
-  },[]);
+  // Check if current value is a valid country
+  const isValidCountry = value === "" || ALL_COUNTRIES.includes(value);
+
+  useEffect(() => {
+    const click = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", click); return () => document.removeEventListener("mousedown", click);
+  }, []);
 
   return (
     <div className="relative" ref={ref}>
       <input
-        className="frosted-input"
+        className={`frosted-input ${!isValidCountry ? 'border-red-500' : ''}`}
         placeholder="Country"
         value={value}
         onChange={handleInputChange}
       />
-      {open && suggestions.length>0 && (
+      {!isValidCountry && value && (
+        <p className="text-red-400 text-sm mt-1">Please select a valid country from the suggestions</p>
+      )}
+      {open && suggestions.length > 0 && (
         <ul className="absolute z-20 w-full max-h-40 overflow-y-auto glass-card backdrop-blur-sm">
-          {suggestions.map(c=>(
+          {suggestions.map(c => (
             <li
               key={c}
-              onClick={()=>handleSelect(c)}
+              onClick={() => handleSelect(c)}
               className="px-3 py-1 hover:bg-white/10 cursor-pointer"
             >
               {c}
@@ -244,3 +250,8 @@ export default function CountryAutoComplete({ value, onChange }) {
     </div>
   );
 }
+
+// Export function to check if a country is valid
+export const isValidCountry = (country) => {
+  return country === "" || ALL_COUNTRIES.includes(country);
+};

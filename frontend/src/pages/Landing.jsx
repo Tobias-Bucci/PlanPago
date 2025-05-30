@@ -292,7 +292,7 @@ export default function Landing() {
 
             <div className="flex items-center gap-6 text-sm text-white/70">
               <span>&copy; {new Date().getFullYear()} PlanPago</span>
-              <a href="/impressum" className="hover:text-white transition-colors">
+              <a href="/imprint" className="hover:text-white transition-colors">
                 Imprint & Contact
               </a>
               <a href="/privacypolicy" className="hover:text-white transition-colors">

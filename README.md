@@ -1,10 +1,14 @@
-## PlanPago
-
-**PlanPago** ist eine browserbasiertes Web­tool zur strukturierten Verwaltung deiner Verträge und wiederkehrenden Zahlungsverpflichtungen. Mit PlanPago behältst du Mietverträge, Versicherungen, Abonnements und Gehaltsverträge im Blick, erhältst automatische Netto‑Berechnungen und kannst dich per E‑Mail an anstehende Fristen erinnern lassen.
+Here is the complete README translated into English:
 
 ---
 
-### 📂 Projektstruktur
+## PlanPago
+
+**PlanPago** is a browser-based web tool for the structured management of your contracts and recurring payment obligations. With PlanPago, you can keep track of rental contracts, insurance policies, subscriptions, and employment contracts. It includes automatic net salary calculations and email reminders for upcoming deadlines.
+
+---
+
+### 📂 Project Structure
 
 ```
 backend/
@@ -37,50 +41,53 @@ frontend/
 
 ---
 
-## 🚀 Technologie‑Stack
+## 🚀 Technology Stack
 
-- **Backend**
-  - Python 3.11
-  - FastAPI (REST‑API + OpenAPI‑Docs)
-  - SQLAlchemy ORM
-  - SQLite (oder PostgreSQL)
-  - Pydantic v2
-  - Passlib (bcrypt)
-  - jose (JWT)
-  - pytest, httpx für Unit‑Tests
-- **Frontend**
-  - React 18
-  - React Router
-  - Tailwind CSS
-  - Fetch API (mit JWT‑Bearer‑Headern)
+* **Backend**
+
+  * Python 3.11
+  * FastAPI (REST API + OpenAPI Docs)
+  * SQLAlchemy ORM
+  * SQLite (or PostgreSQL)
+  * Pydantic v2
+  * Passlib (bcrypt)
+  * jose (JWT)
+  * pytest, httpx for unit tests
+
+* **Frontend**
+
+  * React 18
+  * React Router
+  * Tailwind CSS
+  * Fetch API (with JWT Bearer headers)
 
 ---
 
-## 🔧 Installation & Start
+## 🔧 Installation & Startup
 
 ### 1. Backend
 
-1. Repository klonen und in das Backend‑Verzeichnis wechseln
+1. Clone the repository and navigate to the backend directory:
 
    ```bash
    git clone <repo-url>
    cd PlanPago/backend
    ```
 
-2. Virtuelle Umgebung anlegen und aktivieren
+2. Create and activate a virtual environment:
 
    ```bash
    python3 -m venv venv
    source venv/bin/activate
    ```
 
-3. Abhängigkeiten installieren
+3. Install dependencies:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-4. (Optional) Datenbank zurücksetzen
+4. (Optional) Reset the database:
 
    ```bash
    rm database.db
@@ -91,17 +98,17 @@ frontend/
    EOF
    ```
 
-5. Server starten
+5. Start the server:
 
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
    ```
 
-6. API‑Docs verfügbar unter
+6. API documentation is available at:
 
    > [http://localhost:8001/docs](http://localhost:8001/docs)
 
-7. Tests ausführen
+7. Run tests:
 
    ```bash
    export PYTHONPATH=.
@@ -110,92 +117,106 @@ frontend/
 
 ### 2. Frontend
 
-1. In das Frontend‑Verzeichnis wechseln
+1. Navigate to the frontend directory:
 
    ```bash
    cd ../frontend
    ```
 
-2. Abhängigkeiten installieren
+2. Install dependencies:
 
    ```bash
    npm install
    ```
 
-3. Dev‑Server starten
+3. Start the development server:
 
    ```bash
    npm start
    ```
 
-4. App öffnen unter
+4. Open the app at:
 
    > [http://localhost:4000](http://localhost:4000/)
 
 ---
 
-## ✅ Aktuell implementierte Features
+## ✅ Currently Implemented Features
 
-### Authentifizierung & Nutzerverwaltung
+### Authentication & User Management
 
-- **Registrierung** mit E‑Mail + Passwort
-- **Login** via JWT (Bearer‑Token im LocalStorage)
-- **Profil**
-  - E‑Mail und Passwort ändern
-  - Benutzer­spezifische Einstellungen: Land, Währung
-  - Account löschen (inkl. aller Verträge)
+* **Registration** with email and password
+* **Login** via JWT (Bearer token in localStorage)
+* **2FA support**: Email codes or TOTP (Authenticator apps)
+* **Brute-force protection**: Login limits with cooldown
+* **Profile**
 
-### Vertragsverwaltung (CRUD)
+  * Change email and password (with 2FA confirmation)
+  * Password validation (minimum requirements)
+  * User-specific settings: country, currency
+  * Account deletion (including all contracts)
 
-- **Contracts** API
-  - `POST /contracts/` → Neues Vertragsobjekt mit `user_id`
-  - `GET /contracts/` → Listet nur **eigene** Verträge
-  - `GET /contracts/{id}` → Details (nur eigener Vertrag)
-  - `PATCH /contracts/{id}` → Teil‑Update, beliebige Felder
-  - `DELETE /contracts/{id}` → Löschen (nur eigener Vertrag)
-- **Mandanten‑Isolation**: Jeder Nutzer sieht und ändert nur seine Verträge
+### Contract Management (CRUD)
+
+* **Contracts API**
+
+  * `POST /contracts/` → Create a new contract (linked to `user_id`)
+  * `GET /contracts/` → Lists only **your** contracts
+  * `GET /contracts/{id}` → View details (only your own)
+  * `PATCH /contracts/{id}` → Partial update of any fields
+  * `DELETE /contracts/{id}` → Delete (only your own)
+* **Tenant isolation**: Each user sees and modifies only their own contracts
 
 ### Frontend UX
 
-- **Modern Glass-Morphism Design**
-  - Consistent visual language across all pages (Dashboard, Forms, Profile)
-  - Semi-transparent cards with backdrop blur effects
-  - Smooth animations and hover transitions
-- **NavBar** mit Links zu Dashboard, neuem Vertrag, Profil und Logout
-- **Dashboard**
-  - Responsive table/card layout for all screen sizes
-  - Advanced filtering and sorting with live search
-  - Bulk export functionality (CSV/PDF)
-  - File attachment preview and management
-  - Intuitive pagination with visual feedback
-- **ContractForm** (Create & Edit)
-  - Structured multi-section layout with clear visual hierarchy
-  - Contextual form fields that adapt based on contract type
-  - Enhanced file upload with drag-and-drop support
-  - Live validation with helpful error messages and guidance
-  - Smart net salary calculation for employment contracts
-  - Responsive design optimized for mobile and desktop
-- **Profile**
-  - Comprehensive user settings management
-  - Secure password change functionality
-  - Country and currency preferences with autocomplete
-  - Account deletion with data protection compliance
+* **Modern Glass-Morphism Design**
+
+  * Consistent visual language across all pages (Dashboard, Forms, Profile)
+  * Semi-transparent cards with backdrop blur effects
+  * Smooth animations and hover transitions
+* **NavBar** with links to Dashboard, New Contract, Profile, and Logout
+* **Dashboard**
+
+  * Responsive table/card layout for all screen sizes
+  * Advanced filtering and sorting with live search
+  * Bulk export functionality (CSV/PDF)
+  * File attachment preview and management
+  * Intuitive pagination with visual feedback
+* **ContractForm** (Create & Edit)
+
+  * Structured multi-section layout with clear visual hierarchy
+  * Contextual form fields that adapt based on contract type
+  * Enhanced file upload with drag-and-drop support
+  * Live validation with helpful error messages and guidance
+  * Smart net salary calculation for employment contracts
+  * Responsive design optimized for mobile and desktop
+* **Profile**
+
+  * Comprehensive user settings management
+  * Secure password change functionality
+  * Country and currency preferences with autocomplete
+  * Account deletion with data protection compliance
 
 ---
 
-## 🔮 Geplante Features
+## 🔮 Planned Features
 
-- **E‑Mail‑Reminder**
-  - Automatische Benachrichtigungen vor Fälligkeiten und Kündigungsfristen
-- **Kalender‑Export**
-  - iCal / Google Calendar Integration
-- **Dokumenten­verwaltung**
-  - Hochladen und sichere Speicherung von Vertrags‑PDFs/Bildern
-- **Erweiterte Finanz‑Analytics**
-  - Diagramme: Kostenverteilung, Monatsüberblick
-  - Prognosen zukünftiger Ausgaben
-- **Mehrbenutzer‑Support**
-  - Familien‑ oder Team‑Accounts mit Rollen (Admin, Editor, Viewer)
-- **2‑Faktor‑Authentifizierung** (TOTP)
-- **Dark Mode** und Accessibility‑Optimierungen
-- **Mobile App** (React Native oder Flutter)
+* **Email reminders**
+
+  * Automatic notifications before due dates and termination deadlines
+* **Calendar export**
+
+  * iCal / Google Calendar integration
+* **Document management**
+
+  * Upload and securely store contract PDFs/images
+* **Advanced financial analytics**
+
+  * Charts: cost distribution, monthly overview
+  * Forecasting of future expenses
+* **Multi-user support**
+
+  * Family or team accounts with roles (Admin, Editor, Viewer)
+* **2-factor authentication** (TOTP)
+* **Dark Mode** and accessibility improvements
+* **Mobile App** (React Native or Flutter)

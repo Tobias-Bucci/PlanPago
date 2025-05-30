@@ -16,7 +16,21 @@ export async function fetchWithAuth(url, options = {}, navigate) {
         navigate("/login");
         throw new Error("Session expired. Please log in again.");
       }
-    } catch {}
+      // Throw the actual error message from the backend
+      if (data?.detail) {
+        throw new Error(data.detail);
+      }
+    } catch (jsonError) {
+      // If JSON parsing fails, try to get text response
+      try {
+        const text = await r.text();
+        if (text) {
+          throw new Error(text);
+        }
+      } catch { }
+    }
+    // Fallback error message
+    throw new Error(`Request failed with status ${r.status}`);
   }
   return r;
 }
