@@ -29,7 +29,7 @@ export default function AnimatedParticlesParallax() {
                 document.body.classList.remove('scrolling');
             }, 1000);
         };
-        
+
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => {
             window.removeEventListener('scroll', handleScroll);

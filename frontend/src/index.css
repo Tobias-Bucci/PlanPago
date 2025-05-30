@@ -311,9 +311,17 @@ input[type="file"].frosted-file:hover {
 
 /* Custom scrollbar animation on scroll */
 @keyframes scrollPulse {
-  0% { opacity: 0.8; }
-  50% { opacity: 1; }
-  100% { opacity: 0.8; }
+  0% {
+    opacity: 0.8;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.8;
+  }
 }
 
 /* Add pulse animation to scrollbar when scrolling */
