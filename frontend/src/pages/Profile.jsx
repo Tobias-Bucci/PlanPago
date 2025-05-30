@@ -215,7 +215,7 @@ export default function Profile() {
         <p className="text-white/90">If you have questions, feedback, or need support, feel free to contact us. We are happy to help!</p>
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <a href="mailto:planpago.contact@gmail.com" className="btn-primary w-full sm:w-auto">Contact via E-Mail</a>
-          <span className="text-white/70 text-sm">or see <a href='/impressum' className='underline'>Imprint & Legal Notice</a></span>
+          <span className="text-white/70 text-sm">or see <a href='/imprint' className='underline'>Imprint & Legal Notice</a></span>
         </div>
       </section>
 

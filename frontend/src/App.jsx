@@ -81,7 +81,7 @@ function App() {
           element={<ImpersonateConfirm />}
         />
 
-        <Route path="/impressum" element={<Impressum />} />
+        <Route path="/imprint" element={<Impressum />} />
         <Route path="/privacypolicy" element={<PrivacyPolicy />} />
 
         <Route path="/" element={<Landing />} />
