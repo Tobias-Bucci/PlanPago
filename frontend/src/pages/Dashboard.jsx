@@ -999,7 +999,7 @@ export default function Dashboard() {
 
         {/* Search modal */}
         {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="glass-card p-8 w-full max-w-md mx-4 animate-pop">
               <h3 className="text-xl font-semibold mb-6 text-white flex items-center gap-3">
                 <Search size={20} />
@@ -1043,7 +1043,7 @@ export default function Dashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 py-8">
+      <footer className="relative z-[1] border-t border-white/10 py-8">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">

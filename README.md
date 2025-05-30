@@ -157,22 +157,29 @@ frontend/
 
 ### Frontend UX
 
+- **Modern Glass-Morphism Design**
+  - Consistent visual language across all pages (Dashboard, Forms, Profile)
+  - Semi-transparent cards with backdrop blur effects
+  - Smooth animations and hover transitions
 - **NavBar** mit Links zu Dashboard, neuem Vertrag, Profil und Logout
 - **Dashboard**
-  - Tabelle aller eigenen Verträge
-  - Abgelaufene Verträge als „inactive“ gekennzeichnet
-  - Aktionen: 🗑️ Löschen, ✏️ Bearbeiten
-- **ContractForm** (Create & Edit)
-  - Einheitliches Formular für Neu‑Anlage oder Bearbeitung
-  - Live‑Netto‑Berechnung (via `computeNet`), überschreibbar
-  - Pflicht‑Validierung (Felder, Land, Betrag) mit freundlichen Hinweisen
-  - Bei fehlendem Land roter, klickbarer Hinweis zur Profile‑Seite
+  - Responsive table/card layout for all screen sizes
+  - Advanced filtering and sorting with live search
+  - Bulk export functionality (CSV/PDF)
+  - File attachment preview and management
+  - Intuitive pagination with visual feedback
+- **ContractForm** (Create & Edit)
+  - Structured multi-section layout with clear visual hierarchy
+  - Contextual form fields that adapt based on contract type
+  - Enhanced file upload with drag-and-drop support
+  - Live validation with helpful error messages and guidance
+  - Smart net salary calculation for employment contracts
+  - Responsive design optimized for mobile and desktop
 - **Profile**
-  - Lesen und Ändern von E‑Mail/Passwort
-  - Country‑Autocomplete (Dropdown / Freitext mit Vorschlägen)
-  - Währungs‑Auswahl (EUR, USD, CHF, GBP)
-  - Persistente Speicherung pro E‑Mail in `localStorage`
-  - Löschen des Accounts und zugehöriger Daten
+  - Comprehensive user settings management
+  - Secure password change functionality
+  - Country and currency preferences with autocomplete
+  - Account deletion with data protection compliance
 
 ---
 

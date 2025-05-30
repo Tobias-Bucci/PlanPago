@@ -31,7 +31,7 @@ export default function Notification({ message, type = "info", duration = 2200, 
 
   return (
     <div
-      className={`fixed left-1/2 top-8 z-[200] px-6 py-3 rounded-xl border shadow-lg transition-all duration-300 ${color} ${show ? "opacity-100 scale-100 translate-x-[-50%]" : "opacity-0 scale-90 translate-x-[-50%] pointer-events-none"}`}
+      className={`notification-toast fixed left-1/2 top-8 z-[10000] px-6 py-3 rounded-xl border shadow-lg transition-all duration-300 ${color} ${show ? "opacity-100 scale-100 translate-x-[-50%]" : "opacity-0 scale-90 translate-x-[-50%] pointer-events-none"}`}
       style={{ minWidth: 220, maxWidth: 400, textAlign: "center" }}
       aria-live="polite"
     >

@@ -14,15 +14,15 @@ export default function ConfirmModal({
 
   // Portal – Modal landet ganz oben im DOM (neben <body>)
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[9500] flex items-center justify-center">
       {/* ── Backdrop ── */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-backdrop"
         onClick={onClose}
       />
 
       {/* ── Dialog ── */}
-      <div className="glass-card relative w-[90vw] max-w-md p-6 animate-pop">
+      <div className="glass-card relative w-[90vw] max-w-md p-6 animate-pop modal-content z-[9501] confirm-modal">
         <h3 className="text-xl font-semibold mb-3">{title}</h3>
         <p className="mb-6 text-white/80">{message}</p>
 
