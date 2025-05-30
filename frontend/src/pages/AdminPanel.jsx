@@ -237,22 +237,22 @@ export default function AdminPanel() {
         method: "POST",
         headers: authHeader,
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText);
       }
-      
+
       setNotification({ message: "Database has been reset successfully. All data has been deleted.", type: "success" });
       setDbResetDialog({ open: false, step: 1 });
       setDbResetConfirmText("");
-      
+
       // Clear local storage and redirect to login
       localStorage.clear();
       setTimeout(() => {
         navigate("/login", { replace: true });
       }, 2000);
-      
+
     } catch (e) {
       setNotification({ message: e.message, type: "error" });
     } finally {
@@ -641,7 +641,7 @@ export default function AdminPanel() {
                         <div>
                           <h4 className="text-white font-medium mb-2">Reset Database</h4>
                           <p className="text-white/70 text-sm mb-4">
-                            This will permanently delete ALL data including users, contracts, and files. 
+                            This will permanently delete ALL data including users, contracts, and files.
                             The database will be recreated with only the admin account. This action cannot be undone.
                           </p>
                           <button
