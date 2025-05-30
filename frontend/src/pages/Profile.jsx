@@ -1,7 +1,7 @@
 import { API_BASE } from "../config";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Mail, Lock, Globe, DollarSign, Settings, Shield, Trash2, Bell } from "lucide-react";
+import { User, Mail, Globe, DollarSign, Settings, Shield, Trash2, Bell } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import Notification from "../components/Notification";
 import { fetchWithAuth } from "../utils/fetchWithAuth";
@@ -36,7 +36,6 @@ export default function Profile() {
   const [currency, setCurrency] = useState("EUR");
 
   // Confirmation modal
-  const [confirmModal, setConfirmModal] = useState({ open: false });
   const [deleteModal, setDeleteModal] = useState({ open: false });
 
   // 2FA verification
@@ -311,8 +310,8 @@ export default function Profile() {
             <button
               onClick={() => setActiveTab("profile")}
               className={`px-6 py-3 font-medium transition-colors ${activeTab === "profile"
-                  ? "text-white border-b-2 border-blue-500"
-                  : "text-white/70 hover:text-white"
+                ? "text-white border-b-2 border-blue-500"
+                : "text-white/70 hover:text-white"
                 }`}
             >
               <User size={20} className="inline mr-2" />
@@ -321,8 +320,8 @@ export default function Profile() {
             <button
               onClick={() => setActiveTab("settings")}
               className={`px-6 py-3 font-medium transition-colors ${activeTab === "settings"
-                  ? "text-white border-b-2 border-blue-500"
-                  : "text-white/70 hover:text-white"
+                ? "text-white border-b-2 border-blue-500"
+                : "text-white/70 hover:text-white"
                 }`}
             >
               <Settings size={20} className="inline mr-2" />
@@ -331,8 +330,8 @@ export default function Profile() {
             <button
               onClick={() => setActiveTab("security")}
               className={`px-6 py-3 font-medium transition-colors ${activeTab === "security"
-                  ? "text-white border-b-2 border-blue-500"
-                  : "text-white/70 hover:text-white"
+                ? "text-white border-b-2 border-blue-500"
+                : "text-white/70 hover:text-white"
                 }`}
             >
               <Shield size={20} className="inline mr-2" />

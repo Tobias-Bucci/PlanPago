@@ -17,8 +17,6 @@ export default function AdminPanel() {
   const [mailRaw, setMailRaw] = useState("");
   const [health, setHealth] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
   const [notification, setNotification] = useState({ message: "", type: "" }); // State for Notification
 
   /* Dialog state for ConfirmModal */
@@ -65,7 +63,7 @@ export default function AdminPanel() {
         setBusy(true);
         setUsers(await fetchJSON(`${API}/users/admin/users`));
       } catch (e) {
-        setErr(e.message);
+        setNotification({ message: e.message, type: "error" });
       } finally {
         setBusy(false);
       }
@@ -82,10 +80,9 @@ export default function AdminPanel() {
         headers: authHeader,
       });
       setUsers((u) => u.filter((x) => x.id !== id));
-      setNotification({ message: "User deleted successfully.", type: "success" }); // Use Notification
-      setErr("");
+      setNotification({ message: "User deleted successfully.", type: "success" });
     } catch (e) {
-      setNotification({ message: e.message, type: "error" }); // Use Notification for error
+      setNotification({ message: e.message, type: "error" });
     } finally {
       setBusy(false);
     }
@@ -105,8 +102,12 @@ export default function AdminPanel() {
   /* ─────────────── server & mail logs ─────────────────── */
   const loadMailLogs = async () => {
     setTab("email"); setBusy(true);
-    try { setMailRaw(await fetchTXT(`${API}/admin/email-logs?lines=800`)); setErr(""); }
-    catch (e) { setErr(e.message); }
+    try {
+      setMailRaw(await fetchTXT(`${API}/admin/email-logs?lines=800`));
+    }
+    catch (e) {
+      setNotification({ message: e.message, type: "error" });
+    }
     finally { setBusy(false); }
   };
 
@@ -136,11 +137,9 @@ export default function AdminPanel() {
         const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
         setBuildInfo(`Frontend active (${timestamp})`);
       }
-
-      setErr("");
     }
     catch (e) {
-      setErr(e.message);
+      setNotification({ message: e.message, type: "error" });
       setUptime("Error fetching data");
       setBuildInfo("Error fetching data");
     }
@@ -151,7 +150,7 @@ export default function AdminPanel() {
   const sendBroadcast = async (e) => {
     e.preventDefault();
     if (!subj.trim() || !body.trim()) {
-      setNotification({ message: "Subject and body required.", type: "error" }); // Use Notification
+      setNotification({ message: "Subject and body required.", type: "error" });
       return;
     }
     setBusy(true);
@@ -177,10 +176,10 @@ export default function AdminPanel() {
         });
       }
       if (!response.ok) throw new Error(await response.text());
-      setNotification({ message: "Broadcast sent successfully.", type: "success" }); // Use Notification
-      setSubj(""); setBody(""); setBroadcastFiles([]); setErr("");
+      setNotification({ message: "Broadcast sent successfully.", type: "success" });
+      setSubj(""); setBody(""); setBroadcastFiles([]);
     } catch (e) {
-      setNotification({ message: e.message, type: "error" }); // Use Notification for error
+      setNotification({ message: e.message, type: "error" });
     } finally {
       setBusy(false);
     }
@@ -358,8 +357,6 @@ export default function AdminPanel() {
                                   <button
                                     onClick={async () => {
                                       setBusy(true);
-                                      setMsg("");
-                                      setErr("");
                                       // Show waiting modal immediately
                                       setImpersonateWait({ open: true, user: u, requestId: null });
                                       try {
@@ -393,7 +390,7 @@ export default function AdminPanel() {
                                         setImpersonateWait({ open: false, user: null, requestId: null });
                                         navigate("/dashboard", { replace: true });
                                       } catch (e) {
-                                        setErr(e.message);
+                                        setNotification({ message: e.message, type: "error" });
                                         setImpersonateWait({ open: false, user: null, requestId: null });
                                       } finally {
                                         setBusy(false);

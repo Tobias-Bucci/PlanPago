@@ -174,7 +174,6 @@ frontend/
   * Consistent visual language across all pages (Dashboard, Forms, Profile)
   * Semi-transparent cards with backdrop blur effects
   * Smooth animations and hover transitions
-  * Enhanced modal dialogs with contextual styling and improved UX
 * **NavBar** with links to Dashboard, New Contract, Profile, and Logout
 * **Dashboard**
 
@@ -197,12 +196,6 @@ frontend/
   * Secure password change functionality
   * Country and currency preferences with autocomplete
   * Account deletion with data protection compliance
-* **Enhanced Components**
-
-  * Contextual modal dialogs with type-based styling (danger, warning, info)
-  * Consistent glass-morphism effects across all UI elements
-  * Improved accessibility with proper focus management
-  * Smooth animations and transitions throughout the interface
 
 ---
 

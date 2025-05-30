@@ -17,7 +17,6 @@ import {
   ArrowDown,
   ArrowUpDown,
   ChevronFirst,
-  Filter,
   SlidersHorizontal,
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
@@ -78,7 +77,6 @@ export default function Dashboard() {
   const [expandedId, setExpandedId] = useState(null);
   const [exportOpen, setExportOpen] = useState(false);
   const exportRef = useRef();
-  const sortRef = useRef();
   const [filesCache, setFilesCache] = useState({}); // contractId -> files array
 
   const navigate = useNavigate();

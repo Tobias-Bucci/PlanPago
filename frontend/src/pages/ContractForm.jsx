@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { computeNet } from "../utils/taxUtils";
 import Notification from "../components/Notification";
-import { Upload, FileText, X, AlertCircle, Save, Plus, ArrowLeft } from "lucide-react";
+import { Upload, FileText, AlertCircle, Save, Plus, ArrowLeft } from "lucide-react";
 
 const API = `${API_BASE}/contracts/`;
 const TYPE_OPTIONS = [
