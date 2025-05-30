@@ -157,6 +157,52 @@ input[type="file"].frosted-file:hover {
   animation: pop .5s ease forwards
 }
 
+/* ─── Enhanced Modal Animations ─────────────────────────────── */
+@keyframes modalFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes backdropFadeIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
+}
+
+/* Modal-specific glass effect enhancements */
+.glass-card.modal-enhanced {
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.1) 100%);
+  box-shadow:
+    0 32px 64px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced button focus states for modals */
+.glass-card button:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(97, 218, 251, 0.3),
+    0 0 0 4px rgba(97, 218, 251, 0.1);
+}
+
 /* ─── Contract notes expand animation ───────────────────────── */
 .contract-notes-transition {
   transition: max-height 0.35s cubic-bezier(.4, 2, .6, 1), opacity 0.25s;
