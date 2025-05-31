@@ -1,5 +1,5 @@
 // NavBar.jsx  –  translucent brand bar
-import React, { useState } from "react";
+import React from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -8,7 +8,6 @@ export default function NavBar() {
   const location = useLocation();
   const isAuth = Boolean(localStorage.getItem("token"));
   const isAdmin = isAuth && localStorage.getItem("currentEmail") === "admin@admin";
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Seiten, auf denen nur Login/Register angezeigt werden soll
   const onlyAuthRoutes = ["/login", "/register", "/terms", "/privacypolicy", "/imprint"];

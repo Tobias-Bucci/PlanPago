@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
-import { ArrowRight, Shield, BarChart3, Calendar, Github } from "lucide-react";
+import { Github } from "lucide-react";
 
 export default function Landing() {
   const navigate = useNavigate();

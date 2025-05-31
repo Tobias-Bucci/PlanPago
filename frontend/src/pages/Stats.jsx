@@ -41,7 +41,7 @@ export default function Stats() {
   const [err, setErr] = useState("");
   const [loading, setLd] = useState(true);
   const [msg, setMsg] = useState("");
-  const [msgType, setMsgType] = useState("success");
+  const [msgType] = useState("success");
 
   const API = API_BASE;
   const authHeader = useMemo(

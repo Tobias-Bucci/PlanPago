@@ -43,16 +43,6 @@ const STATUS_OPTIONS = [
   { label: "Expired", value: "expired" },
 ];
 
-// Sort options with labels and field names
-const SORT_OPTIONS = [
-  { label: "Date (newest first)", field: "start_date", dir: "desc" },
-  { label: "Date (oldest first)", field: "start_date", dir: "asc" },
-  { label: "Price (highest first)", field: "amount", dir: "desc" },
-  { label: "Price (lowest first)", field: "amount", dir: "asc" },
-  { label: "End date (soonest first)", field: "end_date", dir: "asc" },
-  { label: "End date (latest first)", field: "end_date", dir: "desc" },
-];
-
 /* ───────── component ────────────────────────────────────────── */
 export default function Dashboard() {
   /* main data & ui state */
