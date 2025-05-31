@@ -105,7 +105,7 @@ export default function Register() {
       background: "linear-gradient(135deg, #0f1419 0%, #1a1f2e 25%, #2d3748 50%, #1a202c 75%, #0f1419 100%)"
     }}>
       <AnimatedParticlesParallax />
-      
+
       <div className="glass-card w-full max-w-md p-8 animate-pop" style={{ position: "relative", zIndex: 10 }}>
         <h2 className="text-2xl font-semibold text-center mb-6 tracking-wide">
           {step === 1 ? "Register" : "Confirm"}
@@ -151,10 +151,10 @@ export default function Register() {
               </button>
             </div>
             <div>
-              <label className="block text-white/80 mb-1">2FA-Methode</label>
+              <label className="block text-white/80 mb-1">2FA Method</label>
               <select className="frosted-input" value={twofa} onChange={e => setTwofa(e.target.value)}>
-                <option value="email">E-Mail-Code</option>
-                <option value="totp">Authenticator-App (TOTP)</option>
+                <option value="email">Email Code</option>
+                <option value="totp">Authenticator App (TOTP)</option>
               </select>
             </div>
             {/* Terms and Conditions checkbox */}

@@ -116,7 +116,7 @@ export default function ContractForm() {
         ? Number(form.netto || 0)
         : Number(form.amount);
 
-    // Fix: end_date explizit auf null setzen, wenn leer
+    // Fix: explicitly set end_date to null when empty
     const end_date = form.end_date === "" ? null : iso(form.end_date);
 
     return {
