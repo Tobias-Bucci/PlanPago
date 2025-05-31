@@ -609,11 +609,12 @@ export default function Dashboard() {
                                   )}
                                 </button>
                                 <button
-                                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors shadow-lg border border-white/20"
+                                  className="absolute -top-0 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-2 h-2 flex items-center justify-center text-xs font-bold transition-colors shadow-lg border border-white/20 flex-shrink-0"
                                   onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
                                   title="Delete file"
+                                  style={{ minWidth: '15px', minHeight: '15px' }}
                                 >
-                                  <X size={12} />
+                                  <X size={10} />
                                 </button>
                               </div>
                             ))}
@@ -672,65 +673,10 @@ export default function Dashboard() {
                           >
                             {expanded && (
                               <div className="p-6 bg-white/5 border-t border-white/10 animate-pop text-white/90">
-                                <div className="font-semibold mb-1">Notes</div>
-                                <div className="whitespace-pre-line text-white/80 min-h-[1.5em]">
+                                <div className="font-semibold mb-1 text-left">Notes</div>
+                                <div className="whitespace-pre-line text-white/80 min-h-[1.5em] text-left">
                                   {c.notes ? c.notes : <span className="italic text-white/40">No notes entered.</span>}
                                 </div>
-                                <div className="font-semibold mt-4 mb-2">Attachments:</div>
-                                {filesCache[c.id] === undefined ? (
-                                  <span className="text-white/60 text-sm">Loading files…</span>
-                                ) : filesCache[c.id].length === 0 ? (
-                                  <span className="text-white/40 text-sm italic">No attachments.</span>
-                                ) : (
-                                  <div className="flex flex-wrap gap-2">
-                                    {filesCache[c.id].map((f) => (
-                                      <div key={f.id} className="relative inline-block">
-                                        <button
-                                          onClick={async (e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            const token = authCookies.getToken();
-                                            const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
-                                            const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-                                            if (!res.ok) {
-                                              alert("Fehler beim Laden der Datei: " + (await res.text()));
-                                              return;
-                                            }
-                                            const blob = await res.blob();
-                                            const fileUrl = window.URL.createObjectURL(blob);
-                                            if (f.url.endsWith(".pdf")) {
-                                              window.open(fileUrl, "_blank");
-                                            } else {
-                                              const img = new window.Image();
-                                              img.src = fileUrl;
-                                              const w = window.open();
-                                              w.document.write(img.outerHTML);
-                                            }
-                                          }}
-                                          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                                          title="Preview/download"
-                                        >
-                                          {f.url.endsWith(".pdf") ? (
-                                            <span className="text-2xl">📄</span>
-                                          ) : (
-                                            <img
-                                              src="/static/placeholder.png"
-                                              alt={f.original_filename}
-                                              className="h-10 w-10 rounded object-cover"
-                                            />
-                                          )}
-                                        </button>
-                                        <button
-                                          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors shadow-lg border border-white/20"
-                                          onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
-                                          title="Delete file"
-                                        >
-                                          <X size={12} />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                             )}
                           </div>
