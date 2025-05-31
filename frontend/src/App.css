@@ -32,6 +32,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -44,8 +45,8 @@
   --landing-accent: #ff61d9;
   --landing-white: #fff;
   --landing-text: #e1e6f9;
-  --landing-shadow-blue: rgba(97,218,251,0.15);
-  --landing-shadow-pink: rgba(255,97,217,0.15);
+  --landing-shadow-blue: rgba(97, 218, 251, 0.15);
+  --landing-shadow-pink: rgba(255, 97, 217, 0.15);
 }
 
 .landing-container {
@@ -74,8 +75,58 @@
   cursor: pointer;
   box-shadow: 0 2px 16px 0 var(--landing-shadow-blue);
   transition: background 0.2s, color 0.2s;
+  /* Mobile touch improvements */
+  min-height: 44px;
+  touch-action: manipulation;
 }
+
 .landing-btn:hover {
   background: linear-gradient(90deg, var(--landing-primary) 0%, var(--landing-accent) 100%);
   color: var(--landing-white);
+}
+
+/* Glass card effect improvements for mobile */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .landing-container {
+    padding-top: 3.5rem;
+  }
+
+  /* Improve touch targets on mobile */
+  button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Better spacing for mobile */
+  .glass-card {
+    border-radius: 12px;
+  }
+
+  /* Ensure text is readable on small screens */
+  h1,
+  h2,
+  h3,
+  h4 {
+    line-height: 1.2;
+  }
+
+  p {
+    line-height: 1.5;
+  }
+}
+
+/* Improve scrolling on mobile */
+@media (max-width: 768px) {
+  .landing-container {
+    -webkit-overflow-scrolling: touch;
+  }
 }
