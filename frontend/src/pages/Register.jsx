@@ -3,6 +3,7 @@ import { API_BASE } from "../config";
 import React, { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
+import { authCookies } from "../utils/cookieUtils";
 
 /* identical helper used in Login */
 const cacheProfile = async (token) => {
@@ -12,9 +13,9 @@ const cacheProfile = async (token) => {
     });
     if (!r.ok) return;
     const me = await r.json();
-    localStorage.setItem("currentEmail", me.email);
-    localStorage.setItem(`country_${me.email}`, me.country || "");
-    localStorage.setItem(`currency_${me.email}`, me.currency || "EUR");
+    authCookies.setUserEmail(me.email);
+    authCookies.setUserPreference(`country_${me.email}`, me.country || "");
+    authCookies.setUserPreference(`currency_${me.email}`, me.currency || "EUR");
   } catch {/* silent */ }
 };
 
@@ -90,7 +91,7 @@ export default function Register() {
       });
       if (!r.ok) throw new Error("Invalid code");
       const { access_token } = await r.json();
-      localStorage.setItem("token", access_token);
+      authCookies.setToken(access_token);
       await cacheProfile(access_token);
       navigate("/dashboard", { replace: true });
     } catch (e) { setErr(e.message) }

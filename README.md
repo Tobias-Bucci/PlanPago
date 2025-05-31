@@ -146,7 +146,9 @@ frontend/
 ### Authentication & User Management
 
 * **Registration** with email and password
-* **Login** via JWT (Bearer token in localStorage)
+* **Login** via JWT (Bearer token stored in secure cookies)
+  * **Token validity**: 30 minutes
+  * **Trusted device window**: 10 minutes (skip 2FA if recently authenticated)
 * **2FA support**: Email codes or TOTP (Authenticator apps)
 * **Brute-force protection**: Login limits with cooldown
 * **Profile**

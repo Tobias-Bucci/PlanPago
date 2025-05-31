@@ -2,12 +2,13 @@
 import React from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { authCookies } from "../utils/cookieUtils";
 
 export default function NavBar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const isAuth = Boolean(localStorage.getItem("token"));
-  const isAdmin = isAuth && localStorage.getItem("currentEmail") === "admin@admin";
+  const isAuth = Boolean(authCookies.getToken());
+  const isAdmin = isAuth && authCookies.getUserEmail() === "admin@admin";
 
   // Seiten, auf denen nur Login/Register angezeigt werden soll
   const onlyAuthRoutes = ["/login", "/register", "/terms", "/privacypolicy", "/imprint"];
@@ -18,7 +19,8 @@ export default function NavBar() {
     `relative px-6 py-3 rounded-lg transition-all duration-200 font-medium flex items-center justify-center min-h-[44px] whitespace-nowrap`;
 
   const handleLogout = () => {
-    localStorage.clear();
+    authCookies.removeToken();
+    authCookies.removeUserEmail();
     navigate("/login");
   };
 

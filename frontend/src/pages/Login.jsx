@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import Notification from "../components/Notification";
 import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
+import { authCookies } from "../utils/cookieUtils";
 
 /* Cache country / currency locally after login ---------------- */
 const cacheProfile = async (token) => {
@@ -13,9 +14,9 @@ const cacheProfile = async (token) => {
     });
     if (!res.ok) return;
     const me = await res.json();
-    localStorage.setItem("currentEmail", me.email);
-    localStorage.setItem(`country_${me.email}`, me.country || "");
-    localStorage.setItem(`currency_${me.email}`, me.currency || "EUR");
+    authCookies.setUserEmail(me.email);
+    authCookies.setUserPreference(`country_${me.email}`, me.country || "");
+    authCookies.setUserPreference(`currency_${me.email}`, me.currency || "EUR");
   } catch {/* silent */ }
 };
 
@@ -59,14 +60,14 @@ export default function Login() {
       if (!r.ok) throw new Error(data.detail || "Login failed");
 
       if (data.access_token) {            // 2-FA already trusted
-        localStorage.setItem("token", data.access_token);
+        authCookies.setToken(data.access_token);
         await cacheProfile(data.access_token);
         // Check if admin
         const meRes = await fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${data.access_token}` } });
         let me = null;
         if (meRes.ok) me = await meRes.json();
         if (me && me.email === "admin@admin") {
-          localStorage.setItem("currentEmail", me.email);
+          authCookies.setUserEmail(me.email);
           return navigate("/adminpanel", { replace: true });
         }
         return navigate(target, { replace: true });
@@ -94,14 +95,14 @@ export default function Login() {
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.detail || "Invalid code");
-      localStorage.setItem("token", data.access_token);
+      authCookies.setToken(data.access_token);
       await cacheProfile(data.access_token);
       // Check if admin
       const meRes = await fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${data.access_token}` } });
       let me = null;
       if (meRes.ok) me = await meRes.json();
       if (me && me.email === "admin@admin") {
-        localStorage.setItem("currentEmail", me.email);
+        authCookies.setUserEmail(me.email);
         return navigate("/adminpanel", { replace: true });
       }
       navigate(target, { replace: true });

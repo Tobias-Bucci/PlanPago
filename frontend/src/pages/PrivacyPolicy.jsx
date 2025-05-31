@@ -137,13 +137,19 @@ export default function PrivacyPolicy() {
                                 <h2 className="text-2xl font-semibold text-white mb-4">9. Cookies and Tracking</h2>
                                 <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                                     <p>
-                                        We use minimal tracking to ensure functionality:
+                                        We use cookies to ensure functionality and enhance your experience:
                                     </p>
                                     <ul className="list-disc pl-6 space-y-2 mt-3">
                                         <li><strong>Essential cookies:</strong> For authentication and basic functionality</li>
-                                        <li><strong>Local storage:</strong> To save your preferences and settings</li>
+                                        <li><strong>Authentication tokens:</strong> Valid for 30 minutes, automatically renewed during active use</li>
+                                        <li><strong>Preference cookies:</strong> To save your settings and preferences</li>
+                                        <li><strong>Security cookies:</strong> To protect your account and maintain session security</li>
                                         <li><strong>No third-party analytics:</strong> We do not use Google Analytics or similar services</li>
                                     </ul>
+                                    <p className="mt-3 text-white/80">
+                                        You can manage cookie preferences in your browser settings. However, disabling essential cookies may affect site functionality.
+                                        Authentication tokens expire after 30 minutes of inactivity for security purposes.
+                                    </p>
                                 </div>
                             </section>
 

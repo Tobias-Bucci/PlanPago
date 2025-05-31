@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import Notification from "../components/Notification";
+import { authCookies } from "../utils/cookieUtils";
 
 const API = API_BASE;
 
@@ -40,7 +41,7 @@ export default function AdminPanel() {
 
   const navigate = useNavigate();
   const authHeader = useMemo(
-    () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` }),
+    () => ({ Authorization: `Bearer ${authCookies.getToken()}` }),
     []
   );
 

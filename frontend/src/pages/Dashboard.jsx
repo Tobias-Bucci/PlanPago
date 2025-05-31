@@ -22,6 +22,7 @@ import {
 import ConfirmModal from "../components/ConfirmModal";
 import Notification from "../components/Notification";
 import { fetchWithAuth } from "../utils/fetchWithAuth";
+import { authCookies } from "../utils/cookieUtils";
 
 /* ───────── constants ─────────────────────────────────────────── */
 const PAGE_SIZE = 10;                     // ← 0 caused empty pages
@@ -72,11 +73,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const API = API_BASE;
   const authHeader = useMemo(
-    () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` }),
+    () => ({ Authorization: `Bearer ${authCookies.getToken()}` }),
     []
   );
   const currency =
-    localStorage.getItem(`currency_${localStorage.getItem("currentEmail")}`) ||
+    authCookies.getUserPreference(`currency_${authCookies.getUserEmail()}`) ||
     "€";
 
   /* ───── fetch contracts page ───────────────────────────────── */

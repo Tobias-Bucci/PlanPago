@@ -15,6 +15,7 @@ import Card from "../components/Card";
 import KPI from "../components/KPI";
 import Notification from "../components/Notification";
 import { upcomingPayments } from "../utils/statsHelpers";
+import { authCookies } from "../utils/cookieUtils";
 
 /* Color map & Glass tooltip style */
 const TYPE_COLORS = {
@@ -37,6 +38,11 @@ const glassTooltipStyle = {
 };
 
 export default function Stats() {
+  const authHeader = useMemo(
+    () => ({ Authorization: `Bearer ${authCookies.getToken()}` }),
+    []
+  );
+
   const [contracts, setContracts] = useState([]);
   const [err, setErr] = useState("");
   const [loading, setLd] = useState(true);
@@ -44,10 +50,6 @@ export default function Stats() {
   const [msgType] = useState("success");
 
   const API = API_BASE;
-  const authHeader = useMemo(
-    () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` }),
-    []
-  );
   const currency =
     localStorage.getItem(
       `currency_${localStorage.getItem("currentEmail")}`

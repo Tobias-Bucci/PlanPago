@@ -4,6 +4,7 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { computeNet } from "../utils/taxUtils";
 import Notification from "../components/Notification";
 import { Upload, FileText, AlertCircle, Save, Plus, ArrowLeft } from "lucide-react";
+import { authCookies } from "../utils/cookieUtils";
 
 const API = `${API_BASE}/contracts/`;
 const TYPE_OPTIONS = [
@@ -46,9 +47,9 @@ export default function ContractForm() {
 
   /* ───── preload user context & contract ──────────── */
   useEffect(() => {
-    const mail = localStorage.getItem("currentEmail");
-    setCur(localStorage.getItem(`currency_${mail}`) || "€");
-    setCountry(localStorage.getItem(`country_${mail}`) || "");
+    const mail = authCookies.getUserEmail();
+    setCur(authCookies.getUserPreference(`currency_${mail}`) || "€");
+    setCountry(authCookies.getUserPreference(`country_${mail}`) || "");
 
     if (isEdit) {
       if (state?.contract) prefill(state.contract);
@@ -89,7 +90,7 @@ export default function ContractForm() {
   /* ───── helpers ─────────────────────────────────── */
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const iso = d => (d ? `${d}T00:00:00` : null);
-  const token = localStorage.getItem("token");
+  const token = authCookies.getToken();
 
   const buildPayload = () => {
     if (!form.name || !form.contract_type || !form.start_date) {

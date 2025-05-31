@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { User, Mail, Globe, DollarSign, Settings, Shield, Trash2, Bell } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import Notification from "../components/Notification";
+import { authCookies } from "../utils/cookieUtils";
 import { fetchWithAuth } from "../utils/fetchWithAuth";
 import CountryAutoComplete, { isValidCountry } from "../utils/CountryAutoComplete";
 
@@ -51,7 +52,7 @@ export default function Profile() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = authCookies.getToken();
         if (!token) {
           navigate("/login");
           return;
@@ -107,7 +108,7 @@ export default function Profile() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = authCookies.getToken();
       const updateData = { old_password: oldPassword };
 
       if (email !== user.email) updateData.email = email;
@@ -160,7 +161,7 @@ export default function Profile() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = authCookies.getToken();
       const response = await fetchWithAuth(`${API}/users/me/confirm`, {
         method: "PATCH",
         headers: {
@@ -180,7 +181,7 @@ export default function Profile() {
       const result = await response.json();
       setUser(result);
       setEmail(result.email);
-      localStorage.setItem("currentEmail", result.email);
+      authCookies.setUserEmail(result.email);
 
       setMsg("Profile updated successfully");
       setMsgType("success");
@@ -209,7 +210,7 @@ export default function Profile() {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = authCookies.getToken();
       const response = await fetchWithAuth(`${API}/users/me/settings`, {
         method: "PATCH",
         headers: {
@@ -230,9 +231,9 @@ export default function Profile() {
       const result = await response.json();
       setUser(result);
 
-      // Update local storage
-      localStorage.setItem(`country_${result.email}`, result.country || "");
-      localStorage.setItem(`currency_${result.email}`, result.currency || "EUR");
+      // Update cookies
+      authCookies.setUserPreference(`country_${result.email}`, result.country || "");
+      authCookies.setUserPreference(`currency_${result.email}`, result.currency || "EUR");
 
       setMsg("Settings updated successfully");
       setMsgType("success");
@@ -246,7 +247,7 @@ export default function Profile() {
   // Delete account
   const handleDeleteAccount = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = authCookies.getToken();
       const response = await fetchWithAuth(`${API}/users/me`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
@@ -256,7 +257,8 @@ export default function Profile() {
         throw new Error(await response.text());
       }
 
-      localStorage.clear();
+      authCookies.removeToken();
+      authCookies.removeUserEmail();
       navigate("/", { replace: true });
     } catch (e) {
       setErr(e.message);

@@ -1,7 +1,16 @@
 // fetchWithAuth.js
+import { authCookies } from './cookieUtils';
 
 export async function fetchWithAuth(url, options = {}, navigate) {
-  const token = localStorage.getItem('token');
+  const token = authCookies.getToken();
+
+  if (!token) {
+    // No token available, redirect to login
+    if (navigate) {
+      navigate('/login', { replace: true });
+    }
+    throw new Error('No authentication token available. Please log in again.');
+  }
 
   const authOptions = {
     ...options,
@@ -18,8 +27,8 @@ export async function fetchWithAuth(url, options = {}, navigate) {
     try {
       const data = await response.json();
       if (data?.detail === "Could not validate credentials") {
-        localStorage.removeItem('token');
-        localStorage.removeItem('currentEmail');
+        authCookies.removeToken();
+        authCookies.removeUserEmail();
         if (navigate) {
           navigate('/login', { replace: true });
         }
@@ -28,8 +37,8 @@ export async function fetchWithAuth(url, options = {}, navigate) {
       throw new Error(data.detail || `HTTP ${response.status}`);
     } catch (jsonError) {
       if (response.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('currentEmail');
+        authCookies.removeToken();
+        authCookies.removeUserEmail();
         if (navigate) {
           navigate('/login', { replace: true });
         }
