@@ -97,10 +97,10 @@ export default function ConfirmModal({
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+          <div className="flex flex-row gap-3 justify-end">
             <button
               onClick={onClose}
-              className="btn-accent px-6 py-3 order-2 sm:order-1"
+              className="btn-accent px-6 py-3"
             >
               {cancelText}
             </button>
@@ -109,9 +109,9 @@ export default function ConfirmModal({
                 onConfirm?.();
                 onClose?.();
               }}
-              className={`px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 order-1 sm:order-2 ${typeConfig.confirmClass.includes("btn-primary")
-                  ? "btn-primary"
-                  : `${typeConfig.confirmClass} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg`
+              className={`px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 ${typeConfig.confirmClass.includes("btn-primary")
+                ? "btn-primary"
+                : `${typeConfig.confirmClass} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg`
                 }`}
             >
               {confirmText}

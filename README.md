@@ -177,7 +177,7 @@ frontend/
 * **NavBar** with links to Dashboard, New Contract, Statistics, Profile, and Logout
 * **Dashboard**
 
-  * Responsive table/card layout for all screen sizes
+  * Consistent desktop layout for all screen sizes
   * Advanced filtering and sorting with live search
   * Bulk export functionality (CSV/PDF)
   * File attachment preview and management

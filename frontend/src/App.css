@@ -7,10 +7,8 @@
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
 }
 
 .App-header {
@@ -75,7 +73,6 @@
   cursor: pointer;
   box-shadow: 0 2px 16px 0 var(--landing-shadow-blue);
   transition: background 0.2s, color 0.2s;
-  /* Mobile touch improvements */
   min-height: 44px;
   touch-action: manipulation;
 }
@@ -85,7 +82,7 @@
   color: var(--landing-white);
 }
 
-/* Glass card effect improvements for mobile */
+/* Glass card effect improvements */
 .glass-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
@@ -94,39 +91,25 @@
   transition: all 0.3s ease;
 }
 
-/* Mobile-specific adjustments */
-@media (max-width: 640px) {
-  .landing-container {
-    padding-top: 3.5rem;
-  }
-
-  /* Improve touch targets on mobile */
-  button {
-    min-height: 44px;
-    touch-action: manipulation;
-  }
-
-  /* Better spacing for mobile */
-  .glass-card {
-    border-radius: 12px;
-  }
-
-  /* Ensure text is readable on small screens */
-  h1,
-  h2,
-  h3,
-  h4 {
-    line-height: 1.2;
-  }
-
-  p {
-    line-height: 1.5;
-  }
+/* Improve touch targets */
+button {
+  min-height: 44px;
+  touch-action: manipulation;
 }
 
-/* Improve scrolling on mobile */
-@media (max-width: 768px) {
-  .landing-container {
-    -webkit-overflow-scrolling: touch;
-  }
+/* Ensure text is readable */
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.2;
+}
+
+p {
+  line-height: 1.5;
+}
+
+/* Improve scrolling */
+.landing-container {
+  -webkit-overflow-scrolling: touch;
 }

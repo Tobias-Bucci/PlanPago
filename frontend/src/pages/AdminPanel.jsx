@@ -561,7 +561,7 @@ export default function AdminPanel() {
                     <h2 className="text-xl font-semibold text-white mb-4">System Health</h2>
 
                     {/* Health status cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="grid grid-cols-3 gap-6 mb-8">
                       <div className="glass-card p-6 text-center">
                         <div className="text-lg font-semibold text-white mb-3">Database</div>
                         <Status ok={health.db} />
@@ -584,7 +584,7 @@ export default function AdminPanel() {
                       <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <Server size={20} /> System Information
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-white/70">Uptime:</span>
@@ -671,7 +671,7 @@ export default function AdminPanel() {
       {/* Footer */}
       <footer className="relative z-[1] border-t border-white/10 py-8">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <img src="/PlanPago-trans.png" alt="PlanPago" className="h-6 w-6" />
               <span className="text-lg font-semibold">PlanPago</span>

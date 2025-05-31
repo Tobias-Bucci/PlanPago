@@ -249,7 +249,7 @@ export default function ContractForm() {
                   Basic Information
                 </h3>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-white/80 font-medium mb-2">Contract Name *</label>
                     <input
@@ -289,7 +289,7 @@ export default function ContractForm() {
 
                 {form.contract_type === "salary" ? (
                   <>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="block text-white/80 font-medium mb-2">Gross Salary</label>
                         <input
@@ -315,8 +315,8 @@ export default function ContractForm() {
                         <p className="text-xs text-white/60">Net amount after tax deductions</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <div></div> {/* Empty div to align payment interval to the right */}
+                    <div className="grid grid-cols-2 gap-6">
+                      <div></div>
                       <div className="space-y-2">
                         <label className="block text-white/80 font-medium mb-2">Payment Interval *</label>
                         <select
@@ -335,7 +335,7 @@ export default function ContractForm() {
                     </div>
                   </>
                 ) : form.contract_type ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-2 gap-6">
                     <div className="flex flex-col justify-start">
                       <label className="block text-white/80 font-medium mb-2">Amount *</label>
                       <div className="relative">
@@ -386,7 +386,7 @@ export default function ContractForm() {
                   Timeline
                 </h3>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-white/80 font-medium mb-2">Start Date *</label>
                     <input
@@ -564,7 +564,7 @@ export default function ContractForm() {
                   Settings
                 </h3>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-white/80 font-medium mb-2">Country</label>
                     <input
@@ -596,11 +596,11 @@ export default function ContractForm() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-white/10">
+              <div className="flex flex-row gap-4 pt-6 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => navigate("/dashboard")}
-                  className="btn-accent flex-1 sm:flex-none px-8"
+                  className="btn-accent flex-none px-8"
                   disabled={busy}
                 >
                   Cancel
@@ -631,7 +631,7 @@ export default function ContractForm() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/10 py-8 mt-16">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <img src="/PlanPago-trans.png" alt="PlanPago" className="h-6 w-6" />
               <span className="text-lg font-semibold">PlanPago</span>

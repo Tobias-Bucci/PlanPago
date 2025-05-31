@@ -283,14 +283,14 @@ export default function Dashboard() {
 
         {/* Header + action buttons - without glass card wrapper */}
         <div className="mb-8 animate-pop">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-row items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-semibold text-white mb-2">Contract Overview</h1>
               <p className="text-white/70 text-lg">
                 {`Total contracts: ${total}`}
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-row gap-3">
               <button
                 className="btn-primary flex items-center justify-center gap-2 px-6 py-3 rounded-xl"
                 onClick={() => navigate("/contracts/new")}
@@ -428,9 +428,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Filters - removed glass card wrapper */}
         <div className="mb-6 animate-pop">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-4 p-6 rounded-2xl bg-white/5 border border-white/10 relative z-[1]">
+          <div className="flex flex-row items-center gap-4 p-6 rounded-2xl bg-white/5 border border-white/10 relative z-[1]">
             {/* Search Section */}
             <div className="flex items-center gap-3">
               <button
@@ -438,7 +437,7 @@ export default function Dashboard() {
                 onClick={() => setModalOpen(true)}
               >
                 <Search size={18} />
-                <span className="hidden sm:inline">Search</span>
+                <span>Search</span>
               </button>
 
               {query && (
@@ -455,21 +454,18 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Divider */}
-            <div className="hidden lg:block w-px h-8 bg-white/20"></div>
+            <div className="block w-px h-8 bg-white/20"></div>
 
-            {/* Filter Section */}
-            <div className="flex items-center gap-3 lg:ml-auto">
+            <div className="flex items-center gap-3 ml-auto">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal size={18} className="text-white/70" />
-                <span className="text-white/70 text-sm hidden sm:inline">Filters:</span>
+                <span className="text-white/70 text-sm">Filters:</span>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 relative z-[2]">
+              <div className="flex flex-row gap-3 relative z-[2]">
                 <div>
-                  <label className="block text-white/70 text-xs mb-1 sm:hidden">Type</label>
                   <select
-                    className="frosted-input w-full sm:w-36 text-sm relative z-[3]"
+                    className="frosted-input w-36 text-sm relative z-[3]"
                     value={filterType}
                     onChange={(e) => setFType(e.target.value)}
                   >
@@ -480,9 +476,8 @@ export default function Dashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-white/70 text-xs mb-1 sm:hidden">Status</label>
                   <select
-                    className="frosted-input w-full sm:w-36 text-sm relative z-[3]"
+                    className="frosted-input w-36 text-sm relative z-[3]"
                     value={filterStat}
                     onChange={(e) => setFStat(e.target.value)}
                   >
@@ -510,176 +505,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="glass-card overflow-x-auto animate-pop">
-            {/* Mobile: Cards, Desktop: Table */}
-            <div className="block lg:hidden p-6">
-              {/* Mobile Sorting Options */}
-              <div className="mb-6">
-                <label className="block text-white/70 text-sm mb-2">Sort by:</label>
-                <select
-                  className="frosted-input w-full"
-                  value={`${sortField}_${sortDir}`}
-                  onChange={(e) => {
-                    const [field, direction] = e.target.value.split('_');
-                    setSortField(field);
-                    setSortDir(direction);
-                  }}
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <option key={`${option.field}_${option.dir}`} value={`${option.field}_${option.dir}`}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {contracts.slice(0, PAGE_SIZE).map((c, idx) => {
-                const end = new Date(c.end_date || "");
-                const expired = c.end_date && end < today;
-                const cancelled = c.status === "cancelled";
-                return (
-                  <div key={c.id} className={`mb-4 p-5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm ${(expired || cancelled) ? "opacity-60" : ""}`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-bold text-lg text-white">{c.name}</h3>
-                      <span className={`text-xs px-3 py-1 rounded-full ${cancelled ? "bg-gray-600/30 text-gray-300" : expired ? "bg-red-600/30 text-red-300" : "bg-emerald-600/30 text-emerald-300"}`}>
-                        {cancelled ? "Cancelled" : expired ? "Expired" : c.status}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-                      <div className="bg-white/10 rounded-lg px-3 py-2">
-                        <span className="text-white/60 block">Type</span>
-                        <span className="text-white">{c.contract_type}</span>
-                      </div>
-                      <div className="bg-white/10 rounded-lg px-3 py-2">
-                        <span className="text-white/60 block">Amount</span>
-                        <span className="text-white font-semibold">{c.amount} {currency}</span>
-                      </div>
-                      <div className="bg-white/10 rounded-lg px-3 py-2">
-                        <span className="text-white/60 block">Start Date</span>
-                        <span className="text-white">{new Date(c.start_date).toLocaleDateString()}</span>
-                      </div>
-                      <div className="bg-white/10 rounded-lg px-3 py-2">
-                        <span className="text-white/60 block">End Date</span>
-                        <span className="text-white">{c.end_date ? end.toLocaleDateString() : "-"}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {filesCache[c.id]?.map((f) => (
-                        <div key={f.id} className="relative inline-block">
-                          <button
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // Authentifizierte Vorschau/Download per fetch
-                              const token = localStorage.getItem("token");
-                              const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
-                              const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-                              if (!res.ok) {
-                                alert("Fehler beim Laden der Datei: " + (await res.text()));
-                                return;
-                              }
-                              const blob = await res.blob();
-                              const fileUrl = window.URL.createObjectURL(blob);
-                              if (f.url.endsWith(".pdf")) {
-                                window.open(fileUrl, "_blank");
-                              } else {
-                                const img = new window.Image();
-                                img.src = fileUrl;
-                                const w = window.open();
-                                w.document.write(img.outerHTML);
-                              }
-                            }}
-                            style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                            title="Preview/download"
-                          >
-                            {f.url.endsWith(".pdf") ? (
-                              <span className="text-2xl">📄</span>
-                            ) : (
-                              <img
-                                src="/static/placeholder.png"
-                                alt={f.original_filename}
-                                className="h-10 w-10 rounded object-cover"
-                              />
-                            )}
-                          </button>
-                          <button
-                            className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
-                            onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <button className="btn-primary flex-1 py-2 text-sm" onClick={() => navigate(`/contracts/${c.id}/edit`, { state: { contract: c } })}>Edit</button>
-                      <button className="btn-accent flex-1 py-2 text-sm bg-red-600 hover:bg-red-700" onClick={() => deleteContract(c.id)}>Delete</button>
-                      {cancelled ? (
-                        <button
-                          className="btn-accent flex-1 py-2 text-sm bg-emerald-700 hover:bg-emerald-800"
-                          onClick={() => reactivateContract(c.id)}
-                        >
-                          Reactivate
-                        </button>
-                      ) : (
-                        <button
-                          className="btn-accent flex-1 py-2 text-sm bg-purple-600 hover:bg-purple-700"
-                          onClick={() => cancelContract(c.id)}
-                          disabled={expired}
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                    {c.notes && (
-                      <div className="mt-2 text-white/80 text-sm bg-white/5 rounded p-2">
-                        <span className="font-semibold">Notes:</span> {c.notes}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-4 mb-2">
-                  <button
-                    className="p-3 rounded-lg hover:bg-white/10 disabled:opacity-40 transition-colors"
-                    onClick={() => setPage(0)}
-                    disabled={page === 0}
-                    title="First page"
-                  >
-                    <ChevronFirst size={20} />
-                  </button>
-                  <button
-                    className="p-3 rounded-lg hover:bg-white/10 disabled:opacity-40 transition-colors"
-                    onClick={() => setPage((p) => p - 1)}
-                    disabled={page === 0}
-                    title="Previous page"
-                  >
-                    <ChevronsLeft size={18} />
-                  </button>
-                  {pageNumbers.map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setPage(n)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${n === page ? "bg-blue-600 text-white" : "hover:bg-white/10 text-white/80"}`}
-                    >
-                      {n + 1}
-                    </button>
-                  ))}
-                  <button
-                    className="p-3 rounded-lg hover:bg-white/10 disabled:opacity-40 transition-colors"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={page === totalPages - 1}
-                    title="Next page"
-                  >
-                    <ChevronsRight size={18} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <table className="min-w-full text-white/90 hidden lg:table">
+            <table className="min-w-full text-white/90">
               <thead className="text-white uppercase text-sm bg-white/10">
                 <tr>
                   <th className="px-6 py-4 text-center font-semibold">Name</th>
@@ -1043,7 +869,7 @@ export default function Dashboard() {
       {/* Footer */}
       <footer className="relative z-[1] border-t border-white/10 py-8">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <img src="/PlanPago-trans.png" alt="PlanPago" className="h-6 w-6" />
               <span className="text-lg font-semibold">PlanPago</span>
