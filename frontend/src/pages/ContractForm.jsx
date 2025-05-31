@@ -69,8 +69,9 @@ export default function ContractForm() {
     }));
 
   const fetchContract = async () => {
+    const token = authCookies.getToken();
     const r = await fetch(`${API}${id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     if (r.ok) prefill(await r.json());
     else {

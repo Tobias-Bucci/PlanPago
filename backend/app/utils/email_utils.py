@@ -240,6 +240,57 @@ def send_broadcast(to_addresses: list[str], subject: str, body: str, attachments
 
 
 # ────────────────────────────────────────────────────────────────
+#  (3.5)  INDIVIDUAL EMAIL
+# ────────────────────────────────────────────────────────────────
+def send_individual_email(to_address: str, subject: str, body: str, attachments: list[str] = None) -> None:
+    """Send a styled individual e-mail (admin panel feature) with HTML layout and optional attachments."""
+    if not to_address:
+        return
+
+    logo_url = "https://planpago.buccilab.com/PlanPago-trans.png"
+    year = datetime.utcnow().year
+    html = f'''
+    <div style="font-family: 'Inter', Arial, sans-serif; background: #f6f8fa; padding: 32px 0;">
+      <div style="max-width: 420px; margin: auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(30,99,255,0.08); padding: 32px 32px 24px 32px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <img src="{logo_url}" alt="PlanPago Logo" style="height: 48px; margin-bottom: 8px;"/>
+        </div>
+        <h2 style="color: #1e63ff; font-size: 1.5rem; margin-bottom: 12px; text-align: center; font-weight: 700; letter-spacing: 0.01em;">{subject}</h2>
+        <div style="font-size: 1.08rem; color: #222; margin-bottom: 18px; text-align: left; white-space: pre-line;">{body}</div>
+        <div style="text-align: center; color: #aaa; font-size: 0.95rem; margin-top: 24px;">Best regards,<br><b>The PlanPago Team</b></div>
+      </div>
+      <div style="text-align: center; color: #bbb; font-size: 0.9rem; margin-top: 18px;">&copy; {year} PlanPago</div>
+    </div>
+    '''
+    
+    # Betreff für Log markieren
+    log_subject = f"[Individual] {subject}"
+    
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = EMAIL_USER or "planpago@example.com"
+    msg["To"] = to_address
+    msg.set_content(body)
+    msg.add_alternative(html, subtype="html")
+    
+    # Anhänge hinzufügen
+    if attachments:
+        for fpath in attachments:
+            try:
+                fname = os.path.basename(fpath)
+                ctype, encoding = mimetypes.guess_type(fname)
+                maintype, subtype = (ctype.split("/", 1) if ctype else ("application", "octet-stream"))
+                with open(fpath, "rb") as f:
+                    msg.add_attachment(f.read(), maintype=maintype, subtype=subtype, filename=fname)
+            except Exception as e:
+                print(f"[Individual] Attachment-Fehler: {fpath} – {e}")
+    
+    _smtp_send(msg, to_address)
+    # Logge explizit als Individual
+    _log_mail(to_address, log_subject)
+
+
+# ────────────────────────────────────────────────────────────────
 #  (4)  APSCHEDULER ENTRY POINT
 # ────────────────────────────────────────────────────────────────
 def schedule_all_reminders(contract: Contract, scheduler, replace: bool = False) -> None:

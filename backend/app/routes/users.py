@@ -621,3 +621,71 @@ def admin_reset_database(
         
     except Exception as e:
         raise HTTPException(500, f"Database reset failed: {str(e)}")
+
+# ───────── Individual Email an einen Nutzer ────────────────────
+class _IndividualEmail(BaseModel):
+    subject: str
+    body: str
+    user_id: int
+
+@router.post("/admin/send-individual-email")
+async def admin_send_individual_email(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    subject: Optional[str] = Form(None),
+    body: Optional[str] = Form(None),
+    user_id: Optional[int] = Form(None),
+    files: Optional[list[UploadFile]] = File(None),
+    cur:  models.User = Depends(get_current_user),
+    db:   Session     = Depends(get_db),
+):
+    _ensure_admin(cur)
+    
+    # multipart/form-data: subject/body/user_id als Form, Dateien als UploadFile
+    if subject and body and user_id:
+        target_user = db.get(models.User, user_id)
+        if not target_user:
+            raise HTTPException(404, "User not found")
+            
+        saved_files = []
+        from ..config import UPLOAD_DIR
+        import shutil, uuid
+        if files:
+            for up in files:
+                ext = os.path.splitext(up.filename)[1]
+                fname = f"individual_{uuid.uuid4().hex}{ext}"
+                dest = UPLOAD_DIR / fname
+                from ..utils import crypto_utils
+                with dest.open("wb") as buffer:
+                    crypto_utils.encrypt_file(up.file, buffer)
+                saved_files.append(dest)
+        background_tasks.add_task(
+            email_utils.send_individual_email,
+            target_user.email,
+            subject.strip(),
+            body.strip(),
+            [str(f) for f in saved_files] if saved_files else None
+        )
+        return {"sent": 1, "recipient": target_user.email}
+    
+    # JSON: subject/body/user_id im Body, keine Dateien
+    data = await request.json()
+    subject = data.get("subject")
+    body = data.get("body")
+    user_id = data.get("user_id")
+    
+    if not subject or not body or not user_id:
+        return JSONResponse({"detail": "Subject, body and user_id required."}, status_code=400)
+    
+    target_user = db.get(models.User, user_id)
+    if not target_user:
+        raise HTTPException(404, "User not found")
+    
+    background_tasks.add_task(
+        email_utils.send_individual_email,
+        target_user.email,
+        subject.strip(),
+        body.strip(),
+        None
+    )
+    return {"sent": 1, "recipient": target_user.email}

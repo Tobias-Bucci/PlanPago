@@ -1,52 +1,46 @@
 // fetchWithAuth.js
 import { authCookies } from './cookieUtils';
 
-export async function fetchWithAuth(url, options = {}, navigate) {
+/**
+ * Fetch wrapper that automatically adds authentication headers from cookies
+ * @param {string} url - The URL to fetch
+ * @param {RequestInit} options - Fetch options
+ * @param {Function} navigate - Navigation function for redirects
+ * @returns {Promise<Response>} - The fetch response
+ */
+export async function fetchWithAuth(url, options = {}, navigate = null) {
   const token = authCookies.getToken();
 
   if (!token) {
-    // No token available, redirect to login
     if (navigate) {
       navigate('/login', { replace: true });
     }
-    throw new Error('No authentication token available. Please log in again.');
+    throw new Error('No authentication token available');
   }
 
-  const authOptions = {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+  const authHeaders = {
+    'Authorization': `Bearer ${token}`,
+    ...options.headers
   };
 
-  const response = await fetch(url, authOptions);
+  const response = await fetch(url, {
+    ...options,
+    headers: authHeaders
+  });
 
-  if (!response.ok) {
-    try {
-      const data = await response.json();
-      if (data?.detail === "Could not validate credentials") {
-        authCookies.removeToken();
-        authCookies.removeUserEmail();
-        if (navigate) {
-          navigate('/login', { replace: true });
-        }
-        throw new Error('Session expired. Please log in again.');
-      }
-      throw new Error(data.detail || `HTTP ${response.status}`);
-    } catch (jsonError) {
-      if (response.status === 401) {
-        authCookies.removeToken();
-        authCookies.removeUserEmail();
-        if (navigate) {
-          navigate('/login', { replace: true });
-        }
-        throw new Error('Session expired. Please log in again.');
-      }
-      throw new Error(`Network error: ${response.status}`);
+  // Handle 401 unauthorized responses
+  if (response.status === 401) {
+    // Clear invalid token
+    authCookies.removeToken();
+    authCookies.removeUserEmail();
+
+    if (navigate) {
+      navigate('/login', { replace: true });
     }
+    throw new Error('Authentication failed');
   }
 
   return response;
 }
+
+export default fetchWithAuth;

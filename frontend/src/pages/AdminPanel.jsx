@@ -36,6 +36,12 @@ export default function AdminPanel() {
   // Neu: Dateien für Broadcast
   const [broadcastFiles, setBroadcastFiles] = useState([]);
 
+  // Individual email state
+  const [individualSubj, setIndividualSubj] = useState("");
+  const [individualBody, setIndividualBody] = useState("");
+  const [individualFiles, setIndividualFiles] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
+
   const [uptime, setUptime] = useState("");
   const [buildInfo, setBuildInfo] = useState("");
 
@@ -47,14 +53,16 @@ export default function AdminPanel() {
 
   /* ─────────────── helpers ────────────────────────────── */
   const fetchJSON = async (url) => {
-    const r = await fetch(url, { headers: authHeader });
+    const token = authCookies.getToken();
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (r.status === 401) return navigate("/login");
     if (r.status === 403) return navigate("/");
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   };
   const fetchTXT = async (url) => {
-    const r = await fetch(url, { headers: authHeader });
+    const token = authCookies.getToken();
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (r.status === 401) return navigate("/login");
     if (r.status === 403) return navigate("/");
     if (!r.ok) throw new Error(await r.text());
@@ -183,6 +191,50 @@ export default function AdminPanel() {
       if (!response.ok) throw new Error(await response.text());
       setNotification({ message: "Broadcast sent successfully.", type: "success" });
       setSubj(""); setBody(""); setBroadcastFiles([]);
+    } catch (e) {
+      setNotification({ message: e.message, type: "error" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /* ─────────────── individual email ──────────────────── */
+  const sendIndividualEmail = async (e) => {
+    e.preventDefault();
+    if (!individualSubj.trim() || !individualBody.trim() || !selectedUserId) {
+      setNotification({ message: "Subject, body and recipient required.", type: "error" });
+      return;
+    }
+    setBusy(true);
+    try {
+      let response;
+      if (individualFiles.length > 0) {
+        // Mit Dateianhängen: multipart/form-data
+        const formData = new FormData();
+        formData.append("subject", individualSubj.trim());
+        formData.append("body", individualBody);
+        formData.append("user_id", selectedUserId);
+        individualFiles.forEach((file) => formData.append("files", file));
+        response = await fetch(`${API}/users/admin/send-individual-email`, {
+          method: "POST",
+          headers: { ...authHeader },
+          body: formData,
+        });
+      } else {
+        // Ohne Dateianhängen: JSON
+        response = await fetch(`${API}/users/admin/send-individual-email`, {
+          method: "POST",
+          headers: { ...authHeader, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subject: individualSubj.trim(),
+            body: individualBody,
+            user_id: parseInt(selectedUserId)
+          }),
+        });
+      }
+      if (!response.ok) throw new Error(await response.text());
+      setNotification({ message: "Email sent successfully.", type: "success" });
+      setIndividualSubj(""); setIndividualBody(""); setIndividualFiles([]); setSelectedUserId("");
     } catch (e) {
       setNotification({ message: e.message, type: "error" });
     } finally {
@@ -357,6 +409,7 @@ export default function AdminPanel() {
             <TabBtn id="users" label={<><Users size={20} className="inline mr-2" />Users</>} onClick={() => setTab("users")} />
             <TabBtn id="email" label={<><Mail size={20} className="inline mr-2" />E-mail logs</>} onClick={loadMailLogs} />
             <TabBtn id="broadcast" label={<><Send size={20} className="inline mr-2" />Broadcast</>} onClick={() => setTab("broadcast")} />
+            <TabBtn id="individual" label={<><Mail size={20} className="inline mr-2" />Individual Email</>} onClick={() => setTab("individual")} />
             <TabBtn id="health" label={<><HeartPulse size={20} className="inline mr-2" />Health</>} onClick={loadHealth} />
           </div>
 
@@ -550,6 +603,87 @@ export default function AdminPanel() {
                           disabled={busy}
                         >
                           {busy ? "Sending…" : "Send Broadcast"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* INDIVIDUAL EMAIL */}
+                {tab === "individual" && (
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">Send Individual Email</h2>
+                    <div className="max-w-2xl mx-auto">
+                      <form onSubmit={sendIndividualEmail} className="space-y-6">
+                        {/* User Selection */}
+                        <div className="space-y-3">
+                          <label className="block text-white/80 font-medium">Select Recipient</label>
+                          <select
+                            className="frosted-input"
+                            value={selectedUserId}
+                            onChange={(e) => setSelectedUserId(e.target.value)}
+                            required
+                          >
+                            <option value="">Choose a user...</option>
+                            {users.map((user) => (
+                              <option key={user.id} value={user.id}>
+                                {user.email} (ID: {user.id})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <input
+                          className="frosted-input"
+                          placeholder="Subject"
+                          value={individualSubj}
+                          onChange={(e) => setIndividualSubj(e.target.value)}
+                          required
+                        />
+                        <textarea
+                          className="frosted-input"
+                          rows={6}
+                          placeholder="Message body"
+                          value={individualBody}
+                          onChange={(e) => setIndividualBody(e.target.value)}
+                          required
+                        />
+
+                        {/* File upload */}
+                        <div className="space-y-3">
+                          <label className="block text-white/80 font-medium">Attach Files</label>
+                          <input
+                            type="file"
+                            multiple
+                            className="frosted-file"
+                            onChange={e => setIndividualFiles(Array.from(e.target.files))}
+                          />
+                          {individualFiles.length > 0 && (
+                            <div className="glass-card p-4">
+                              <p className="text-white/70 text-sm mb-3">Selected files:</p>
+                              <div className="space-y-2">
+                                {individualFiles.map((file, idx) => (
+                                  <div key={idx} className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                                    <span className="text-white/90 text-sm">{file.name}</span>
+                                    <button
+                                      type="button"
+                                      className="text-red-400 hover:text-red-300 transition-colors"
+                                      onClick={() => setIndividualFiles(files => files.filter((_, i) => i !== idx))}
+                                    >
+                                      <XCircle size={18} />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          className="btn-primary w-full py-4 text-lg font-semibold"
+                          disabled={busy}
+                        >
+                          {busy ? "Sending…" : "Send Email"}
                         </button>
                       </form>
                     </div>

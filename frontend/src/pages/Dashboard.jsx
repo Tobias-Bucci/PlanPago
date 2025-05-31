@@ -18,6 +18,7 @@ import {
   ArrowUpDown,
   ChevronFirst,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import ConfirmModal from "../components/ConfirmModal";
 import Notification from "../components/Notification";
@@ -124,13 +125,15 @@ export default function Dashboard() {
 
   /* Attachments for a contract: load and cache */
   const loadFilesForContract = async (contractId) => {
-    if (filesCache[contractId]) return; // already loaded
+    if (filesCache[contractId]) return;
     try {
-      const fr = await fetchWithAuth(`${API}/contracts/${contractId}/files`, { headers: authHeader }, navigate);
-      const files = fr.ok ? await fr.json() : [];
-      setFilesCache((prev) => ({ ...prev, [contractId]: files }));
-    } catch {
-      setFilesCache((prev) => ({ ...prev, [contractId]: [] }));
+      const response = await fetchWithAuth(`${API}/contracts/${contractId}/files`, {}, navigate);
+      if (response.ok) {
+        const files = await response.json();
+        setFilesCache(cache => ({ ...cache, [contractId]: files }));
+      }
+    } catch (e) {
+      console.error('Failed to load files:', e);
     }
   };
 
@@ -167,15 +170,20 @@ export default function Dashboard() {
   /* ───── deletion helpers ───────────────────────────────────── */
   const reallyDeleteContract = async (id) => {
     try {
-      const r = await fetchWithAuth(`${API}/contracts/${id}`, {
-        method: "DELETE",
-        headers: authHeader,
+      const response = await fetchWithAuth(`${API}/contracts/${id}`, {
+        method: "DELETE"
       }, navigate);
-      if (!r.ok) throw new Error("Deletion failed");
-      setMsg("Contract deleted");
-      setMsgType("success");
-      loadPage();
-    } catch (e) { setErr(e.message); }
+      if (response.ok) {
+        setContracts(cs => cs.filter(c => c.id !== id));
+        setTotal(t => t - 1);
+        setMsg("Contract deleted.");
+        setMsgType("success");
+      } else {
+        throw new Error(await response.text());
+      }
+    } catch (e) {
+      setErr(e.message);
+    }
   };
   const deleteContract = (id) =>
     setDialog({
@@ -187,15 +195,22 @@ export default function Dashboard() {
 
   const reallyDeleteFile = async (cid, fid) => {
     try {
-      const r = await fetchWithAuth(`${API}/contracts/${cid}/files/${fid}`, {
-        method: "DELETE",
-        headers: authHeader,
+      const response = await fetchWithAuth(`${API}/contracts/${cid}/files/${fid}`, {
+        method: "DELETE"
       }, navigate);
-      if (!r.ok) throw new Error("Attachment could not be deleted");
-      setMsg("Attachment deleted");
-      setMsgType("success");
-      loadPage();
-    } catch (e) { setErr(e.message); }
+      if (response.ok) {
+        setFilesCache(cache => ({
+          ...cache,
+          [cid]: cache[cid]?.filter(f => f.id !== fid) || []
+        }));
+        setMsg("File deleted.");
+        setMsgType("success");
+      } else {
+        throw new Error(await response.text());
+      }
+    } catch (e) {
+      setErr(e.message);
+    }
   };
   const deleteFile = (cid, fid) =>
     setDialog({
@@ -207,16 +222,22 @@ export default function Dashboard() {
 
   const reallyCancelContract = async (id) => {
     try {
-      const r = await fetchWithAuth(`${API}/contracts/${id}`, {
+      const response = await fetchWithAuth(`${API}/contracts/${id}`, {
         method: "PATCH",
-        headers: { ...authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "cancelled" }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" })
       }, navigate);
-      if (!r.ok) throw new Error("Cancel failed");
-      setMsg("Contract cancelled");
-      setMsgType("success");
-      loadPage();
-    } catch (e) { setErr(e.message); }
+      if (response.ok) {
+        const updated = await response.json();
+        setContracts(cs => cs.map(c => c.id === id ? updated : c));
+        setMsg("Contract cancelled.");
+        setMsgType("success");
+      } else {
+        throw new Error(await response.text());
+      }
+    } catch (e) {
+      setErr(e.message);
+    }
   };
   const cancelContract = (id) =>
     setDialog({
@@ -228,16 +249,22 @@ export default function Dashboard() {
 
   const reallyReactivateContract = async (id) => {
     try {
-      const r = await fetchWithAuth(`${API}/contracts/${id}`, {
+      const response = await fetchWithAuth(`${API}/contracts/${id}`, {
         method: "PATCH",
-        headers: { ...authHeader, "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "active" }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "active" })
       }, navigate);
-      if (!r.ok) throw new Error("Re-activate failed");
-      setMsg("Contract re-activated");
-      setMsgType("success");
-      loadPage();
-    } catch (e) { setErr(e.message); }
+      if (response.ok) {
+        const updated = await response.json();
+        setContracts(cs => cs.map(c => c.id === id ? updated : c));
+        setMsg("Contract reactivated.");
+        setMsgType("success");
+      } else {
+        throw new Error(await response.text());
+      }
+    } catch (e) {
+      setErr(e.message);
+    }
   };
   const reactivateContract = (id) =>
     setDialog({
@@ -319,29 +346,22 @@ export default function Dashboard() {
                           e.stopPropagation();
                           setExportOpen(false);
                           try {
-                            console.log('Starting CSV export...');
-                            const res = await fetchWithAuth(`${API}/contracts/export/csv`, { headers: authHeader }, navigate);
-                            console.log('CSV export response status:', res.status);
-                            if (!res.ok) {
-                              const errorText = await res.text();
-                              console.error('CSV export error:', errorText);
-                              throw new Error(`Export failed: ${errorText}`);
+                            const response = await fetchWithAuth(`${API}/contracts/export/csv`, {}, navigate);
+                            if (response.ok) {
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'contracts.csv';
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                            } else {
+                              throw new Error(await response.text());
                             }
-                            const blob = await res.blob();
-                            const url = window.URL.createObjectURL(blob);
-                            const a = Object.assign(document.createElement("a"), {
-                              href: url,
-                              download: "contracts.csv",
-                            });
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            window.URL.revokeObjectURL(url);
-                            setMsg("CSV export successful");
-                            setMsgType("success");
                           } catch (e) {
-                            console.error('CSV export error:', e);
-                            setErr(e.message || "CSV export failed");
+                            setErr(e.message);
                           }
                         }}
                       >
@@ -356,55 +376,22 @@ export default function Dashboard() {
                           e.stopPropagation();
                           setExportOpen(false);
                           try {
-                            console.log('Starting PDF export...');
-                            setMsg("Generating PDF export...");
-                            setMsgType("info");
-
-                            const res = await fetchWithAuth(`${API}/contracts/export/pdf`, {
-                              headers: authHeader,
-                              method: 'GET'
-                            }, navigate);
-
-                            console.log('PDF export response status:', res.status);
-                            console.log('PDF export response headers:', Object.fromEntries(res.headers.entries()));
-
-                            if (!res.ok) {
-                              const errorText = await res.text();
-                              console.error('PDF export error response:', errorText);
-                              throw new Error(`PDF export failed (${res.status}): ${errorText}`);
+                            const response = await fetchWithAuth(`${API}/contracts/export/pdf`, {}, navigate);
+                            if (response.ok) {
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = 'contracts.pdf';
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                            } else {
+                              throw new Error(await response.text());
                             }
-
-                            const contentType = res.headers.get('content-type');
-                            console.log('Content-Type:', contentType);
-
-                            if (!contentType || !contentType.includes('application/pdf')) {
-                              const responseText = await res.text();
-                              console.error('Unexpected content type:', contentType, 'Response:', responseText);
-                              throw new Error(`Expected PDF but got: ${contentType}`);
-                            }
-
-                            const blob = await res.blob();
-                            console.log('PDF blob size:', blob.size);
-
-                            if (blob.size === 0) {
-                              throw new Error('PDF file is empty');
-                            }
-
-                            const url = window.URL.createObjectURL(blob);
-                            const a = Object.assign(document.createElement("a"), {
-                              href: url,
-                              download: `contracts_${new Date().toISOString().split('T')[0]}.pdf`,
-                            });
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            window.URL.revokeObjectURL(url);
-
-                            setMsg("PDF export successful");
-                            setMsgType("success");
                           } catch (e) {
-                            console.error('PDF export error:', e);
-                            setErr(e.message || "PDF export failed");
+                            setErr(e.message);
                           }
                         }}
                       >
@@ -590,7 +577,7 @@ export default function Dashboard() {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     // Authentifizierte Vorschau/Download per fetch
-                                    const token = localStorage.getItem("token");
+                                    const token = authCookies.getToken();
                                     const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
                                     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
                                     if (!res.ok) {
@@ -622,10 +609,11 @@ export default function Dashboard() {
                                   )}
                                 </button>
                                 <button
-                                  className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
+                                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors shadow-lg border border-white/20"
                                   onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
+                                  title="Delete file"
                                 >
-                                  ×
+                                  <X size={12} />
                                 </button>
                               </div>
                             ))}
@@ -701,7 +689,7 @@ export default function Dashboard() {
                                           onClick={async (e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            const token = localStorage.getItem("token");
+                                            const token = authCookies.getToken();
                                             const url = `${API}/contracts/${c.id}/files/preview/${f.id}`;
                                             const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
                                             if (!res.ok) {
@@ -733,10 +721,11 @@ export default function Dashboard() {
                                           )}
                                         </button>
                                         <button
-                                          className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 text-[10px]"
+                                          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors shadow-lg border border-white/20"
                                           onClick={(e) => { e.stopPropagation(); deleteFile(c.id, f.id); }}
+                                          title="Delete file"
                                         >
-                                          ×
+                                          <X size={12} />
                                         </button>
                                       </div>
                                     ))}
