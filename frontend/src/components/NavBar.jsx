@@ -16,7 +16,7 @@ export default function NavBar() {
 
   /* — activeLink helper (works for both desktop & mobile) — */
   const linkClass = ({ isActive }) =>
-    `relative px-4 py-2 rounded-lg transition-colors duration-150 font-medium overflow-hidden flex items-center justify-center`;
+    `relative px-6 py-3 rounded-lg transition-all duration-200 font-medium overflow-hidden flex items-center justify-center min-h-[44px] w-full md:w-auto`;
 
   const handleLogout = () => {
     localStorage.clear();
@@ -211,190 +211,284 @@ export default function NavBar() {
           {/* mobile hamburger */}
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="md:hidden p-2 rounded-lg hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-white"
-            aria-label="Open menu"
+            className="md:hidden p-3 rounded-lg hover:bg-white/10 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
-            <svg className="w-7 h-7" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+            <motion.svg
+              className="w-6 h-6"
+              stroke="currentColor"
+              fill="none"
+              viewBox="0 0 24 24"
+              animate={{ rotate: menuOpen ? 180 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
               {menuOpen
                 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16" />}
-            </svg>
+            </motion.svg>
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu Backdrop */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Slide-Down Mobile Menu */}
-      <div
-        className={`md:hidden transition-all duration-400 overflow-hidden ${menuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'} bg-white/10 backdrop-blur-lg border-b border-white/10`}
-        style={{ transitionProperty: 'max-height,opacity' }}
-      >
-        <div className="container mx-auto flex flex-col items-center gap-2 py-4 animate-pop">
-          {showOnlyAuth ? (
-            <>
-              <NavLink to="/login" onClick={() => setMenuOpen(false)} className={linkClass}>
-                {({ isActive }) => (
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="md:hidden fixed top-[73px] left-0 right-0 z-50 backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl mx-2 mt-2 rounded-2xl"
+          >
+            <div className="container mx-auto px-6 py-6 max-h-[calc(100vh-100px)] overflow-y-auto">
+              <div className="flex flex-col gap-2">
+                {showOnlyAuth ? (
                   <>
-                    <span className="relative z-10">Login</span>
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-underline-mobile"
-                          className="absolute inset-0 rounded-lg bg-white/20 shadow"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </NavLink>
-              <NavLink to="/register" onClick={() => setMenuOpen(false)} className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span className="relative z-10">Register</span>
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-underline-mobile"
-                          className="absolute inset-0 rounded-lg bg-white/20 shadow"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </NavLink>
-            </>
-          ) : isAuth ? (
-            <>
-              <NavLink to="/dashboard" onClick={() => setMenuOpen(false)} className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span className="relative z-10">Dashboard</span>
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-underline-mobile"
-                          className="absolute inset-0 rounded-lg bg-white/20 shadow"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </NavLink>
-              <NavLink to="/stats" onClick={() => setMenuOpen(false)} className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span className="relative z-10">Statistics</span>
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-underline-mobile"
-                          className="absolute inset-0 rounded-lg bg-white/20 shadow"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </NavLink>
-              <NavLink to="/profile" onClick={() => setMenuOpen(false)} className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span className="relative z-10">Settings</span>
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-underline-mobile"
-                          className="absolute inset-0 rounded-lg bg-white/20 shadow"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </NavLink>
-              {isAdmin && (
-                <NavLink to="/adminpanel" onClick={() => setMenuOpen(false)} className={linkClass}>
-                  {({ isActive }) => (
-                    <>
-                      <span className="relative z-10">Adminpanel</span>
-                      <AnimatePresence>
-                        {isActive && (
-                          <motion.div
-                            layoutId="nav-underline-mobile"
-                            className="absolute inset-0 rounded-lg bg-white/20 shadow"
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                          />
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1, duration: 0.3 }}
+                    >
+                      <NavLink to="/login" onClick={() => setMenuOpen(false)} className={linkClass}>
+                        {({ isActive }) => (
+                          <>
+                            <span className="relative z-10 text-lg">Login</span>
+                            <AnimatePresence>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="nav-underline-mobile"
+                                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                />
+                              )}
+                            </AnimatePresence>
+                          </>
                         )}
-                      </AnimatePresence>
-                    </>
-                  )}
-                </NavLink>
-              )}
-              <button onClick={handleLogout} className="btn-accent w-full text-lg py-3 mt-2 bg-red-600 hover:bg-red-700">Logout</button>
-            </>
-          ) : (
-            <>
-              <NavLink to="/login" onClick={() => setMenuOpen(false)} className={linkClass}>
-                {({ isActive }) => (
+                      </NavLink>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15, duration: 0.3 }}
+                    >
+                      <NavLink to="/register" onClick={() => setMenuOpen(false)} className={linkClass}>
+                        {({ isActive }) => (
+                          <>
+                            <span className="relative z-10 text-lg">Register</span>
+                            <AnimatePresence>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="nav-underline-mobile"
+                                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                />
+                              )}
+                            </AnimatePresence>
+                          </>
+                        )}
+                      </NavLink>
+                    </motion.div>
+                  </>
+                ) : isAuth ? (
                   <>
-                    <span className="relative z-10">Login</span>
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-underline-mobile"
-                          className="absolute inset-0 rounded-lg bg-white/20 shadow"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                    </AnimatePresence>
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1, duration: 0.3 }}
+                    >
+                      <NavLink to="/dashboard" onClick={() => setMenuOpen(false)} className={linkClass}>
+                        {({ isActive }) => (
+                          <>
+                            <span className="relative z-10 text-lg">Dashboard</span>
+                            <AnimatePresence>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="nav-underline-mobile"
+                                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                />
+                              )}
+                            </AnimatePresence>
+                          </>
+                        )}
+                      </NavLink>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15, duration: 0.3 }}
+                    >
+                      <NavLink to="/stats" onClick={() => setMenuOpen(false)} className={linkClass}>
+                        {({ isActive }) => (
+                          <>
+                            <span className="relative z-10 text-lg">Statistics</span>
+                            <AnimatePresence>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="nav-underline-mobile"
+                                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                />
+                              )}
+                            </AnimatePresence>
+                          </>
+                        )}
+                      </NavLink>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                    >
+                      <NavLink to="/profile" onClick={() => setMenuOpen(false)} className={linkClass}>
+                        {({ isActive }) => (
+                          <>
+                            <span className="relative z-10 text-lg">Settings</span>
+                            <AnimatePresence>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="nav-underline-mobile"
+                                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                />
+                              )}
+                            </AnimatePresence>
+                          </>
+                        )}
+                      </NavLink>
+                    </motion.div>
+                    {isAdmin && (
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.25, duration: 0.3 }}
+                      >
+                        <NavLink to="/adminpanel" onClick={() => setMenuOpen(false)} className={linkClass}>
+                          {({ isActive }) => (
+                            <>
+                              <span className="relative z-10 text-lg">Adminpanel</span>
+                              <AnimatePresence>
+                                {isActive && (
+                                  <motion.div
+                                    layoutId="nav-underline-mobile"
+                                    className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                  />
+                                )}
+                              </AnimatePresence>
+                            </>
+                          )}
+                        </NavLink>
+                      </motion.div>
+                    )}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                      className="pt-4 border-t border-white/10 mt-4"
+                    >
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setMenuOpen(false);
+                        }}
+                        className="w-full py-3 px-6 text-lg font-semibold rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-200 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] min-h-[44px]"
+                      >
+                        Logout
+                      </button>
+                    </motion.div>
+                  </>
+                ) : (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1, duration: 0.3 }}
+                    >
+                      <NavLink to="/login" onClick={() => setMenuOpen(false)} className={linkClass}>
+                        {({ isActive }) => (
+                          <>
+                            <span className="relative z-10 text-lg">Login</span>
+                            <AnimatePresence>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="nav-underline-mobile"
+                                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                />
+                              )}
+                            </AnimatePresence>
+                          </>
+                        )}
+                      </NavLink>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15, duration: 0.3 }}
+                    >
+                      <NavLink to="/register" onClick={() => setMenuOpen(false)} className={linkClass}>
+                        {({ isActive }) => (
+                          <>
+                            <span className="relative z-10 text-lg">Register</span>
+                            <AnimatePresence>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="nav-underline-mobile"
+                                  className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                                />
+                              )}
+                            </AnimatePresence>
+                          </>
+                        )}
+                      </NavLink>
+                    </motion.div>
                   </>
                 )}
-              </NavLink>
-              <NavLink to="/register" onClick={() => setMenuOpen(false)} className={linkClass}>
-                {({ isActive }) => (
-                  <>
-                    <span className="relative z-10">Register</span>
-                    <AnimatePresence>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-underline-mobile"
-                          className="absolute inset-0 rounded-lg bg-white/20 shadow"
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                        />
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </NavLink>
-            </>
-          )}
-        </div>
-      </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
