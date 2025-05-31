@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 import AnimatedParticlesParallax from "../components/AnimatedParticlesParallax";
+import { ArrowRight, Shield, BarChart3, Calendar, Github } from "lucide-react";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -27,6 +28,20 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative z-10 container mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="max-w-4xl mx-auto text-center">
+          {/* GitHub Link */}
+          <div className="flex justify-center mb-8">
+            <a
+              href="https://github.com/Tobias-Bucci/PlanPago"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 flex items-center gap-2 text-white/80 hover:text-white"
+              title="View on GitHub"
+            >
+              <Github size={20} />
+              <span className="text-sm font-medium">Open Source on GitHub</span>
+            </a>
+          </div>
+
           {/* Main Headline */}
           <motion.h1
             initial={{ y: -40, opacity: 0 }}
